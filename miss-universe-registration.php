@@ -352,6 +352,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reg'])) {
     -webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);
   }
 
+  /* ---------- Fee structure ---------- */
+  .fsia-lux .lux-fees{
+    position:relative;border-radius:26px;padding:1.5px;
+    margin-top:clamp(1.5rem,3.5vw,2.25rem);scroll-margin-top:2rem;
+    background:linear-gradient(150deg,rgba(212,175,55,.55),rgba(255,255,255,.05) 46%,rgba(212,175,55,.38) 100%);
+    box-shadow:0 34px 72px -34px rgba(0,0,0,.9),0 0 50px -26px rgba(212,175,55,.28);
+  }
+  .fsia-lux .lux-fees__in{
+    border-radius:25px;padding:clamp(1.35rem,3.2vw,2.3rem);
+    background:
+      radial-gradient(40rem 20rem at 100% 0%,rgba(212,175,55,.11),transparent 62%),
+      linear-gradient(180deg,rgba(16,16,24,.94),rgba(9,9,14,.97));
+    -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+  }
+  .fsia-lux .lux-fees__head{margin-bottom:1.35rem;}
+  .fsia-lux .lux-fees__kicker{
+    font-size:9.5px;font-weight:700;letter-spacing:.34em;text-transform:uppercase;color:rgba(244,240,230,.42);
+  }
+  .fsia-lux .lux-fees__title{
+    font-family:'Playfair Display',Georgia,serif;font-weight:700;
+    font-size:clamp(1.35rem,3vw,1.95rem);line-height:1.2;margin:.35rem 0 .35rem;
+    background:linear-gradient(90deg,#fff6dd,#f3d77a 48%,#d4af37);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .fsia-lux .lux-fees__sub{font-size:.85rem;line-height:1.65;color:rgba(244,240,230,.5);}
+
+  /* highlighted "pay today" row */
+  .fsia-lux .fee-hero{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;
+    border-radius:20px;padding:clamp(1.1rem,2.6vw,1.55rem);
+    background:linear-gradient(135deg,rgba(212,175,55,.26),rgba(212,175,55,.06) 58%,rgba(212,175,55,.18));
+    border:1px solid rgba(212,175,55,.58);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 22px 48px -26px rgba(212,175,55,.95);
+  }
+  .fsia-lux .fee-hero__badge{
+    display:inline-flex;align-items:center;gap:.4rem;
+    font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    padding:.34rem .7rem;border-radius:999px;
+    background:linear-gradient(135deg,#fbe9a8,#d4af37);color:#0b0b11;
+    box-shadow:0 8px 18px -10px rgba(212,175,55,1);
+  }
+  .fsia-lux .fee-hero__name{
+    font-family:'Playfair Display',Georgia,serif;font-weight:700;color:#fff;
+    font-size:clamp(1.15rem,2.6vw,1.5rem);line-height:1.25;margin-top:.55rem;
+  }
+  .fsia-lux .fee-hero__note{font-size:.78rem;color:rgba(244,240,230,.62);margin-top:.3rem;line-height:1.6;}
+  .fsia-lux .fee-hero__amt{
+    font-family:'Playfair Display',Georgia,serif;font-weight:700;line-height:1;
+    font-size:clamp(2.1rem,6vw,3rem);letter-spacing:-.01em;
+    background:linear-gradient(100deg,#fffdf6,#f3d77a 45%,#d4af37);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .fsia-lux .fee-hero__amtnote{
+    display:block;text-align:right;margin-top:.35rem;
+    font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6ee7b7;
+  }
+
+  /* remaining stages */
+  .fsia-lux .fee-list{list-style:none;margin:1.25rem 0 0;padding:0;}
+  .fsia-lux .fee-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;
+    padding:.95rem .35rem;
+    border-bottom:1px dashed rgba(255,255,255,.09);
+    transition:background-color .25s ease;
+  }
+  .fsia-lux .fee-row:last-child{border-bottom:0;}
+  .fsia-lux .fee-row:hover{background:rgba(212,175,55,.05);}
+  .fsia-lux .fee-row__n{
+    flex:0 0 auto;width:1.85rem;height:1.85rem;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:var(--lux-gold-4);
+    background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.26);
+  }
+  .fsia-lux .fee-row__l{flex:1 1 12rem;min-width:0;}
+  .fsia-lux .fee-row__stage{display:block;font-size:.92rem;font-weight:600;color:rgba(255,255,255,.92);line-height:1.35;}
+  .fsia-lux .fee-row__when{display:block;font-size:11px;color:rgba(244,240,230,.4);margin-top:.15rem;line-height:1.5;}
+  .fsia-lux .fee-row__amt{
+    margin-left:auto;text-align:right;white-space:nowrap;
+    font-size:1.05rem;font-weight:600;color:var(--lux-gold-4);letter-spacing:.005em;
+  }
+  .fsia-lux .fee-row__gst{
+    display:block;font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(244,240,230,.38);margin-top:.15rem;
+  }
+
+  .fsia-lux .fee-note{
+    display:flex;gap:.7rem;align-items:flex-start;margin-top:1.35rem;
+    border-radius:15px;padding:.95rem 1.1rem;
+    background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.26);
+    font-size:.8rem;line-height:1.7;color:rgba(244,240,230,.68);
+  }
+  .fsia-lux .fee-note b{color:#6ee7b7;font-weight:600;}
+  .fsia-lux .fee-disc{
+    margin-top:.85rem;font-size:11px;line-height:1.7;color:rgba(244,240,230,.32);text-align:center;
+  }
+  .fsia-lux .fee-link{
+    display:inline-flex;align-items:center;gap:.3rem;margin-top:.6rem;
+    font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--lux-gold-4);text-decoration:none;border-bottom:1px solid rgba(212,175,55,.35);
+    padding-bottom:.1rem;transition:color .2s ease,border-color .2s ease;
+  }
+  .fsia-lux .fee-link:hover{color:#fff6dd;border-color:rgba(212,175,55,.8);}
+
+  @media(max-width:520px){
+    .fsia-lux .fee-hero{flex-direction:column;align-items:flex-start;}
+    .fsia-lux .fee-hero__amtnote{text-align:left;}
+    .fsia-lux .fee-row__amt{flex:1 0 100%;text-align:left;margin-left:2.45rem;}
+    .fsia-lux .fee-row__gst{display:inline;margin-left:.4rem;}
+  }
+
   /* ---------- Left rail ---------- */
   .fsia-lux .lux-rail{
     position:relative;
@@ -638,6 +748,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reg'])) {
       </div>
     </div>
 
+    <!-- ===================== Fee structure ===================== -->
+    <section class="lux-fees" id="feeStructure" aria-labelledby="feeStructureTitle">
+      <div class="lux-fees__in">
+
+        <header class="lux-fees__head">
+          <div class="lux-fees__kicker">Transparent Pricing</div>
+          <h2 class="lux-fees__title" id="feeStructureTitle">Complete Fee Structure</h2>
+          <p class="lux-fees__sub">Every cost across the full pageant journey, listed upfront &mdash; so there are no surprises at any stage.</p>
+        </header>
+
+        <!-- Payable today -->
+        <div class="fee-hero">
+          <div>
+            <span class="fee-hero__badge">Stage 01 &middot; Pay now to register</span>
+            <div class="fee-hero__name">Audition Fee</div>
+            <p class="fee-hero__note">This is the <b style="color:#f3d77a;font-weight:600;">only</b> amount payable today to complete your registration.</p>
+          </div>
+          <div>
+            <div class="fee-hero__amt"><?php echo isset($meta_tag['pay']) ? htmlspecialchars($meta_tag['pay']) : '₹2,999'; ?></div>
+            <span class="fee-hero__amtnote">Due today</span>
+          </div>
+        </div>
+
+        <!-- Later stages -->
+        <ul class="fee-list">
+          <li class="fee-row">
+            <span class="fee-row__n">02</span>
+            <div class="fee-row__l">
+              <span class="fee-row__stage">Training and Grooming</span>
+              <span class="fee-row__when">Payable only after you clear the audition</span>
+            </div>
+            <div class="fee-row__amt">&#8377;15,000<span class="fee-row__gst">+ GST</span></div>
+          </li>
+          <li class="fee-row">
+            <span class="fee-row__n">03</span>
+            <div class="fee-row__l">
+              <span class="fee-row__stage">Finalist Fee</span>
+              <span class="fee-row__when">Payable only on selection as a finalist</span>
+            </div>
+            <div class="fee-row__amt">&#8377;15,000<span class="fee-row__gst">+ GST</span></div>
+          </li>
+          <li class="fee-row">
+            <span class="fee-row__n">04</span>
+            <div class="fee-row__l">
+              <span class="fee-row__stage">City Finale Fee</span>
+              <span class="fee-row__when">Payable only if you qualify for the city finale</span>
+            </div>
+            <div class="fee-row__amt">&#8377;70,000 &ndash; &#8377;80,000<span class="fee-row__gst">+ GST</span></div>
+          </li>
+          <li class="fee-row">
+            <span class="fee-row__n">05</span>
+            <div class="fee-row__l">
+              <span class="fee-row__stage">State Finale Fee</span>
+              <span class="fee-row__when">Payable only if you qualify for the state finale</span>
+            </div>
+            <div class="fee-row__amt">&#8377;1,00,000<span class="fee-row__gst">+ GST</span></div>
+          </li>
+          <li class="fee-row">
+            <span class="fee-row__n">06</span>
+            <div class="fee-row__l">
+              <span class="fee-row__stage">National Finale Fee</span>
+              <span class="fee-row__when">Payable only if you qualify for the national finale</span>
+            </div>
+            <div class="fee-row__amt">&#8377;1,50,000<span class="fee-row__gst">+ GST</span></div>
+          </li>
+        </ul>
+
+        <div class="fee-note">
+          <span style="font-size:1rem;line-height:1.3;">&#9989;</span>
+          <span>
+            <b>Only the audition fee of <?php echo isset($meta_tag['pay']) ? htmlspecialchars($meta_tag['pay']) : '₹2,999'; ?> is required today.</b>
+            Every later stage fee becomes applicable only if and when you advance to that stage &mdash; nothing else is charged at registration.
+          </span>
+        </div>
+
+        <p class="fee-disc">All amounts from stage 02 onward are exclusive of GST. City finale fees vary by city.</p>
+      </div>
+    </section>
+    <!-- ===================== /Fee structure ===================== -->
+
     <!-- ===================== Main card ===================== -->
     <div class="lux-card">
       <div class="lux-card__in grid grid-cols-1 md:grid-cols-12">
@@ -679,8 +869,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reg'])) {
           </div>
 
           <div class="lux-price">
-            <div class="lux-price__l">Registration Price</div>
+            <div class="lux-price__l">Payable Today</div>
             <div class="lux-price__v"><?php echo isset($meta_tag['pay']) ? htmlspecialchars($meta_tag['pay']) : '₹2,999'; ?></div>
+            <p class="text-[11px] leading-relaxed text-white/45 mt-1">Audition fee only. No other fee is charged at registration.</p>
+            <a href="#feeStructure" class="fee-link">View full fee structure &rarr;</a>
           </div>
 
           <div class="lux-badges">
