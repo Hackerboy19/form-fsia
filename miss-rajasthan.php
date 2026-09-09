@@ -14,6 +14,16 @@ $meta_tag = array_filter($meta_tag) + [
 ];
 $year=date("Y");
 
+// Eligibility window for this pageant. Declared once and reused by the age
+// dropdown, the date picker's min/max and the client-side check, so the three
+// can never drift apart.
+$fsia_age_min = 18;
+$fsia_age_max = 35;
+// Latest date of birth that is still $fsia_age_min today, and the earliest that
+// is still $fsia_age_max (one day past the $fsia_age_max + 1 birthday).
+$fsia_dob_max = date('Y-m-d', strtotime('-' . $fsia_age_min . ' years'));
+$fsia_dob_min = date('Y-m-d', strtotime('-' . ($fsia_age_max + 1) . ' years +1 day'));
+
 // Error passed back from savemissindia-new.php (if any)
 $error = $_SESSION['form_error'] ?? '';
 unset($_SESSION['form_error']);
@@ -299,13 +309,13 @@ echo $header_html;
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label>
-                    <input type="date" name="dob" id="dob" required class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
+                    <input type="date" name="dob" id="dob" required min="<?= $fsia_dob_min ?>" max="<?= $fsia_dob_max ?>" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label>
                     <select name="age" id="age" readonly style="pointer-events: none;" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed">
                         <option value="">Auto-calculated</option>
-                        <?php for($i=18; $i<=35; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?>
+                        <?php for($i=$fsia_age_min; $i<=$fsia_age_max; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?>
                     </select>
                 </div>
             </div>
@@ -794,7 +804,7 @@ function fsiaShowError(el, msg) {
    This page has one date field, not the birthday/birthmonth/birthyear triplet that the
    older forms used, so the calculation reads #dob directly. #dob is the field posted to
    savemissindia-new.php, and #age is filled from it. */
-var FSIA_AGE_MIN = 18, FSIA_AGE_MAX = 35;
+var FSIA_AGE_MIN = <?= (int)$fsia_age_min ?>, FSIA_AGE_MAX = <?= (int)$fsia_age_max ?>;
 
 (function () {
   var dob = document.getElementById('dob');
