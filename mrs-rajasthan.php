@@ -1,30 +1,21 @@
 <?php  include("config.php");
-$getmeta="select * from more_pages where page_name='46'";
+$getmeta="select * from more_pages where page_name='47'";
 $gmeta=mysqli_query($connect,$getmeta);
 $meta_tag=mysqli_fetch_assoc($gmeta) ?: [];
 // this page's own text, used only when the CMS row has nothing for that field
 $meta_tag = array_filter($meta_tag) + [
-  'meta_title'     => 'Miss Forever Rajasthan 2026 | Auditions Open | National Beauty Pageant',
-  'descritpion'    => 'Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.',
-  'meta_keyword'   => 'miss rajasthan, miss rajasthan 2026, miss rajasthan beauty pageant, miss rajasthan auditions, audition dates miss rajasthan 2026, miss rajasthan 2026 beauty pageant',
-  'og_title'       => 'Miss Forever Rajasthan 2026 | Auditions Open | National Beauty Pageant',
-  'og_description' => 'Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.',
-  'og_image'       => 'https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp',
-  'h1'             => 'Forever Miss Rajasthan 2026',
+  'meta_title'     => 'Mrs Rajasthan 2026 | Online Auditions | Application Form',
+  'descritpion'    => 'Mrs Rajasthan 2026 - Forever Star India is going to organize Mrs Rajasthan under Mrs India, India\'s Biggest Beauty Pageant for Women. Auditions have Started, complete your Registration Today',
+  'meta_keyword'   => 'mrs rajasthan, mrs rajasthan 2026, mrs rajasthan 2026 beauty pageant, mrs rajasthan 2026 audition, how to register for mrs rajasthan 2026, mrs rajasthan 2026 dates',
+  'og_title'       => 'Mrs Rajasthan 2026 | Online Auditions | Application Form',
+  'og_description' => 'Mrs Rajasthan 2026 - Forever Star India is going to organize Mrs Rajasthan under Mrs India, India\'s Biggest Beauty Pageant for Women. Auditions have Started, complete your Registration Today',
+  'og_image'       => 'https://www.fsia.in/uploads/812Mrs-Rajasthan-2026.webp',
+  'h1'             => 'Mrs Rajasthan 2026',
 ];
 $year=date("Y");
-
-// Eligibility window for this pageant. Declared once and reused by the age
-// dropdown, the date picker's min/max and the client-side check, so the three
-// can never drift apart.
-$fsia_age_min = 18;
-$fsia_age_max = 35;
-// Latest date of birth that is still $fsia_age_min today, and the earliest that
-// is still $fsia_age_max (one day past the $fsia_age_max + 1 birthday).
-$fsia_dob_max = date('Y-m-d', strtotime('-' . $fsia_age_min . ' years'));
-$fsia_dob_min = date('Y-m-d', strtotime('-' . ($fsia_age_max + 1) . ' years +1 day'));
-
-// Error passed back from savemissindia-new.php (if any)
+$fsia_age_min = 21;
+$fsia_age_max = 50;
+// Error passed back from savemrsindia-new.php (if any)
 $error = $_SESSION['form_error'] ?? '';
 unset($_SESSION['form_error']);
 ?>
@@ -102,9 +93,9 @@ if (isset($_GET['action'])) {
   <link rel="stylesheet" href="/assets-new/css/dark-theme.css">
   <link rel="stylesheet" href="/assets-new/css/grid-fx.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Forever Miss Rajasthan 2026 | Auditions Open | National Beauty Pageant","headline":"Forever MissRajasthan 2026","description":"Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.","url":"https://www.fsia.in/miss-rajasthan.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/miss-rajasthan.php","name":"Register for Forever Miss Rajasthan 2026"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Forever Miss Rajasthan 2026","item":"https://www.fsia.in/miss-rajasthan.php"}]}]</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How to participate in Forever Miss Rajasthan?","acceptedAnswer":{"@type":"Answer","text":"Fill out the online registration form on the Forever Star India official website."}},{"@type":"Question","name":"How do I register for Forever Miss Rajasthan 2026?","acceptedAnswer":{"@type":"Answer","text":"Fill the registration form on this page, verify your WhatsApp number with the 6-digit code we send you, upload a recent photograph and submit the form. Our registration team then contacts you with the audition details."}},{"@type":"Question","name":"Is there any registration or audition fee?","acceptedAnswer":{"@type":"Answer","text":"Filling this registration form is free. An audition fee is payable after your registration is received — our team shares the exact amount and the payment link with you on call or WhatsApp. For any clarity, call +91-9983286999."}},{"@type":"Question","name":"Are the auditions online or offline?","acceptedAnswer":{"@type":"Answer","text":"The first round is an online audition. Shortlisted candidates are then called for the Rajasthan rounds, and the finalists go on to represent Rajasthan at the Forever Miss India grand finale."}},{"@type":"Question","name":"Do I need modelling or pageant experience to apply?","acceptedAnswer":{"@type":"Answer","text":"No. First-time participants are welcome. Selected candidates are trained by industry experts in ramp walk, personality development, confidence building and public speaking before the finale."}},{"@type":"Question","name":"Which photograph should I upload with the form?","acceptedAnswer":{"@type":"Answer","text":"Upload a recent, clear photograph in which your face is fully visible, without heavy filters or group shots. You can crop the photo to the required size inside the upload window on this page."}},{"@type":"Question","name":"What do the winners of Forever Miss Rajasthan 2026 receive?","acceptedAnswer":{"@type":"Answer","text":"Winners get the title, crown and sash, professional grooming, media editorials, photoshoots and digital promotion, and they represent Rajasthan at the Forever Miss India grand finale."}},{"@type":"Question","name":"When will I hear back after submitting the form?","acceptedAnswer":{"@type":"Answer","text":"Our team calls or messages you on the WhatsApp number you verified, usually within 24 to 48 working hours. You can also reach our support executives on +91-9983286999."}},{"@type":"Question","name":"Can I apply if I do not live in Rajasthan?","acceptedAnswer":{"@type":"Answer","text":"Apply for the state you belong to or currently live in. Forever Star India runs Miss and Mrs pageants for every state of India, so you will find your own state's registration form on fsia.in."}}]}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Forever Miss Rajasthan 2026","startDate":"2026-01-01T19:00+05:30","endDate":"2026-12-31T23:00+05:30","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"Forever Star India","address":{"@type":"PostalAddress","streetAddress":"Nirman Nagar, Jaipur","addressLocality":"Jaipur","addressRegion":"Rajasthan","postalCode":"302019","addressCountry":"IN"}},"image":["https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp"],"description":"Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.","offers":{"@type":"Offer","url":"https://www.fsia.in/miss-rajasthan.php"},"organizer":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in"}}</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Mrs Rajasthan 2026 | Online Auditions | Application Form","headline":"Mrs Rajasthan 2026","description":"Mrs Rajasthan 2026 - Forever Star India is going to organize Mrs Rajasthan under Mrs India, India's Biggest Beauty Pageant for Women. Auditions have Started, complete your Registration Today","url":"https://www.fsia.in/mrs-rajasthan.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/uploads/812Mrs-Rajasthan-2026.webp"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/mrs-rajasthan.php","name":"Register for Mrs Rajasthan 2026"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Mrs Rajasthan 2026","item":"https://www.fsia.in/mrs-rajasthan.php"}]}]</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Who can apply for Mrs Rajasthan 2026?","acceptedAnswer":{"@type":"Answer","text":"Married women from Rajasthan — including married, widowed, divorced women and single mothers — can apply. As listed in the participation criteria, the candidate should be between 18 and 50 years of age, at least five feet (152.4 cm) tall without heels, and weigh less than 90 kg."}},{"@type":"Question","name":"What are the G-1 and G-2 registration categories?","acceptedAnswer":{"@type":"Answer","text":"Registrations are divided by age group: G-1 is for 21 to 35 years and G-2 is for 36 to 50 years. Select your group in the Registration Category dropdown — you are judged only within your own age group."}},{"@type":"Question","name":"How do I register for Mrs Rajasthan 2026?","acceptedAnswer":{"@type":"Answer","text":"Fill the registration form on this page, verify your WhatsApp number with the 6-digit code we send you, upload a recent photograph and submit the form. Our registration team then contacts you with the audition details."}},{"@type":"Question","name":"Is there any registration or audition fee?","acceptedAnswer":{"@type":"Answer","text":"Filling this registration form is free. An audition fee is payable after your registration is received — our team shares the exact amount and the payment link with you on call or WhatsApp. For any clarity, call +91-9983286999."}},{"@type":"Question","name":"Are the auditions online or offline?","acceptedAnswer":{"@type":"Answer","text":"The first round is an online audition. Shortlisted candidates are then called for the Rajasthan rounds, and the finalists go on to represent Rajasthan at the Forever Mrs India grand finale."}},{"@type":"Question","name":"Do I need modelling or pageant experience to apply?","acceptedAnswer":{"@type":"Answer","text":"No. First-time participants are welcome. Selected candidates are trained by industry experts in ramp walk, personality development, confidence building and public speaking before the finale."}},{"@type":"Question","name":"Which photograph should I upload with the form?","acceptedAnswer":{"@type":"Answer","text":"Upload a recent, clear photograph in which your face is fully visible, without heavy filters or group shots. You can crop the photo to the required size inside the upload window on this page."}},{"@type":"Question","name":"What do the winners of Mrs Rajasthan 2026 receive?","acceptedAnswer":{"@type":"Answer","text":"Winners get the title, crown and sash, professional grooming, media editorials, photoshoots and digital promotion, and they represent Rajasthan at the Forever Mrs India grand finale."}},{"@type":"Question","name":"When will I hear back after submitting the form?","acceptedAnswer":{"@type":"Answer","text":"Our team calls or messages you on the WhatsApp number you verified, usually within 24 to 48 working hours. You can also reach our support executives on +91-9983286999."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Mrs Rajasthan 2026","startDate":"2026-01-01T19:00+05:30","endDate":"2026-12-31T23:00+05:30","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"Forever Star India","address":{"@type":"PostalAddress","streetAddress":"Nirman Nagar, Jaipur","addressLocality":"Jaipur","addressRegion":"Rajasthan","postalCode":"302019","addressCountry":"IN"}},"image":["https://www.fsia.in/uploads/812Mrs-Rajasthan-2026.webp"],"description":"Mrs Rajasthan 2026 - Forever Star India is going to organize Mrs Rajasthan under Mrs India, India's Biggest Beauty Pageant for Women. Auditions have Started, complete your Registration Today","offers":{"@type":"Offer","url":"https://www.fsia.in/mrs-rajasthan.php"},"organizer":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in"}}</script>
 </head>
 <style>
 /* FSIA new-design page styles (info box, gold card, about block, criteria, FAQ) */
@@ -125,10 +116,10 @@ if (isset($_GET['action'])) {
 .info-dropdown ul { margin: 8px 0 12px 20px; color: #8B4513; font-weight: 700; }
 .info-dropdown li { margin-bottom: 4px; }
 .info-dropdown .example { font-style: italic; color: var(--ink-mute); border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; margin-bottom: 0; }
-@media (max-width: 560px) {
-  .info-box { padding: 16px; }
+@media (max-width: 560px) { 
+  .info-box { padding: 16px; } 
   .info-box-header { align-items: flex-start; }
-  .info-body { padding-left: 0; margin-top: 12px; }
+  .info-body { padding-left: 0; margin-top: 12px; } 
 }
 
 .fsia-s3d{position:relative;border-radius:24px;padding:3px;max-width:56rem;margin:0 auto 2rem;
@@ -181,7 +172,7 @@ if (isset($_GET['action'])) {
 
 <?php
 /* Notification bar for this page — change the text and the link here. */
-$announce_text = 'Forever Miss Rajasthan 2026 Auditions Open - Limited Entries';
+$announce_text = 'Mrs Rajasthan 2026 auditions open - limited entries';
 $announce_link = 'https://www.fsia.in/quickapply';
 $announce_cta  = 'Register';
 
@@ -200,10 +191,10 @@ echo $header_html;
     <div class="text-center max-w-3xl mx-auto mb-8 pt-2 px-4 font-sans">
       <div class="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 mb-4" style="display:inline-flex !important;">
         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-[0.4em]">Auditions Open</span>
+        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-[0.4em]">Registrations Open</span>
       </div>
-      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;">Forever Miss Rajasthan 2026</h1>
-      <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.4em] block mb-6">Rajasthan's Biggest Beauty Pageant Platform</p>
+      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;">Mrs Rajasthan 2026</h1>
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.4em] block mb-6">BY FOREVER STAR INDIA</p>
       <div class="w-20 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto rounded-full"></div>
     </div>
 
@@ -214,8 +205,8 @@ echo $header_html;
         <div class="fsia-s3d__row">
           <div style="flex:1;">
             <h2 class="fsia-s3d__title">Your Journey to the Rajasthan Crown Starts Here</h2>
-            <p class="fsia-s3d__txt"><b>Forever Miss Rajasthan 2026</b> is part of the Forever Miss India Pageant circuit, with winners crowned from every city of Rajasthan. Registrations are open to confident, ambitious women who are ready for the big stage.</p>
-            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Winners represent Rajasthan at the <b>Forever Miss India</b> grand finale and receive professional grooming, media exposure and a platform built on <span class="fsia-s3d__hl">talent, grace and hard work</span>.</p>
+            <p class="fsia-s3d__txt"><b>Mrs Rajasthan 2026</b> is part of the Forever Star India pageant circuit, with winners crowned from every city of Rajasthan. Registrations are open to confident, ambitious women who are ready for the big stage.</p>
+            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Winners represent Rajasthan at the <b>Forever Mrs India</b> grand finale and receive professional grooming, media exposure and a platform built on <span class="fsia-s3d__hl">talent, grace and hard work</span>.</p>
           </div>
           <div class="fsia-s3d__status">
             <div style="font-size:1.8rem;line-height:1;">👑</div>
@@ -324,7 +315,7 @@ echo $header_html;
           <?php } ?>
         </div>
         <div class="mt-8 pt-4 border-t border-slate-950/10 text-xs font-semibold text-slate-950/80">
-          Forever Miss Rajasthan 2026        </div>
+          Mrs Rajasthan 2026        </div>
       </div>
 
       <div class="md:col-span-8 p-8 md:p-10 bg-slate-50">
@@ -333,13 +324,11 @@ echo $header_html;
           <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900" style="font-family:'Playfair Display', serif;">Registration Form</h2>
         </div>
 
-        <form name="sform" action="savemissindia-new.php" data-form-type="register" method="post" enctype="multipart/form-data" id="registrationForm" onSubmit="return fsiaValidateForm(event)" class="space-y-5">
+        <form name="sform" action="savemrsindia-new.php" data-form-type="register" method="post" enctype="multipart/form-data" id="registrationForm" onSubmit="return fsiaValidateForm(event)" class="space-y-5">
 
-          <input type="hidden" name="landing" id="landing" value="Miss Rajasthan">
-          <!-- Same fields the other state forms post; filled from #dob below. -->
-          <input type="hidden" name="birthday" id="birthday">
-          <input type="hidden" name="birthmonth" id="birthmonth">
-          <input type="hidden" name="birthyear" id="birthyear">
+          <!-- <input type="hidden" name="dob" id="dob"> -->
+          <input type="hidden" name="category" id="category">
+          <input type="hidden" name="landing" id="landing" value="Mrs Rajasthan">
 
           <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
 
@@ -355,22 +344,28 @@ echo $header_html;
 
           <div id="otpContainer"></div>
 
-
-
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label>
-                    <input type="date" name="dob" id="dob" required min="<?= $fsia_dob_min ?>" max="<?= $fsia_dob_max ?>" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
+                    <input type="date" name="dob" id="dob" required min="<?= $fsia_dob_min ?>" max="<?= date('Y-m-d', strtotime('-' . $fsia_age_min . ' years')) ?>" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label>
-                    <select name="age" id="age" readonly style="pointer-events: none;" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed">
-                        <option value="">Auto-calculated</option>
-                        <?php for($i=$fsia_age_min; $i<=$fsia_age_max; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?>
-                    </select>
+                    <input type="text" name="age" id="age" readonly placeholder="Auto-calculated" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed">
                 </div>
             </div>
+        <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="reg_type">Registration Category *</label>
+              <select name="reg_type" id="reg_type" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+                <option value="">Select Category</option>
+                <option value="18-35">G-1: 21-35 Years</option>
+                <option value="36-50">G-2: 36-50 Years</option>
+              </select>
+            </div>
+
           <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location</h3>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label>
@@ -395,6 +390,7 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
               </div>
             </div>
           </div>
+
           <div class="pt-4">
             <button type="submit" id="mainSubmitBtn" class="w-full bg-amber-400 opacity-50 pointer-events-none text-slate-950 font-bold py-4 px-6 rounded-xl shadow-md transition text-lg cursor-not-allowed">
               Verify Number to Unlock Registration
@@ -692,7 +688,7 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
         })();
         </script>
 <?php fsia_criteria_block(); ?>
-<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age Criteria</h3><p>Candidates must be between 18 and 35 years of age. Candidates above 35 years can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Weight Criteria</h3><p>Candidate must weigh under 65kg (143.3 Pounds). Candidates above 65kg can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Height Criteria</h3><p>Candidates must be at least 5 feet (152.4 cm) tall without heels. Candidates below 5 feet can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Maritial Status</h3><p>Candidates must be single, not engaged, and no proir marriage</p></div></div></div> -->
+<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age Criteria</h3><p>Candidates must be between 21 and 50 years of age. Candidates above 50 can also be considered in exceptional cases.</p></div><div class="fsia-crit"><h3>Weight Criteria</h3><p>Candidate must weigh under 90kg (198.4 Pounds) Candidates above 90kg can also be considered in exceptional cases.</p></div><div class="fsia-crit"><h3>Height Criteria</h3><p>Candidates must be at least 5 feet (152.4 cm) tall without heels. Candidates below 5 feet can also be considered in exceptional cases.</p></div><div class="fsia-crit"><h3>Maritial Status</h3><p>Candidate must be Married, Widow, Divorced, or Separated</p></div></div></div> -->
 <?php include 'faq-section.php'; ?>
   </div>
 </section>
@@ -875,14 +871,14 @@ var FSIA_AGE_MIN = <?= (int)$fsia_age_min ?>, FSIA_AGE_MAX = <?= (int)$fsia_age_
     var mm  = t.getMonth() - b.getMonth();
     if (mm < 0 || (mm === 0 && t.getDate() < b.getDate())) { age--; }
 
+    a.value = String(age); // always reflect the computed age, regardless of eligibility
+
     if (age < FSIA_AGE_MIN || age > FSIA_AGE_MAX) {
-      a.value = '';
       if (showAlert) {
         alert('Eligibility requires an age between ' + FSIA_AGE_MIN + ' and ' + FSIA_AGE_MAX + ' years.');
       }
       return false;
     }
-    a.value = String(age);
     return true;
   };
 
@@ -922,7 +918,7 @@ function fsiaValidateForm(event) {
   if (dobEl) {
     if (dobEl.value === '') {
       fsiaShowError(dobEl, 'Please select your date of birth.'); ok = false;
-    } else if (ageEl && ageEl.value === '') {
+    } else if (!window.fsiaCalcAge(false)) {
       fsiaShowError(dobEl, 'Eligibility requires an age between ' + FSIA_AGE_MIN + ' and ' + FSIA_AGE_MAX + ' years.'); ok = false;
     } else {
       fsiaShowError(dobEl, '');
@@ -949,26 +945,6 @@ function fsiaValidateForm(event) {
 
 
 
-</script>
-
-<script>
-/* Keep birthday / birthmonth / birthyear in step with the date picker so this form
-   posts the same fields as every other state form. */
-(function () {
-  var dob = document.getElementById('dob');
-  if (!dob) return;
-  function sync() {
-    var p = (dob.value || '').split('-');
-    document.getElementById('birthyear').value  = p.length === 3 ? p[0] : '';
-    document.getElementById('birthmonth').value = p.length === 3 ? p[1] : '';
-    document.getElementById('birthday').value   = p.length === 3 ? p[2] : '';
-  }
-  dob.addEventListener('change', sync);
-  dob.addEventListener('input', sync);
-  var form = document.getElementById('registrationForm');
-  if (form) form.addEventListener('submit', sync, true);
-  sync();
-})();
 </script>
 </body>
 </html>

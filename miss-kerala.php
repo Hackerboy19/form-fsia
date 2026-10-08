@@ -1,28 +1,18 @@
 <?php  include("config.php");
-$getmeta="select * from more_pages where page_name='46'";
+$getmeta="select * from more_pages where page_name='54'";
 $gmeta=mysqli_query($connect,$getmeta);
 $meta_tag=mysqli_fetch_assoc($gmeta) ?: [];
 // this page's own text, used only when the CMS row has nothing for that field
 $meta_tag = array_filter($meta_tag) + [
-  'meta_title'     => 'Miss Forever Rajasthan 2026 | Auditions Open | National Beauty Pageant',
-  'descritpion'    => 'Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.',
-  'meta_keyword'   => 'miss rajasthan, miss rajasthan 2026, miss rajasthan beauty pageant, miss rajasthan auditions, audition dates miss rajasthan 2026, miss rajasthan 2026 beauty pageant',
-  'og_title'       => 'Miss Forever Rajasthan 2026 | Auditions Open | National Beauty Pageant',
-  'og_description' => 'Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.',
-  'og_image'       => 'https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp',
-  'h1'             => 'Forever Miss Rajasthan 2026',
+  'meta_title'     => 'Miss Kerala 2026 | Auditions Started for Next Top Model of Kerala | Auditions Online',
+  'descritpion'    => 'Miss Kerala 2026 - Forever Star India has started Miss India 2026 auditions from Kerala state. Audition lines are open, if you also want to apply at city, state, or national level from Kerala then fill the form today.',
+  'meta_keyword'   => 'miss kerala, miss kerala 2026, miss kerala beauty pageant, miss kerala 2026 auditions, how to register for miss kerala 2026, miss kerala 2026 online audition',
+  'og_title'       => 'Miss Kerala 2026 | Auditions Started for Next Top Model of Kerala | Auditions Online',
+  'og_description' => 'Miss Kerala 2026 - Forever Star India has started Miss India 2026 auditions from Kerala state. Audition lines are open, if you also want to apply at city, state, or national level from Kerala then fill the form today.',
+  'og_image'       => 'https://www.fsia.in/uploads/196980%20mob_miss%20kerala%202025.webp',
+  'h1'             => 'Miss Kerala 2026',
 ];
 $year=date("Y");
-
-// Eligibility window for this pageant. Declared once and reused by the age
-// dropdown, the date picker's min/max and the client-side check, so the three
-// can never drift apart.
-$fsia_age_min = 18;
-$fsia_age_max = 35;
-// Latest date of birth that is still $fsia_age_min today, and the earliest that
-// is still $fsia_age_max (one day past the $fsia_age_max + 1 birthday).
-$fsia_dob_max = date('Y-m-d', strtotime('-' . $fsia_age_min . ' years'));
-$fsia_dob_min = date('Y-m-d', strtotime('-' . ($fsia_age_max + 1) . ' years +1 day'));
 
 // Error passed back from savemissindia-new.php (if any)
 $error = $_SESSION['form_error'] ?? '';
@@ -102,9 +92,9 @@ if (isset($_GET['action'])) {
   <link rel="stylesheet" href="/assets-new/css/dark-theme.css">
   <link rel="stylesheet" href="/assets-new/css/grid-fx.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Forever Miss Rajasthan 2026 | Auditions Open | National Beauty Pageant","headline":"Forever MissRajasthan 2026","description":"Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.","url":"https://www.fsia.in/miss-rajasthan.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/miss-rajasthan.php","name":"Register for Forever Miss Rajasthan 2026"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Forever Miss Rajasthan 2026","item":"https://www.fsia.in/miss-rajasthan.php"}]}]</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How to participate in Forever Miss Rajasthan?","acceptedAnswer":{"@type":"Answer","text":"Fill out the online registration form on the Forever Star India official website."}},{"@type":"Question","name":"How do I register for Forever Miss Rajasthan 2026?","acceptedAnswer":{"@type":"Answer","text":"Fill the registration form on this page, verify your WhatsApp number with the 6-digit code we send you, upload a recent photograph and submit the form. Our registration team then contacts you with the audition details."}},{"@type":"Question","name":"Is there any registration or audition fee?","acceptedAnswer":{"@type":"Answer","text":"Filling this registration form is free. An audition fee is payable after your registration is received — our team shares the exact amount and the payment link with you on call or WhatsApp. For any clarity, call +91-9983286999."}},{"@type":"Question","name":"Are the auditions online or offline?","acceptedAnswer":{"@type":"Answer","text":"The first round is an online audition. Shortlisted candidates are then called for the Rajasthan rounds, and the finalists go on to represent Rajasthan at the Forever Miss India grand finale."}},{"@type":"Question","name":"Do I need modelling or pageant experience to apply?","acceptedAnswer":{"@type":"Answer","text":"No. First-time participants are welcome. Selected candidates are trained by industry experts in ramp walk, personality development, confidence building and public speaking before the finale."}},{"@type":"Question","name":"Which photograph should I upload with the form?","acceptedAnswer":{"@type":"Answer","text":"Upload a recent, clear photograph in which your face is fully visible, without heavy filters or group shots. You can crop the photo to the required size inside the upload window on this page."}},{"@type":"Question","name":"What do the winners of Forever Miss Rajasthan 2026 receive?","acceptedAnswer":{"@type":"Answer","text":"Winners get the title, crown and sash, professional grooming, media editorials, photoshoots and digital promotion, and they represent Rajasthan at the Forever Miss India grand finale."}},{"@type":"Question","name":"When will I hear back after submitting the form?","acceptedAnswer":{"@type":"Answer","text":"Our team calls or messages you on the WhatsApp number you verified, usually within 24 to 48 working hours. You can also reach our support executives on +91-9983286999."}},{"@type":"Question","name":"Can I apply if I do not live in Rajasthan?","acceptedAnswer":{"@type":"Answer","text":"Apply for the state you belong to or currently live in. Forever Star India runs Miss and Mrs pageants for every state of India, so you will find your own state's registration form on fsia.in."}}]}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Forever Miss Rajasthan 2026","startDate":"2026-01-01T19:00+05:30","endDate":"2026-12-31T23:00+05:30","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"Forever Star India","address":{"@type":"PostalAddress","streetAddress":"Nirman Nagar, Jaipur","addressLocality":"Jaipur","addressRegion":"Rajasthan","postalCode":"302019","addressCountry":"IN"}},"image":["https://www.fsia.in/uploads/433Miss-Rajasthan-2026.webp"],"description":"Forever Miss Rajasthan 2026 is the state level part of the beauty pageant organized by Forever Star India. In this Biggest Beauty Pageant of India, winners are declared from every city of Rajasthan.","offers":{"@type":"Offer","url":"https://www.fsia.in/miss-rajasthan.php"},"organizer":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in"}}</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Miss Kerala 2026 | Auditions Started for Next Top Model of Kerala | Auditions Online","headline":"Miss Kerala 2026","description":"Miss Kerala 2026 - Forever Star India has started Miss India 2026 auditions from Kerala state. Audition lines are open, if you also want to apply at city, state, or national level from Kerala then fill the form today.","url":"https://www.fsia.in/miss-kerala.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/uploads/196980%20mob_miss%20kerala%202025.webp"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/miss-kerala.php","name":"Register for Miss Kerala 2026"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Miss Kerala 2026","item":"https://www.fsia.in/miss-kerala.php"}]}]</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Who can apply for Miss Kerala 2026?","acceptedAnswer":{"@type":"Answer","text":"Any unmarried woman of 18 years or above who belongs to or lives in Kerala can apply. As listed in the participation criteria, the candidate should be at least five feet (152.4 cm) tall without heels, weigh under 65 kg, and should never have been married or engaged."}},{"@type":"Question","name":"How do I register for Miss Kerala 2026?","acceptedAnswer":{"@type":"Answer","text":"Fill the registration form on this page, verify your WhatsApp number with the 6-digit code we send you, upload a recent photograph and submit the form. Our registration team then contacts you with the audition details."}},{"@type":"Question","name":"Is there any registration or audition fee?","acceptedAnswer":{"@type":"Answer","text":"Filling this registration form is free. An audition fee is payable after your registration is received — our team shares the exact amount and the payment link with you on call or WhatsApp. For any clarity, call +91-9983286999."}},{"@type":"Question","name":"Are the auditions online or offline?","acceptedAnswer":{"@type":"Answer","text":"The first round is an online audition. Shortlisted candidates are then called for the Kerala rounds, and the finalists go on to represent Kerala at the Forever Miss India grand finale."}},{"@type":"Question","name":"Do I need modelling or pageant experience to apply?","acceptedAnswer":{"@type":"Answer","text":"No. First-time participants are welcome. Selected candidates are trained by industry experts in ramp walk, personality development, confidence building and public speaking before the finale."}},{"@type":"Question","name":"Which photograph should I upload with the form?","acceptedAnswer":{"@type":"Answer","text":"Upload a recent, clear photograph in which your face is fully visible, without heavy filters or group shots. You can crop the photo to the required size inside the upload window on this page."}},{"@type":"Question","name":"What do the winners of Miss Kerala 2026 receive?","acceptedAnswer":{"@type":"Answer","text":"Winners get the title, crown and sash, professional grooming, media editorials, photoshoots and digital promotion, and they represent Kerala at the Forever Miss India grand finale."}},{"@type":"Question","name":"When will I hear back after submitting the form?","acceptedAnswer":{"@type":"Answer","text":"Our team calls or messages you on the WhatsApp number you verified, usually within 24 to 48 working hours. You can also reach our support executives on +91-9983286999."}},{"@type":"Question","name":"Can I apply if I do not live in Kerala?","acceptedAnswer":{"@type":"Answer","text":"Apply for the state you belong to or currently live in. Forever Star India runs Miss and Mrs pageants for every state of India, so you will find your own state's registration form on fsia.in."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Miss Kerala 2026","startDate":"2026-01-01T19:00+05:30","endDate":"2026-12-31T23:00+05:30","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"Forever Star India","address":{"@type":"PostalAddress","streetAddress":"Nirman Nagar, Jaipur","addressLocality":"Jaipur","addressRegion":"Rajasthan","postalCode":"302019","addressCountry":"IN"}},"image":["https://www.fsia.in/uploads/196980%20mob_miss%20kerala%202025.webp"],"description":"Miss Kerala 2026 - Forever Star India has started Miss India 2026 auditions from Kerala state. Audition lines are open, if you also want to apply at city, state, or national level from Kerala then fill the form today.","offers":{"@type":"Offer","url":"https://www.fsia.in/miss-kerala.php"},"organizer":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in"}}</script>
 </head>
 <style>
 /* FSIA new-design page styles (info box, gold card, about block, criteria, FAQ) */
@@ -125,10 +115,10 @@ if (isset($_GET['action'])) {
 .info-dropdown ul { margin: 8px 0 12px 20px; color: #8B4513; font-weight: 700; }
 .info-dropdown li { margin-bottom: 4px; }
 .info-dropdown .example { font-style: italic; color: var(--ink-mute); border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; margin-bottom: 0; }
-@media (max-width: 560px) {
-  .info-box { padding: 16px; }
+@media (max-width: 560px) { 
+  .info-box { padding: 16px; } 
   .info-box-header { align-items: flex-start; }
-  .info-body { padding-left: 0; margin-top: 12px; }
+  .info-body { padding-left: 0; margin-top: 12px; } 
 }
 
 .fsia-s3d{position:relative;border-radius:24px;padding:3px;max-width:56rem;margin:0 auto 2rem;
@@ -181,7 +171,7 @@ if (isset($_GET['action'])) {
 
 <?php
 /* Notification bar for this page — change the text and the link here. */
-$announce_text = 'Forever Miss Rajasthan 2026 Auditions Open - Limited Entries';
+$announce_text = 'Miss Kerala 2026 auditions open — limited entries';
 $announce_link = 'https://www.fsia.in/quickapply';
 $announce_cta  = 'Register';
 
@@ -200,10 +190,10 @@ echo $header_html;
     <div class="text-center max-w-3xl mx-auto mb-8 pt-2 px-4 font-sans">
       <div class="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 mb-4" style="display:inline-flex !important;">
         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-[0.4em]">Auditions Open</span>
+        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-[0.4em]">Registrations Open</span>
       </div>
-      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;">Forever Miss Rajasthan 2026</h1>
-      <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.4em] block mb-6">Rajasthan's Biggest Beauty Pageant Platform</p>
+      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;">Miss Kerala 2026</h1>
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.4em] block mb-6">BY FOREVER STAR INDIA</p>
       <div class="w-20 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto rounded-full"></div>
     </div>
 
@@ -213,13 +203,13 @@ echo $header_html;
       <div class="fsia-s3d__in">
         <div class="fsia-s3d__row">
           <div style="flex:1;">
-            <h2 class="fsia-s3d__title">Your Journey to the Rajasthan Crown Starts Here</h2>
-            <p class="fsia-s3d__txt"><b>Forever Miss Rajasthan 2026</b> is part of the Forever Miss India Pageant circuit, with winners crowned from every city of Rajasthan. Registrations are open to confident, ambitious women who are ready for the big stage.</p>
-            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Winners represent Rajasthan at the <b>Forever Miss India</b> grand finale and receive professional grooming, media exposure and a platform built on <span class="fsia-s3d__hl">talent, grace and hard work</span>.</p>
+            <h2 class="fsia-s3d__title">Your Journey to the Kerala Crown Starts Here</h2>
+            <p class="fsia-s3d__txt"><b>Miss Kerala 2026</b> is part of the Forever Star India pageant circuit, with winners crowned from every city of Kerala. Registrations are open to confident, ambitious women who are ready for the big stage.</p>
+            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Winners represent Kerala at the <b>Forever Miss India</b> grand finale and receive professional grooming, media exposure and a platform built on <span class="fsia-s3d__hl">talent, grace and hard work</span>.</p>
           </div>
           <div class="fsia-s3d__status">
             <div style="font-size:1.8rem;line-height:1;">👑</div>
-            <div class="fsia-s3d__zone">RAJASTHAN</div>
+            <div class="fsia-s3d__zone">KERALA</div>
             <div class="fsia-s3d__open">Auditions Open</div>
           </div>
         </div>
@@ -324,7 +314,7 @@ echo $header_html;
           <?php } ?>
         </div>
         <div class="mt-8 pt-4 border-t border-slate-950/10 text-xs font-semibold text-slate-950/80">
-          Forever Miss Rajasthan 2026        </div>
+          Miss Kerala 2026        </div>
       </div>
 
       <div class="md:col-span-8 p-8 md:p-10 bg-slate-50">
@@ -333,13 +323,10 @@ echo $header_html;
           <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900" style="font-family:'Playfair Display', serif;">Registration Form</h2>
         </div>
 
-        <form name="sform" action="savemissindia-new.php" data-form-type="register" method="post" enctype="multipart/form-data" id="registrationForm" onSubmit="return fsiaValidateForm(event)" class="space-y-5">
+        <form name="sform" action="savemissindia-new.php" data-form-type="register" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)" class="space-y-5">
 
-          <input type="hidden" name="landing" id="landing" value="Miss Rajasthan">
-          <!-- Same fields the other state forms post; filled from #dob below. -->
-          <input type="hidden" name="birthday" id="birthday">
-          <input type="hidden" name="birthmonth" id="birthmonth">
-          <input type="hidden" name="birthyear" id="birthyear">
+          <input type="hidden" name="dob" id="dob">
+          <input type="hidden" name="landing" id="landing" value="Miss Kerala">
 
           <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
 
@@ -355,30 +342,128 @@ echo $header_html;
 
           <div id="otpContainer"></div>
 
-
-
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label>
-                    <input type="date" name="dob" id="dob" required min="<?= $fsia_dob_min ?>" max="<?= $fsia_dob_max ?>" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label>
-                    <select name="age" id="age" readonly style="pointer-events: none;" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed">
-                        <option value="">Auto-calculated</option>
-                        <?php for($i=$fsia_age_min; $i<=$fsia_age_max; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?>
-                    </select>
-                </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label>
+              <select name="age" id="age" readonly style="pointer-events: none;" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed">
+                <option value="">Auto-calculated</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+                <option value="34">34</option>
+                <option value="35">35</option>
+              </select>
             </div>
+          </div>
+
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">🎂 Date of Birth</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="birthday">Birth Date *</label>
+              <select name="birthday" id="birthday" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+                <option value="">Birth Date</option>
+                <option value="01">1</option>
+                <option value="02">2</option>
+                <option value="03">3</option>
+                <option value="04">4</option>
+                <option value="05">5</option>
+                <option value="06">6</option>
+                <option value="07">7</option>
+                <option value="08">8</option>
+                <option value="09">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="birthmonth">Birth Month *</label>
+              <select name="birthmonth" id="birthmonth" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+                <option value="">Birth Month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="birthyear">Birth Year *</label>
+              <select name="birthyear" id="birthyear" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+                <option value="">Birth Year</option>
+                <option value="2007">2007</option>
+                <option value="2006">2006</option>
+                <option value="2005">2005</option>
+                <option value="2004">2004</option>
+                <option value="2003">2003</option>
+                <option value="2002">2002</option>
+                <option value="2001">2001</option>
+                <option value="2000">2000</option>
+                <option value="1999">1999</option>
+                <option value="1998">1998</option>
+                <option value="1997">1997</option>
+                <option value="1996">1996</option>
+                <option value="1995">1995</option>
+                <option value="1994">1994</option>
+                <option value="1993">1993</option>
+                <option value="1992">1992</option>
+                <option value="1991">1991</option>
+                <option value="1990">1990</option>
+                <option value="1989">1989</option>
+              </select>
+            </div>
+          </div>
+
           <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location</h3>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label>
-              <select name="state" id="state" onChange="get_city(this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+              <select name="state" id="state" onchange="get_city(this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
 <option value="">Select State</option>
 <?php $strq = mysqli_query($connect,"select * from city group by state_names order by state_names");
 while($stress = mysqli_fetch_array($strq)){ ?>
-<option value="<?php echo $stress['state_id']; ?>"<?php if($stress['state_id']==29){echo " selected";} ?>><?php echo $stress['state_names']; ?></option>
+<option value="<?php echo $stress['state_id']; ?>"<?php if($stress['state_id']==18){echo " selected";} ?>><?php echo $stress['state_names']; ?></option>
 <?php } ?>
 </select>
             </div>
@@ -387,7 +472,7 @@ while($stress = mysqli_fetch_array($strq)){ ?>
               <div id="cid">
                 <select name="city" id="city1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
 <option value="">Select City</option>
-<?php $ctyq = mysqli_query($connect,"select city_name,city_id from city where state_id='29' order by city_name");
+<?php $ctyq = mysqli_query($connect,"select city_name,city_id from city where state_id='18' order by city_name");
 while($cres = mysqli_fetch_array($ctyq)){ ?>
 <option value="<?php echo $cres['city_id']; ?>"><?php echo $cres['city_name']; ?></option>
 <?php } ?>
@@ -395,6 +480,7 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
               </div>
             </div>
           </div>
+
           <div class="pt-4">
             <button type="submit" id="mainSubmitBtn" class="w-full bg-amber-400 opacity-50 pointer-events-none text-slate-950 font-bold py-4 px-6 rounded-xl shadow-md transition text-lg cursor-not-allowed">
               Verify Number to Unlock Registration
@@ -692,7 +778,7 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
         })();
         </script>
 <?php fsia_criteria_block(); ?>
-<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age Criteria</h3><p>Candidates must be between 18 and 35 years of age. Candidates above 35 years can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Weight Criteria</h3><p>Candidate must weigh under 65kg (143.3 Pounds). Candidates above 65kg can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Height Criteria</h3><p>Candidates must be at least 5 feet (152.4 cm) tall without heels. Candidates below 5 feet can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Maritial Status</h3><p>Candidates must be single, not engaged, and no proir marriage</p></div></div></div> -->
+<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age</h3><p>The candidate has to be 18 years and above</p></div><div class="fsia-crit"><h3>Weight</h3><p>The weight of the participant should be under 65 kg</p></div><div class="fsia-crit"><h3>Height</h3><p>The candidate should be a minimum of five feet (152.4cm) tall, without heels.</p></div><div class="fsia-crit"><h3>Marriage Status</h3><p>The candidate should be SINGLE, UNMARRIED, not ENGAGED, and never been married before.</p></div></div></div> -->
 <?php include 'faq-section.php'; ?>
   </div>
 </section>
@@ -850,62 +936,175 @@ function fsiaShowError(el, msg) {
   }
 }
 
-/* ---------- Age: auto-calculated from the single <input type="date" id="dob"> ----------
-   This page has one date field, not the birthday/birthmonth/birthyear triplet that the
-   older forms used, so the calculation reads #dob directly. #dob is the field posted to
-   savemissindia-new.php, and #age is filled from it. */
-var FSIA_AGE_MIN = <?= (int)$fsia_age_min ?>, FSIA_AGE_MAX = <?= (int)$fsia_age_max ?>;
-
+/* ---------- Normalize DOB to the Rajasthan date-input experience ---------- */
 (function () {
   var dob = document.getElementById('dob');
-  var a   = document.getElementById('age');
-  if (!dob || !a) return;
+  var day = document.getElementById('birthday');
+  var month = document.getElementById('birthmonth');
+  var year = document.getElementById('birthyear');
+  var age = document.getElementById('age');
+  if (!dob || !day || !month || !year || !age) return;
 
+  var minAge = parseInt(age.options && age.options[1] ? age.options[1].value : '18', 10);
+  var maxAge = parseInt(age.options && age.options[age.options.length - 1] ? age.options[age.options.length - 1].value : '35', 10);
+  var today = new Date();
+  var iso = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var latest = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+  var earliest = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate() + 1);
+
+  dob.type = 'date';
+  dob.required = true;
+  dob.min = iso(earliest);
+  dob.max = iso(latest);
+  dob.className = 'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm';
+
+  var oldDobGrid = day.closest('.grid');
+  if (oldDobGrid) {
+    oldDobGrid.style.display = 'none';
+    var oldHeading = oldDobGrid.previousElementSibling;
+    if (oldHeading && oldHeading.tagName === 'H3') oldHeading.style.display = 'none';
+  }
+
+  var ageGrid = age.closest('.grid');
+  var ageBox = age.parentElement;
+  if (ageGrid && ageBox) {
+    var dobBox = document.createElement('div');
+    dobBox.innerHTML = '<label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label>';
+    dobBox.appendChild(dob);
+    ageGrid.insertBefore(dobBox, ageBox);
+  }
+
+  if (document.getElementById('reg_type') && age.tagName === 'SELECT') {
+    var ageInput = document.createElement('input');
+    ageInput.type = 'text';
+    ageInput.name = age.name;
+    ageInput.id = age.id;
+    ageInput.readOnly = true;
+    ageInput.placeholder = 'Auto-calculated';
+    ageInput.className = 'w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed';
+    age.replaceWith(ageInput);
+    age = ageInput;
+  }
+
+  var category = document.getElementById('reg_type');
+  if (category && category.parentElement) {
+    category.parentElement.classList.add('sm:col-span-2');
+    category.parentElement.style.gridColumn = '1 / -1';
+  }
+
+  function syncLegacyFields() {
+    if (!dob.value) return;
+    var parts = dob.value.split('-');
+    year.value = parts[0];
+    month.value = parts[1];
+    day.value = parts[2];
+    if (window.fsiaCalcAge) window.fsiaCalcAge(false);
+  }
+  dob.addEventListener('change', syncLegacyFields);
+  dob.addEventListener('input', syncLegacyFields);
+  var form = document.getElementById('registrationForm');
+  if (form) form.addEventListener('submit', function (event) {
+    if (!dob.value || !dob.checkValidity()) {
+      event.preventDefault();
+      dob.reportValidity();
+    }
+  }, true);
+})();
+/* ---------- Age: auto-calculated from the date of birth (same behaviour as the Miss India form) ---------- */
+(function () {
+  var AGE_MIN = 18, AGE_MAX = 35;
+  var d = document.getElementById('birthday'),
+      m = document.getElementById('birthmonth'),
+      y = document.getElementById('birthyear'),
+      a = document.getElementById('age');
+  if (!d || !m || !y || !a) return;
   window.fsiaCalcAge = function (showAlert) {
-    var v = (dob.value || '').trim();
-    if (v.length < 10) { a.value = ''; return false; }
-
-    // <input type="date"> always reports its value as yyyy-mm-dd
-    var parts = v.split('-');
-    var b = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    var t = new Date();
-    if (isNaN(b.getTime()) || b > t) { a.value = ''; return false; }
-
+    if (!d.value || !m.value || !y.value) { a.value = ''; return false; }
+    var b = new Date(+y.value, +m.value - 1, +d.value), t = new Date();
     var age = t.getFullYear() - b.getFullYear();
-    var mm  = t.getMonth() - b.getMonth();
+    var mm = t.getMonth() - b.getMonth();
     if (mm < 0 || (mm === 0 && t.getDate() < b.getDate())) { age--; }
-
-    if (age < FSIA_AGE_MIN || age > FSIA_AGE_MAX) {
+    if (age < AGE_MIN || age > AGE_MAX) {
       a.value = '';
-      if (showAlert) {
-        alert('Eligibility requires an age between ' + FSIA_AGE_MIN + ' and ' + FSIA_AGE_MAX + ' years.');
-      }
+      if (showAlert) { alert('Eligibility requires an age between ' + AGE_MIN + ' and ' + AGE_MAX + ' years.'); }
       return false;
     }
     a.value = String(age);
+    var dob = document.getElementById('dob');
+    if (dob) { dob.value = y.value + '-' + m.value + '-' + d.value; }   // savemissindia-new.php reads dob
+    var cat = document.getElementById('category');
+    var grp = document.getElementById('reg_type');
+    if (cat && grp) { cat.value = grp.value; }                          // savemrsindia-new.php reads category
+    return true;
+  };
+  [d, m, y].forEach(function (el) {
+    el.addEventListener('change', function () { window.fsiaCalcAge(true); });
+  });
+  var grpSel = document.getElementById('reg_type');
+  if (grpSel) { grpSel.addEventListener('change', function () {
+    var cat = document.getElementById('category');
+    if (cat) { cat.value = grpSel.value; }
+  }); }
+})();
+
+/* ---------- Age calculation from the visible DOB input ---------- */
+(function () {
+  var dob = document.getElementById('dob');
+  var age = document.getElementById('age');
+  if (!dob || !age) return;
+  var minAge = document.getElementById('reg_type') ? 21 : 18;
+  var maxAge = document.getElementById('reg_type') ? 50 : 35;
+
+  function setLegacyValue(id, value) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'SELECT' && !Array.prototype.some.call(el.options, function (o) { return o.value === value; })) {
+      el.add(new Option(value, value));
+    }
+    el.value = value;
+  }
+
+  window.fsiaCalcAge = function (showAlert) {
+    var parts = (dob.value || '').split('-');
+    if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+      age.value = '';
+      return false;
+    }
+    var birth = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var now = new Date();
+    var calculated = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) calculated--;
+    if (calculated < minAge || calculated > maxAge) {
+      age.value = '';
+      if (showAlert) alert('Eligibility requires an age between ' + minAge + ' and ' + maxAge + ' years.');
+      return false;
+    }
+    age.value = String(calculated);
+    setLegacyValue('birthyear', parts[0]);
+    setLegacyValue('birthmonth', parts[1]);
+    setLegacyValue('birthday', parts[2]);
+    var category = document.getElementById('category');
+    var group = document.getElementById('reg_type');
+    if (category && group) category.value = group.value;
     return true;
   };
 
   dob.addEventListener('change', function () { window.fsiaCalcAge(true); });
-  dob.addEventListener('input',  function () { window.fsiaCalcAge(false); });
-  window.fsiaCalcAge(false);   // browsers can restore a value on back/refresh
+  dob.addEventListener('input', function () { window.fsiaCalcAge(false); });
+  window.fsiaCalcAge(false);
 })();
-
-/* Keep #category in step with #reg_type when a page carries those fields. */
-(function () {
-  var grp = document.getElementById('reg_type');
-  var cat = document.getElementById('category');
-  if (!grp || !cat) return;
-  cat.value = grp.value;
-  grp.addEventListener('change', function () { cat.value = grp.value; });
-})();
-
 function fsiaValidateForm(event) {
   var ok = true;
   if (window.fsiaCalcAge) { window.fsiaCalcAge(false); }
   var emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10}$/;
   var required = [
     ['fname', 'Please enter your name.'],
+    ['age', 'Please select your date of birth — your age is calculated from it.'],
+    ['birthday', 'Please select your birth date.'],
+    ['birthmonth', 'Please select your birth month.'],
+    ['birthyear', 'Please select your birth year.'],
     ['state', 'Please select your state.'],
     ['city1', 'Please select your city.']
   ];
@@ -915,20 +1114,6 @@ function fsiaValidateForm(event) {
     if (!el) return;
     if (el.value === '') { fsiaShowError(el, f[1]); ok = false; } else { fsiaShowError(el, ''); }
   });
-
-  // Date of birth drives the age field, so report the problem on the date input itself.
-  var dobEl = document.getElementById('dob');
-  var ageEl = document.getElementById('age');
-  if (dobEl) {
-    if (dobEl.value === '') {
-      fsiaShowError(dobEl, 'Please select your date of birth.'); ok = false;
-    } else if (ageEl && ageEl.value === '') {
-      fsiaShowError(dobEl, 'Eligibility requires an age between ' + FSIA_AGE_MIN + ' and ' + FSIA_AGE_MAX + ' years.'); ok = false;
-    } else {
-      fsiaShowError(dobEl, '');
-    }
-  }
-
   var em = document.getElementById('email');
   if (em.value === '' || !emailRegex.test(em.value)) { fsiaShowError(em, 'Please enter a valid e-mail address.'); ok = false; }
   else { fsiaShowError(em, ''); }
@@ -949,26 +1134,6 @@ function fsiaValidateForm(event) {
 
 
 
-</script>
-
-<script>
-/* Keep birthday / birthmonth / birthyear in step with the date picker so this form
-   posts the same fields as every other state form. */
-(function () {
-  var dob = document.getElementById('dob');
-  if (!dob) return;
-  function sync() {
-    var p = (dob.value || '').split('-');
-    document.getElementById('birthyear').value  = p.length === 3 ? p[0] : '';
-    document.getElementById('birthmonth').value = p.length === 3 ? p[1] : '';
-    document.getElementById('birthday').value   = p.length === 3 ? p[2] : '';
-  }
-  dob.addEventListener('change', sync);
-  dob.addEventListener('input', sync);
-  var form = document.getElementById('registrationForm');
-  if (form) form.addEventListener('submit', sync, true);
-  sync();
-})();
 </script>
 </body>
 </html>
