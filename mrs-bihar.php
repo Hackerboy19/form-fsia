@@ -809,6 +809,9 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
             });
         })();
         </script>
+  </div>
+</section>
+
 <?php fsia_criteria_block(); ?>
 <!-- <div class="mt-10">
   <h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2>
@@ -830,9 +833,8 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
   </div>
 </div>
 </div> -->
-<?php include 'faq-section.php'; ?>
-  </div>
-</section>
+<div class="mt-10"><?php include 'faq-section.php'; ?></div>
+
 
 <?php include 'footer1806.php'; ?>
 <script>

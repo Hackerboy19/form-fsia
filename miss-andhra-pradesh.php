@@ -778,10 +778,12 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
         })();
         </script>
 
-<?php fsia_criteria_block(); ?>
-<?php include 'faq-section.php'; ?>
   </div>
 </section>
+
+<?php fsia_criteria_block(); ?>
+<div class="mt-10"><?php include 'faq-section.php'; ?></div>
+
 
 <?php include 'footer1806.php'; ?>
 <script>

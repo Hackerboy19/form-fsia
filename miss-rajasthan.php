@@ -691,11 +691,13 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
             });
         })();
         </script>
-<?php fsia_criteria_block(); ?>
-<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age Criteria</h3><p>Candidates must be between 18 and 35 years of age. Candidates above 35 years can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Weight Criteria</h3><p>Candidate must weigh under 65kg (143.3 Pounds). Candidates above 65kg can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Height Criteria</h3><p>Candidates must be at least 5 feet (152.4 cm) tall without heels. Candidates below 5 feet can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Maritial Status</h3><p>Candidates must be single, not engaged, and no proir marriage</p></div></div></div> -->
-<?php include 'faq-section.php'; ?>
   </div>
 </section>
+
+<?php fsia_criteria_block(); ?>
+<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age Criteria</h3><p>Candidates must be between 18 and 35 years of age. Candidates above 35 years can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Weight Criteria</h3><p>Candidate must weigh under 65kg (143.3 Pounds). Candidates above 65kg can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Height Criteria</h3><p>Candidates must be at least 5 feet (152.4 cm) tall without heels. Candidates below 5 feet can also be considered in exceptional cases</p></div><div class="fsia-crit"><h3>Maritial Status</h3><p>Candidates must be single, not engaged, and no proir marriage</p></div></div></div> -->
+<div class="mt-10"><?php include 'faq-section.php'; ?></div>
+
 
 <?php include 'footer1806.php'; ?>
 <script>

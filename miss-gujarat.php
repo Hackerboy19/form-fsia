@@ -770,11 +770,13 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
             });
         })();
         </script>
-<?php fsia_criteria_block(); ?>
-<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age</h3><p>The candidate has to be 18 years and above</p></div><div class="fsia-crit"><h3>Weight</h3><p>The weight of the participant should be under 65 kg</p></div><div class="fsia-crit"><h3>Height</h3><p>The candidate should be a minimum of five feet (152.4cm) tall, without heels.</p></div><div class="fsia-crit"><h3>Marriage Status</h3><p>The candidate should be SINGLE, UNMARRIED, not ENGAGED, and never been married before.</p></div></div></div> -->
-<?php include 'faq-section.php'; ?>
   </div>
 </section>
+
+<?php fsia_criteria_block(); ?>
+<!-- <div class="mt-10"><h2 class="text-center text-2xl font-extrabold text-slate-900 mb-6" style="font-family:'Playfair Display', serif;">Participation Criteria</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="fsia-crit"><h3>Age</h3><p>The candidate has to be 18 years and above</p></div><div class="fsia-crit"><h3>Weight</h3><p>The weight of the participant should be under 65 kg</p></div><div class="fsia-crit"><h3>Height</h3><p>The candidate should be a minimum of five feet (152.4cm) tall, without heels.</p></div><div class="fsia-crit"><h3>Marriage Status</h3><p>The candidate should be SINGLE, UNMARRIED, not ENGAGED, and never been married before.</p></div></div></div> -->
+<div class="mt-10"><?php include 'faq-section.php'; ?></div>
+
 
 <?php include 'footer1806.php'; ?>
 <script>
