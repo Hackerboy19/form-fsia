@@ -397,10 +397,6 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
             </button>
             <p class="text-center text-[11px] text-slate-500 mt-3">"For Any Assistance, You can Contact our Support Executives on +91-9983286999"</p>
           </div>
-        </form>
-      </div>
-    </div>
-
         <style>
             @keyframes fsia-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
             @keyframes fsia-fade-slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -687,6 +683,10 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
             });
         })();
         </script>
+        </form>
+      </div>
+    </div>
+
   </div>
 </section>
 
