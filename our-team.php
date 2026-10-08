@@ -80,209 +80,261 @@ if (!function_exists('fsia_attr')) {
   <link rel="stylesheet" href="/assets-new/css/dark-theme.css">
   <link rel="stylesheet" href="/assets-new/css/grid-fx.css">
 <style>
-/* Matches the homepage (fsia-home.css): navy #0C1322, gold #D4AF37, cream cards with
-   #EADBAC borders, square corners, Cinzel headings, Plus Jakarta Sans body text.
-   Everything is scoped under .ft so the shared stylesheets can't collide with it. */
-.ft{--navy:#0C1322;--navy-2:#1A253E;--gold:#D4AF37;--gold-d:#B8860B;--bronze:#7E591B;--cream:#FAF9F5;--cream-2:#FAF7F0;
-    --line:#EADBAC;--sand:#EDE8DC;--slate:#526077;--slate-2:#475569;
-    font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--navy);background:#fff}
-.ft *{box-sizing:border-box}
-.ft h1,.ft h2,.ft h3{font-family:'Cinzel',Georgia,serif;font-weight:700;margin:0;letter-spacing:-.01em}
-.ft a{text-decoration:none}
-.ft-wrap{max-width:1280px;margin:0 auto;padding:0 16px}
-@media (min-width:640px){.ft-wrap{padding:0 24px}}
-@media (min-width:1024px){.ft-wrap{padding:0 32px}}
+/* "Editorial stage" layout in the homepage palette (fsia-home.css): navy #0C1322,
+   gold #D4AF37, cream #FAF7F0, Cinzel / Playfair Display / Plus Jakarta Sans.
+   Arched frames echo a stage proscenium. Everything is scoped under .fx. */
+.fx{--navy:#0C1322;--navy-2:#1A253E;--gold:#D4AF37;--gold-2:#E5C158;--gold-d:#B8860B;--bronze:#7E591B;--cream:#FAF7F0;--cream-2:#F6F2E8;
+    --line:#EADBAC;--sand:#EDE8DC;--slate:#526077;
+    font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--navy);background:var(--cream)}
+.fx *{box-sizing:border-box}
+.fx h1,.fx h2,.fx h3{font-family:'Cinzel',Georgia,serif;font-weight:700;margin:0;letter-spacing:-.01em}
+.fx a{text-decoration:none}
+.fx-wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+@media (min-width:768px){.fx-wrap{padding:0 32px}}
+.fx-eyebrow{display:inline-flex;align-items:center;gap:12px;font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-d)}
+.fx-eyebrow::before{content:"";width:32px;height:1px;background:currentColor}
+.fx-serif{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500}
 
-.ft-kicker{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;background:var(--cream-2);border:1px solid rgba(212,175,55,.4);
-    color:var(--bronze);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
-.ft-kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold-d)}
-.ft-kicker.dark{background:rgba(212,175,55,.1);border-color:rgba(212,175,55,.4);color:var(--gold)}
-.ft-kicker.dark::before{background:var(--gold)}
+/* Hero: copy left, arched photo collage right */
+.fx-hero{position:relative;overflow:hidden;padding:72px 0 88px;
+    background:radial-gradient(900px 500px at 85% 20%,rgba(212,175,55,.16),transparent 60%),var(--cream)}
+.fx-hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(90deg,transparent 0 119px,rgba(212,175,55,.12) 119px 120px)}
+.fx-hero-in{position:relative;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+.fx-crumb{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);margin-bottom:28px;display:block}
+.fx-crumb a{color:var(--bronze)}
+.fx-hero h1{font-size:clamp(2.4rem,5.6vw,4.6rem);line-height:1.02;text-transform:uppercase;margin:20px 0 22px}
+.fx-hero h1 .fx-serif{display:block;text-transform:none;color:var(--gold-d);font-size:.82em;letter-spacing:0}
+.fx-hero p{max-width:520px;margin:0;color:var(--slate);font-size:1.05rem;line-height:1.75}
+.fx-stats{display:flex;gap:0;margin-top:36px;border-top:1px solid var(--line);max-width:520px}
+.fx-stats div{flex:1;padding:18px 0 0}
+.fx-stats div+div{padding-left:20px;border-left:1px solid var(--line);margin-top:0}
+.fx-stats b{display:block;font-family:'Cinzel',serif;font-size:2rem;line-height:1;color:var(--navy)}
+.fx-stats span{display:block;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bronze)}
 
-/* Hero */
-.ft-hero{position:relative;overflow:hidden;background:var(--navy);color:#fff;text-align:center;padding:80px 0 176px;border-bottom:1px solid rgba(212,175,55,.4)}
-.ft-hero-bg{position:absolute;inset:0;opacity:.15;background:url('/uploads/Forever-Star-India-Pageant.webp') center top/cover no-repeat}
-.ft-hero-bg::after{content:"";position:absolute;inset:0;background:rgba(12,19,34,.9)}
-.ft-hero .ft-wrap{position:relative;z-index:1}
-.ft-crumb{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9aa3b2;margin-bottom:22px}
-.ft-crumb a{color:var(--line)}
-.ft-crumb a:hover{color:var(--gold)}
-.ft-hero h1{font-size:clamp(2rem,6vw,3.6rem);line-height:1.1;text-transform:uppercase;color:#fff;margin:22px 0 18px}
-.ft-hero p{max-width:640px;margin:0 auto;color:var(--line);font-size:1.05rem;line-height:1.7}
+.fx-collage{position:relative;height:540px}
+.fx-arch{position:absolute;overflow:hidden;border-radius:999px 999px 0 0;background:var(--sand);
+    box-shadow:0 30px 60px -30px rgba(12,19,34,.55);outline:1px solid var(--gold);outline-offset:8px}
+.fx-arch img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.fx-arch.a1{width:56%;height:88%;left:22%;top:0;z-index:2}
+.fx-arch.a2{width:36%;height:58%;left:0;bottom:0;z-index:1}
+.fx-arch.a3{width:36%;height:58%;right:0;bottom:0;z-index:1}
+.fx-seal{position:absolute;z-index:3;left:50%;bottom:-6px;transform:translateX(-50%);display:grid;place-items:center;width:112px;height:112px;border-radius:50%;
+    background:var(--navy);color:var(--gold);text-align:center;border:1px solid var(--gold);box-shadow:0 0 0 6px var(--cream)}
+.fx-seal b{font-family:'Cinzel',serif;font-size:1.6rem;line-height:1}
+.fx-seal span{display:block;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--line);margin-top:4px}
 
-/* Group photo overlapping the hero */
-.ft-banner{position:relative;z-index:2;max-width:1024px;margin:-128px auto 0;border:2px solid var(--gold);background:var(--sand);
-    box-shadow:0 24px 60px -24px rgba(12,19,34,.55)}
-.ft-banner img{display:block;width:100%;height:auto}
+/* Name ticker */
+.fx-ticker{background:var(--navy);border-block:1px solid rgba(212,175,55,.45);overflow:hidden;padding:18px 0}
+.fx-track{display:flex;width:max-content;animation:fx-scroll 60s linear infinite}
+.fx-track span{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--line);white-space:nowrap;padding:0 22px;display:inline-flex;align-items:center;gap:44px}
+.fx-track span::after{content:"✦";color:var(--gold);font-size:.8rem}
+@keyframes fx-scroll{to{transform:translateX(-50%)}}
 
-/* Jump links */
-.ft-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:40px auto 0;max-width:1024px}
-.ft-nav a{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border:1px solid var(--line);color:var(--navy);
-    font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:border-color .2s,background .2s,color .2s}
-.ft-nav a span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;background:var(--cream-2);border:1px solid rgba(212,175,55,.4);
-    color:var(--bronze);font-size:11px}
-.ft-nav a:hover{background:var(--navy);border-color:var(--navy);color:var(--line)}
+/* Leader spotlights */
+.fx-lead{padding:104px 0 40px}
+.fx-sec-head{text-align:center;margin:0 auto 64px;max-width:720px}
+.fx-sec-head h2{font-size:clamp(1.9rem,4vw,3rem);text-transform:uppercase;margin-top:16px}
+.fx-sec-head p{color:var(--slate);line-height:1.7;margin:14px 0 0}
+.fx-spot{display:grid;grid-template-columns:5fr 7fr;gap:64px;align-items:center;margin-bottom:96px}
+.fx-spot.flip{grid-template-columns:7fr 5fr}
+.fx-spot.flip .fx-spot-img{order:2}
+.fx-spot-img{position:relative;max-width:420px;width:100%;justify-self:center}
+.fx-spot-img .fx-arch{position:relative;width:100%;aspect-ratio:4/5;height:auto}
+.fx-spot-img .fx-num{position:absolute;top:-28px;left:-18px;font-family:'Cinzel',serif;font-size:6rem;line-height:1;color:transparent;-webkit-text-stroke:1px var(--gold);z-index:3}
+.fx-spot-body .fx-role{display:inline-block;padding:6px 14px;border:1px solid var(--gold);color:var(--bronze);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.fx-spot-body h3{font-size:clamp(2rem,4vw,3.2rem);line-height:1.08;margin:20px 0 10px;text-transform:uppercase}
+.fx-spot-body .fx-alias{font-size:1.4rem;color:var(--gold-d)}
+.fx-spot-body .fx-line{font-size:clamp(1.25rem,2.2vw,1.6rem);line-height:1.45;color:var(--navy);margin:22px 0 18px;padding-left:22px;border-left:2px solid var(--gold)}
+.fx-spot-body p{color:var(--slate);line-height:1.8;margin:0;max-width:560px}
+.fx-spot-foot{display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
+.fx-chip{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);transition:border-color .2s,background .2s,color .2s}
+a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy)}
 
-/* Sections */
-.ft-sec{padding:80px 0;border-bottom:1px solid rgba(234,219,172,.6);scroll-margin-top:120px}
-.ft-sec.alt{background:var(--cream-2)}
-.ft-head{max-width:768px;margin-bottom:48px}
-.ft-head h2{font-size:clamp(1.8rem,4vw,2.8rem);text-transform:uppercase;margin-top:16px}
-.ft-head p{margin:12px 0 0;color:var(--slate-2);line-height:1.7}
+/* Team gallery with filter tabs */
+.fx-team{background:#fff;padding:104px 0;border-top:1px solid var(--line)}
+.fx-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:-24px 0 48px}
+.fx-tabs button{font:inherit;cursor:pointer;padding:11px 18px;background:transparent;border:1px solid var(--line);color:var(--navy);
+    font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:background .2s,color .2s,border-color .2s}
+.fx-tabs button span{color:var(--gold-d);margin-left:6px}
+.fx-tabs button:hover{border-color:var(--gold)}
+.fx-tabs button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.fx-tabs button[aria-pressed="true"] span{color:var(--gold)}
+.fx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px 22px}
+.fx-card{position:relative}
+.fx-card[hidden]{display:none}
+.fx-card .fx-ph{position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:999px 999px 0 0;background:var(--sand)}
+.fx-card .fx-ph img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;transition:transform .6s ease}
+.fx-card .fx-ph::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(212,175,55,.5);transition:box-shadow .3s}
+.fx-card:hover .fx-ph img{transform:scale(1.06)}
+.fx-card:hover .fx-ph::after{box-shadow:inset 0 0 0 3px var(--gold)}
+.fx-card .fx-tag{position:absolute;left:12px;bottom:12px;padding:5px 10px;background:rgba(12,19,34,.85);color:var(--gold);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.fx-card h3{font-size:1.1rem;margin-top:16px}
+.fx-card p{margin:4px 0 0;font-size:.85rem;color:var(--slate)}
 
-/* Leadership: same card as the homepage "Our Team & Mentors" block */
-.ft-lead{display:grid;grid-template-columns:repeat(2,minmax(0,448px));justify-content:center;gap:32px}
-.ft-lcard{display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;background:var(--cream);
-    border:1px solid var(--line);padding:48px;transition:border-color .2s}
-.ft-lcard:hover{border-color:var(--gold)}
-.ft-lphoto{width:192px;height:192px;overflow:hidden;border:2px solid var(--gold);background:var(--sand);margin:0 auto 24px}
-.ft-lphoto img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
-.ft-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-d)}
-.ft-lcard h3{font-size:1.75rem;line-height:1.2;margin-top:8px}
-.ft-lcard .ft-sub{margin:6px 0 0;font-size:.875rem;font-weight:600;color:var(--bronze)}
-.ft-lcard .ft-bio{margin:16px 0 0;font-size:.875rem;line-height:1.7;color:var(--slate)}
-.ft-lfoot{width:100%;margin-top:24px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}
-.ft-lfoot span{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
-.ft-phone{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--bronze)}
-.ft-phone:hover{color:var(--gold-d)}
+/* Join CTA */
+.fx-join{position:relative;overflow:hidden;background:var(--navy);color:#fff;padding:96px 0}
+.fx-join::before{content:"";position:absolute;inset:0;opacity:.12;background:url('/uploads/Forever-Star-India-Pageant.webp') center/cover}
+.fx-join-in{position:relative;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center}
+.fx-join h2{font-size:clamp(1.9rem,4vw,3rem);text-transform:uppercase;color:#fff;margin:18px 0}
+.fx-join h2 .fx-serif{text-transform:none;color:var(--gold)}
+.fx-join p{color:var(--line);line-height:1.75;margin:0;max-width:540px}
+.fx-join .fx-eyebrow{color:var(--gold)}
+.fx-join-links{display:grid;gap:12px}
+.fx-join-links a{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;border:1px solid rgba(212,175,55,.45);
+    background:rgba(255,255,255,.04);color:#fff;transition:background .2s,border-color .2s}
+.fx-join-links a:hover{background:rgba(212,175,55,.12);border-color:var(--gold)}
+.fx-join-links b{display:block;font-family:'Cinzel',serif;font-size:1.1rem}
+.fx-join-links small{display:block;margin-top:3px;color:#9aa3b2;font-size:12px}
+.fx-join-links i{font-style:normal;color:var(--gold);font-size:1.3rem}
 
-/* Everyone else */
-.ft-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
-.ft-card{background:var(--cream);border:1px solid var(--line);transition:border-color .2s,transform .25s}
-.ft-card:hover{border-color:var(--gold);transform:translateY(-3px)}
-.ft-photo{aspect-ratio:4/5;overflow:hidden;background:var(--sand);border-bottom:2px solid var(--gold)}
-.ft-photo img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;transition:transform .5s}
-.ft-card:hover .ft-photo img{transform:scale(1.04)}
-.ft-cap{padding:18px 18px 20px}
-.ft-cap h3{font-size:1.1rem;line-height:1.25;margin-top:6px}
-
-/* Closing CTA, same as the homepage's "Step onto the national stage" */
-.ft-cta{position:relative;overflow:hidden;background:var(--navy);color:#fff;text-align:center;padding:96px 0;border-top:1px solid rgba(212,175,55,.4)}
-.ft-cta .ft-wrap{position:relative;z-index:1;max-width:896px}
-.ft-cta h2{font-size:clamp(1.8rem,4.5vw,3rem);text-transform:uppercase;color:#fff;margin:24px 0}
-.ft-cta p{max-width:672px;margin:0 auto 40px;color:var(--line);font-size:1.05rem;line-height:1.7}
-.ft-btns{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:48px}
-.ft-btn{display:inline-flex;align-items:center;justify-content:center;padding:16px 32px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:background .2s}
-.ft-btn.gold{background:var(--gold);color:var(--navy)}
-.ft-btn.gold:hover{background:#BF9136}
-.ft-btn.line{border:1px solid rgba(212,175,55,.6);color:#fff}
-.ft-btn.line:hover{background:rgba(255,255,255,.1)}
-.ft-info{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:768px;margin:0 auto;padding-top:32px;border-top:1px solid rgba(255,255,255,.1);text-align:left}
-.ft-info div{padding:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
-.ft-info b{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
-.ft-info a,.ft-info strong{display:block;font-size:.875rem;font-weight:600;color:#fff}
-.ft-info a:hover{color:var(--gold)}
-.ft-info small{display:block;margin-top:2px;font-size:11px;color:#9aa3b2}
-
-@media (max-width:1024px){.ft-grid{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:820px){
-  .ft-lead{grid-template-columns:minmax(0,448px)}
-  .ft-grid{grid-template-columns:repeat(2,1fr);gap:16px}
-  .ft-info{grid-template-columns:1fr}
+@media (max-width:1024px){
+  .fx-grid{grid-template-columns:repeat(3,1fr)}
+  .fx-hero-in,.fx-join-in{grid-template-columns:1fr}
+  .fx-collage{height:460px;max-width:560px;width:100%;margin:24px auto 0}
+  .fx-spot,.fx-spot.flip{grid-template-columns:1fr;gap:40px}
+  .fx-spot.flip .fx-spot-img{order:0}
 }
-@media (max-width:560px){
-  .ft-hero{padding:64px 0 120px}
-  .ft-banner{margin-top:-88px}
-  .ft-sec{padding:64px 0}
-  .ft-lcard{padding:36px 24px}
-  .ft-cap{padding:14px 12px 16px}
-  .ft-cap h3{font-size:.98rem}
-  .ft-btn{width:100%}
+@media (max-width:640px){
+  .fx-hero{padding:48px 0 64px}
+  .fx-collage{height:360px}
+  .fx-seal{width:92px;height:92px}
+  .fx-seal b{font-size:1.3rem}
+  .fx-stats b{font-size:1.6rem}
+  .fx-lead,.fx-team{padding:72px 0}
+  .fx-spot{margin-bottom:72px}
+  .fx-spot-img{max-width:300px}
+  .fx-spot-img .fx-num{font-size:4.5rem;left:-8px}
+  .fx-grid{grid-template-columns:repeat(2,1fr);gap:22px 14px}
+  .fx-card h3{font-size:.95rem}
+  .fx-card .fx-tag{display:none}
+  .fx-join{padding:72px 0}
 }
-@media (prefers-reduced-motion:reduce){.ft-card,.ft-photo img{transition:none}.ft-card:hover,.ft-card:hover .ft-photo img{transform:none}}
+@media (prefers-reduced-motion:reduce){.fx-track{animation:none}.fx-card .fx-ph img{transition:none}.fx-card:hover .fx-ph img{transform:none}}
 </style>
 </head>
 <body>
 
 <?php include 'header1806.php'; ?>
 
-<main class="ft">
-  <section class="ft-hero">
-    <div class="ft-hero-bg" aria-hidden="true"></div>
-    <div class="ft-wrap">
-      <span class="ft-crumb"><a href="/">Home</a> &nbsp;/&nbsp; Our Team</span>
-      <span class="ft-kicker dark">Leadership &amp; Expert Jury Panel</span>
-      <h1>Our Team &amp; Mentors</h1>
-      <p>Guiding Forever Star India with dedication, national industry pedigree, and a commitment to unlocking human potential.</p>
+<?php
+$lead  = $groups['leadership']['members'];
+$crew  = array_diff_key($groups, ['leadership' => 1]);
+$total = 0;
+foreach ($groups as $g) { $total += count($g['members']); }
+$names = [];
+foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
+?>
+<main class="fx">
+
+  <section class="fx-hero">
+    <div class="fx-wrap fx-hero-in">
+      <div>
+        <span class="fx-crumb"><a href="/">Home</a> &nbsp;/&nbsp; Our Team</span>
+        <span class="fx-eyebrow">The people behind FSIA</span>
+        <h1>The Faces <span class="fx-serif">behind every crown</span></h1>
+        <p>Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur.</p>
+        <div class="fx-stats">
+          <div><b><?php echo $total; ?></b><span>Team members</span></div>
+          <div><b><?php echo count($groups); ?></b><span>Departments</span></div>
+          <div><b>4,000+</b><span>Cities reached</span></div>
+        </div>
+      </div>
+      <div class="fx-collage" aria-hidden="true">
+        <div class="fx-arch a2"><img src="<?php echo fsia_attr($groups['mentors']['members'][4][2]); ?>" alt=""></div>
+        <div class="fx-arch a1"><img src="<?php echo fsia_attr($lead[0][2]); ?>" alt=""></div>
+        <div class="fx-arch a3"><img src="<?php echo fsia_attr($lead[1][2]); ?>" alt=""></div>
+        <div class="fx-seal"><div><b>S·8</b><span>Season</span></div></div>
+      </div>
     </div>
   </section>
 
-  <div class="ft-wrap">
-    <div class="ft-banner">
-      <img src="/static/media/team11fs.jpg" alt="Team Forever Star India" width="1024" height="576">
+  <div class="fx-ticker" aria-hidden="true">
+    <div class="fx-track">
+      <?php for ($r = 0; $r < 2; $r++): foreach ($names as $n): ?><span><?php echo fsia_attr($n); ?></span><?php endforeach; endfor; ?>
     </div>
-
-    <nav class="ft-nav" aria-label="Team sections">
-      <?php foreach ($groups as $id => $g): ?>
-        <a href="#<?php echo fsia_attr($id); ?>"><?php echo fsia_attr($g['title']); ?> <span><?php echo count($g['members']); ?></span></a>
-      <?php endforeach; ?>
-    </nav>
   </div>
 
-  <?php $i = 0; foreach ($groups as $id => $g): ?>
-  <section class="ft-sec<?php echo $i++ % 2 ? ' alt' : ''; ?>" id="<?php echo fsia_attr($id); ?>">
-    <div class="ft-wrap">
-      <div class="ft-head">
-        <span class="ft-kicker"><?php echo $id === 'leadership' ? 'Official FSIA Board' : 'Team FSIA'; ?></span>
-        <h2><?php echo fsia_attr($g['title']); ?></h2>
+  <section class="fx-lead" id="leadership">
+    <div class="fx-wrap">
+      <div class="fx-sec-head">
+        <span class="fx-eyebrow">Official FSIA Board</span>
+        <h2>Leadership</h2>
       </div>
 
-      <?php if ($id === 'leadership'): ?>
-      <div class="ft-lead">
-        <?php foreach ($g['members'] as $m): ?>
-        <article class="ft-lcard reveal">
-          <div>
-            <div class="ft-lphoto"><img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy"></div>
-            <span class="ft-label"><?php echo fsia_attr($m[1]); ?></span>
-            <h3><?php echo fsia_attr($m[0]); ?></h3>
-            <p class="ft-sub"><?php echo fsia_attr($m[1]); ?>, Forever Star India</p>
-            <?php if (!empty($leadBios[$m[0]])): ?>
-            <p class="ft-bio"><?php echo fsia_attr($leadBios[$m[0]]); ?></p>
-            <?php endif; ?>
-          </div>
-          <div class="ft-lfoot">
-            <span>Official FSIA Board</span>
+      <?php
+      $lines = [
+          'Talent should receive opportunity before it is judged.',
+          'Creating real opportunities for women in every corner of India.',
+      ];
+      foreach ($lead as $k => $m):
+          $name  = preg_replace('/\s*\(.*\)$/', '', $m[0]);
+          $alias = preg_match('/\((.*)\)$/', $m[0], $mm) ? $mm[1] : '';
+      ?>
+      <article class="fx-spot<?php echo $k % 2 ? ' flip' : ''; ?>">
+        <div class="fx-spot-img">
+          <span class="fx-num" aria-hidden="true">0<?php echo $k + 1; ?></span>
+          <div class="fx-arch"><img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy"></div>
+        </div>
+        <div class="fx-spot-body">
+          <span class="fx-role"><?php echo fsia_attr($m[1]); ?></span>
+          <h3><?php echo fsia_attr($name); ?></h3>
+          <?php if ($alias): ?><span class="fx-serif fx-alias"><?php echo fsia_attr($alias); ?></span><?php endif; ?>
+          <p class="fx-serif fx-line"><?php echo fsia_attr($lines[$k] ?? ''); ?></p>
+          <p><?php echo fsia_attr($leadBios[$m[0]] ?? ''); ?></p>
+          <div class="fx-spot-foot">
+            <span class="fx-chip">Forever Star India</span>
             <?php if (!empty($m[3])): ?>
-            <a class="ft-phone" href="tel:+91<?php echo fsia_attr($m[3]); ?>">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
-              <?php echo fsia_attr($m[3]); ?>
-            </a>
+            <a class="fx-chip" href="tel:+91<?php echo fsia_attr($m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
           </div>
-        </article>
-        <?php endforeach; ?>
-      </div>
-      <?php else: ?>
-      <div class="ft-grid">
-        <?php foreach ($g['members'] as $m): ?>
-        <article class="ft-card reveal">
-          <div class="ft-photo"><img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy"></div>
-          <div class="ft-cap">
-            <span class="ft-label"><?php echo fsia_attr($m[1]); ?></span>
-            <h3><?php echo fsia_attr($m[0]); ?></h3>
-          </div>
-        </article>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
+        </div>
+      </article>
+      <?php endforeach; ?>
     </div>
   </section>
-  <?php endforeach; ?>
 
-  <section class="ft-cta">
-    <div class="ft-hero-bg" aria-hidden="true"></div>
-    <div class="ft-wrap">
-      <span class="ft-kicker dark">Season 2026 Auditions &amp; Nominations Active</span>
-      <h2>Step onto the National Stage</h2>
-      <p>Join India’s premier talent and achievement movement across 4,000+ cities. Secure your city chapter audition, master runway grooming, and grand coronation stage at Zee Studio Jaipur.</p>
-      <div class="ft-btns">
-        <a class="ft-btn gold" href="https://www.fsia.in/quickapply">Quick Apply • 2026 Season</a>
-        <a class="ft-btn line" href="tel:+919983286999">Call Helpline: +91-99832-86999</a>
+  <section class="fx-team" id="team">
+    <div class="fx-wrap">
+      <div class="fx-sec-head">
+        <span class="fx-eyebrow">Team FSIA</span>
+        <h2>Mentors, Makers &amp; Voices</h2>
+        <p>The experts who train, film, host and run every Forever Star India season.</p>
       </div>
-      <div class="ft-info">
-        <div><b>Direct Helpline</b><a href="tel:+919983286999">+91-99832-86999</a><small>Mon–Sat, 10am–7pm IST</small></div>
-        <div><b>Official Email</b><a href="mailto:care@fsia.in">care@fsia.in</a><small>starindiaaward@gmail.com</small></div>
-        <div><b>Headquarters</b><strong>Jaipur, Rajasthan</strong><small>Govt. Trademark Class 41</small></div>
+
+      <div class="fx-tabs" role="group" aria-label="Filter team">
+        <button type="button" data-filter="all" aria-pressed="true">All <span><?php echo $total - count($lead); ?></span></button>
+        <?php foreach ($crew as $id => $g): ?>
+        <button type="button" data-filter="<?php echo fsia_attr($id); ?>" aria-pressed="false"><?php echo fsia_attr($g['title']); ?> <span><?php echo count($g['members']); ?></span></button>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="fx-grid">
+        <?php foreach ($crew as $id => $g): foreach ($g['members'] as $m): ?>
+        <article class="fx-card" data-group="<?php echo fsia_attr($id); ?>">
+          <div class="fx-ph">
+            <img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy">
+            <span class="fx-tag"><?php echo fsia_attr($g['title']); ?></span>
+          </div>
+          <h3><?php echo fsia_attr($m[0]); ?></h3>
+          <p><?php echo fsia_attr($m[1]); ?></p>
+        </article>
+        <?php endforeach; endforeach; ?>
+      </div>
+    </div>
+  </section>
+
+  <section class="fx-join">
+    <div class="fx-wrap fx-join-in">
+      <div>
+        <span class="fx-eyebrow">Season 2026 is open</span>
+        <h2>Your stage is <span class="fx-serif">waiting</span></h2>
+        <p>Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.</p>
+      </div>
+      <div class="fx-join-links">
+        <a href="https://www.fsia.in/quickapply"><span><b>Quick Apply</b><small>Register for the 2026 season</small></span><i>→</i></a>
+        <a href="https://www.fsia.in/channel-partner"><span><b>Become a Channel Partner</b><small>Bring FSIA to your city</small></span><i>→</i></a>
+        <a href="tel:+919983286999"><span><b>+91-99832-86999</b><small>Call the FSIA helpline</small></span><i>→</i></a>
       </div>
     </div>
   </section>
@@ -292,6 +344,19 @@ if (!function_exists('fsia_attr')) {
 
 <a class="float-wa" href="https://wa.me/919983286999" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 32 32" width="30" height="30" fill="#fff" aria-hidden="true"><path d="M16.04 4C9.96 4 5.02 8.94 5.02 15.02c0 1.94.51 3.83 1.47 5.5L4.9 27.2l6.84-1.79c1.61.88 3.43 1.34 5.28 1.34h.01c6.08 0 11.02-4.94 11.02-11.02C28.05 8.94 23.11 4 16.04 4zm0 20.2h-.01c-1.65 0-3.27-.44-4.68-1.28l-.34-.2-3.55.93.95-3.46-.22-.36a9.13 9.13 0 0 1-1.4-4.86c0-5.05 4.11-9.16 9.17-9.16 2.45 0 4.75.96 6.48 2.69a9.1 9.1 0 0 1 2.68 6.48c0 5.05-4.11 9.16-9.16 9.16zm5.03-6.86c-.28-.14-1.63-.8-1.88-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.87 1.08-.16.18-.32.2-.6.07-.28-.14-1.16-.43-2.21-1.36-.82-.73-1.37-1.63-1.53-1.91-.16-.28-.02-.43.12-.57.13-.13.28-.32.42-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.5-.85-2.05-.22-.54-.45-.47-.62-.48l-.53-.01c-.18 0-.48.07-.74.35-.25.28-.96.94-.96 2.3 0 1.36.99 2.67 1.12 2.85.14.18 1.95 2.98 4.73 4.18.66.28 1.18.45 1.58.58.66.21 1.27.18 1.74.11.53-.08 1.63-.67 1.86-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.18-.53-.32z"/></svg></a>
 
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.fx-tabs button');
+  var cards = document.querySelectorAll('.fx-card');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      var f = t.getAttribute('data-filter');
+      tabs.forEach(function (b) { b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); });
+      cards.forEach(function (c) { c.hidden = f !== 'all' && c.getAttribute('data-group') !== f; });
+    });
+  });
+})();
+</script>
 <script src="/assets-new/js/main.js"></script>
 <script src="/assets-new/js/forms-handler.js"></script>
 </body>
