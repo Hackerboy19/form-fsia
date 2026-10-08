@@ -244,18 +244,6 @@ $fsiaOgImg = $fsiaOgImg !== '' ? 'https://www.fsia.in/uploads/' . rawurlencode($
           
         </div>
 
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">✨ Additional Information</h3>
-        
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Instagram Handle</label>
-          <input class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm" type="text" name="instagram" placeholder="@yourprofile">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tell us about yourself</label>
-          <textarea class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm" name="message" placeholder="Share your dreams, achievements, and why you want to register..."></textarea>
-        </div>
-
         <div class="pt-4">
           <button type="submit" id="mainSubmitBtn" class="w-full bg-amber-400 opacity-50 pointer-events-none text-slate-950 font-bold py-4 px-6 rounded-xl shadow-md transition text-lg cursor-not-allowed">
                     Verify Number to Unlock Registration
