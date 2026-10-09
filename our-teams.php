@@ -1,5 +1,9 @@
-<?php
-/* Team roster, grouped the same way as the live our-teams.php page.
+<?php include("config.php");
+$getmeta  = "select * from more_pages where page_name='19'";
+$gmeta    = mysqli_query($connect, $getmeta);
+$meta_tag = mysqli_fetch_assoc($gmeta);
+
+/* Team roster, grouped by department.
    Each member is [name, role, photo URL, optional phone]. Leadership cards also
    read a bio from $leadBios, keyed by name. */
 $groups = [
@@ -47,6 +51,11 @@ $leadBios = [
     'Jaya Chauhan' => 'Strategic director overseeing operations and growth. Brings expertise in pageant management, contestant grooming, and community building. Passionate about creating opportunities for women.',
 ];
 
+$fsiaMeta = function ($key, $fallback = '') use ($meta_tag) {
+    $v = is_array($meta_tag) && isset($meta_tag[$key]) ? trim((string) $meta_tag[$key]) : '';
+    return $v !== '' ? $v : $fallback;
+};
+
 if (!function_exists('fsia_attr')) {
     function fsia_attr($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
 }
@@ -54,32 +63,41 @@ if (!function_exists('fsia_attr')) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Our Team | Forever Star India</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<meta name="description" content="Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.">
-<meta name="robots" content="index,follow">
-<link rel="canonical" href="https://www.fsia.in/our-team.php">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Forever Star India">
-<meta property="og:title" content="Our Team | Forever Star India">
-<meta property="og:description" content="Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.">
-<meta property="og:url" content="https://www.fsia.in/our-team.php">
-<meta property="og:image" content="https://www.fsia.in/uploads/718Step-1.webp">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Our Team | Forever Star India">
-<meta name="twitter:description" content="Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.">
-<meta name="twitter:image" content="https://www.fsia.in/uploads/718Step-1.webp">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"Organization","name":"Forever Star India","alternateName":"FSIA","url":"https://www.fsia.in/","logo":"https://www.fsia.in/logo.gif","description":"India's biggest platform for beauty pageants and award shows.","sameAs":["https://www.facebook.com/Foreverstarindiaawards/","https://twitter.com/FsiaAward","https://www.instagram.com/fsia_forever/","https://in.pinterest.com/fsiaaward/","https://www.youtube.com/c/foreverstarindiaaward"],"contactPoint":{"@type":"ContactPoint","telephone":"+91-99832-86999","email":"starindiaaward@gmail.com","contactType":"customer service","areaServed":"IN"}},{"@context":"https://schema.org","@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"}]</script>
-  <link rel="stylesheet" href="/assets-new/css/main.css">
-  <link rel="stylesheet" href="/assets-new/css/pages/our-team.css">
-  <link rel="stylesheet" href="/assets-new/css/forms-master.css">
-  <link rel="stylesheet" href="/assets-new/css/dark-theme.css">
-  <link rel="stylesheet" href="/assets-new/css/grid-fx.css">
+    <meta charset="utf-8" />
+    <link rel="icon" href="favicon.ico" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0C1322" />
+    <?php
+      $fsiaTitle = $fsiaMeta('meta_title', 'Our Team | Forever Star India');
+      $fsiaDesc  = $fsiaMeta('descritpion', "Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.");
+      $fsiaUrl   = 'https://www.fsia.in' . ($_SERVER['REQUEST_URI'] ?? '/our-teams.php');
+      $fsiaOgImg = $fsiaMeta('og_image', '');
+    ?>
+    <title><?php echo fsia_attr($fsiaTitle); ?></title>
+    <meta name="description" content="<?php echo fsia_attr($fsiaDesc); ?>" />
+    <meta name="keywords" content="<?php echo fsia_attr($fsiaMeta('meta_keyword')); ?>" />
+    <link rel="canonical" href="<?php echo fsia_attr($fsiaUrl); ?>" />
+    <meta property="og:title" content="<?php echo fsia_attr($fsiaMeta('og_title', $fsiaTitle)); ?>" />
+    <?php if ($fsiaOgImg !== '') { ?><meta property="og:image" content="https://www.fsia.in/uploads/<?php echo fsia_attr($fsiaOgImg); ?>" /><?php } ?>
+    <meta property="og:description" content="<?php echo fsia_attr($fsiaMeta('og_description', $fsiaDesc)); ?>">
+    <meta property="og:url" content="<?php echo fsia_attr($fsiaUrl); ?>">
+    <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,900;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/jquery.fancybox.min.css" />
+    <link href="static/css/main.784a6568.css" rel="stylesheet" />
+    <?php include('scripts.php'); ?>
 <style>
+/* main.784a6568.css reserves body padding-top for the OLD fixed header; header1806.php sits in
+   normal flow. It also paints a dark scrim over footer1806 and capitalises links. */
+body { padding-top: 0 !important; }
+footer.fsia-ft::after { content: none !important; }
+.fx a, .fsia-ft a { text-transform: none; }
+.fx a.fx-chip, .fx .fx-crumb a { text-transform: uppercase; }
+
 /* "Editorial stage" layout in the homepage palette (fsia-home.css): navy #0C1322,
    gold #D4AF37, cream #FAF7F0, Cinzel / Playfair Display / Plus Jakarta Sans.
    Arched frames echo a stage proscenium. Everything is scoped under .fx. */
@@ -257,9 +275,8 @@ html.fx-lock{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.fx-track{animation:none}.fx-modal[open]{animation:none}.fx-card .fx-ph img{transition:none}.fx-card:hover .fx-ph img{transform:none}}
 </style>
 </head>
-<body>
-
-<?php include 'header1806.php'; ?>
+<body class="text-slate-800">
+<?php include('header1806.php'); ?>
 
 <?php
 $lead  = $groups['leadership']['members'];
@@ -428,9 +445,9 @@ foreach ($groups as $g) {
   </dialog>
 </main>
 
-<?php include 'footer1806.php'; ?>
+<?php include('socialmediaprofile.php'); ?>
 
-<a class="float-wa" href="https://wa.me/919983286999" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 32 32" width="30" height="30" fill="#fff" aria-hidden="true"><path d="M16.04 4C9.96 4 5.02 8.94 5.02 15.02c0 1.94.51 3.83 1.47 5.5L4.9 27.2l6.84-1.79c1.61.88 3.43 1.34 5.28 1.34h.01c6.08 0 11.02-4.94 11.02-11.02C28.05 8.94 23.11 4 16.04 4zm0 20.2h-.01c-1.65 0-3.27-.44-4.68-1.28l-.34-.2-3.55.93.95-3.46-.22-.36a9.13 9.13 0 0 1-1.4-4.86c0-5.05 4.11-9.16 9.17-9.16 2.45 0 4.75.96 6.48 2.69a9.1 9.1 0 0 1 2.68 6.48c0 5.05-4.11 9.16-9.16 9.16zm5.03-6.86c-.28-.14-1.63-.8-1.88-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.87 1.08-.16.18-.32.2-.6.07-.28-.14-1.16-.43-2.21-1.36-.82-.73-1.37-1.63-1.53-1.91-.16-.28-.02-.43.12-.57.13-.13.28-.32.42-.49.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.5-.85-2.05-.22-.54-.45-.47-.62-.48l-.53-.01c-.18 0-.48.07-.74.35-.25.28-.96.94-.96 2.3 0 1.36.99 2.67 1.12 2.85.14.18 1.95 2.98 4.73 4.18.66.28 1.18.45 1.58.58.66.21 1.27.18 1.74.11.53-.08 1.63-.67 1.86-1.31.23-.64.23-1.19.16-1.31-.07-.12-.25-.18-.53-.32z"/></svg></a>
+<?php include('footer1806.php'); ?>
 
 <script>
 (function () {
@@ -507,7 +524,5 @@ foreach ($groups as $g) {
   });
 })();
 </script>
-<script src="/assets-new/js/main.js"></script>
-<script src="/assets-new/js/forms-handler.js"></script>
 </body>
 </html>
