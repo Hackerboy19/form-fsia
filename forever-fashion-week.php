@@ -280,21 +280,12 @@ echo $header_html;
         <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
-            <div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="fname">Full Name *</label>
+            <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="fname">Full Name *</label>
             <input type="text" name="fname" id="fname" placeholder="Your Name" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div>
-            <div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="email">E-mail Address *</label><input type="email" name="email" id="email" placeholder="E-mail Address" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div>
-            <div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="mobile">Mobile Number *</label><input type="tel" name="mobile" id="mobile" placeholder="Mobile Number" maxlength="10" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
-            <div id="otpVerifyBox" class="w-full mt-3 p-4 bg-slate-100 border border-slate-200 rounded-2xl space-y-3">
-  <div id="sendOtpWrap" style="display:none">
-    <button type="button" id="sendOtpBtn" class="fsia-otp-btn w-full font-bold py-3 px-4 rounded-xl cursor-pointer">Send Verification Code</button>
-  </div>
-  <div id="otpInputRow" style="display:none">
-    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="otp_code">Enter 6-Digit Verification Code *</label>
-    <input type="text" id="otp_code" maxlength="6" placeholder="------" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest text-lg">
-    <button type="button" id="verifyOtpBtn" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl cursor-pointer">Verify Code</button>
-  </div>
-  <div id="otpStatusNotice" class="text-xs font-semibold text-slate-500">Verification status : Pending</div>
-</div></div><h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location & Contact</h3><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label><select name="state" id="state" onchange="get_city(this.value)" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+            <div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label><input type="date" name="dob" id="dob" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"><input type="hidden" name="birthday" id="birthday"><input type="hidden" name="birthmonth" id="birthmonth"><input type="hidden" name="birthyear" id="birthyear"></div>
+            <div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label><select name="age" id="age" readonly style="pointer-events: none;" tabindex="-1" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed"><option value="">Auto-calculated</option><?php for($i=18; $i<=60; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?></select></div>
+            
+            <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location & Contact</h3><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label><select name="state" id="state" onchange="get_city(this.value)" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
 <option value="">Select State</option>
 <?php $strq = mysqli_query($connect,"select * from city group by state_names order by state_names");
 while($stress = mysqli_fetch_array($strq)){ ?>
@@ -306,7 +297,18 @@ while($stress = mysqli_fetch_array($strq)){ ?>
 while($cres = mysqli_fetch_array($ctyq)){ ?>
 <option value="<?php echo $cres['city_id']; ?>"><?php echo $cres['city_name']; ?></option>
 <?php } ?>
-</select></div></div>          </div>
+</select></div></div><div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="email">E-mail Address *</label><input type="email" name="email" id="email" placeholder="E-mail Address" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div><div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="mobile">Mobile Number *</label><input type="tel" name="mobile" id="mobile" placeholder="Mobile Number" maxlength="10" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
+            <div id="otpVerifyBox" class="w-full mt-3 p-4 bg-slate-100 border border-slate-200 rounded-2xl space-y-3">
+  <div id="sendOtpWrap" style="display:none">
+    <button type="button" id="sendOtpBtn" class="fsia-otp-btn w-full font-bold py-3 px-4 rounded-xl cursor-pointer">Send Verification Code</button>
+  </div>
+  <div id="otpInputRow" style="display:none">
+    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="otp_code">Enter 6-Digit Verification Code *</label>
+    <input type="text" id="otp_code" maxlength="6" placeholder="------" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-center tracking-widest text-lg">
+    <button type="button" id="verifyOtpBtn" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl cursor-pointer">Verify Code</button>
+  </div>
+  <div id="otpStatusNotice" class="text-xs font-semibold text-slate-500">Verification status : Pending</div>
+</div></div>          </div>
           <div class="pt-6">
             <button type="submit" id="mainSubmitBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 px-6 rounded-xl shadow-md transition text-lg cursor-pointer">
               Submit Details            </button>
@@ -415,6 +417,48 @@ function fsiaValidateForm(event) {
 }
 
 /* Block double submits */
+
+/* Date of birth drives the age box, and still posts the three parts
+   savefashiondesigner.php reads (birthday / birthmonth / birthyear). */
+(function () {
+  var d  = document.getElementById('dob');
+  var a  = document.getElementById('age');
+  var by = document.getElementById('birthyear'),
+      bm = document.getElementById('birthmonth'),
+      bd = document.getElementById('birthday');
+  if (!d || !a) return;
+
+  var MIN = 18, MAX = 60;
+  var t = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var bound = function (yearsAgo) {
+    return (t.getFullYear() - yearsAgo) + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+  };
+  d.min = bound(MAX);
+  d.max = bound(MIN);
+
+  function calcAge(showAlert) {
+    var v = (d.value || '').trim();
+    if (v.length < 10) { a.value = ''; if (by) { by.value = bm.value = bd.value = ''; } return false; }
+    var p = v.split('-');
+    if (by) { by.value = p[0]; bm.value = p[1]; bd.value = p[2]; }
+    var b = new Date(+p[0], +p[1] - 1, +p[2]), now = new Date();
+    if (isNaN(b.getTime()) || b > now) { a.value = ''; return false; }
+    var age = now.getFullYear() - b.getFullYear();
+    var m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) { age--; }
+    if (age < MIN || age > MAX) {
+      a.value = '';
+      if (showAlert) { alert('Eligibility requires an age between ' + MIN + ' and ' + MAX + ' years.'); }
+      return false;
+    }
+    a.value = String(age);
+    return true;
+  }
+
+  d.addEventListener('change', function () { calcAge(true); });
+  d.addEventListener('input',  function () { calcAge(false); });
+  calcAge(false);
+})();
 </script>
 
 <script>
