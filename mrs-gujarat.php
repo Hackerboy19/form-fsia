@@ -394,7 +394,6 @@ echo $header_html;
             </div>
           </div>
 
-          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">🎂 Date of Birth</h3>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -490,7 +489,7 @@ echo $header_html;
             </div>
           </div>
 
-          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location</h3>
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location & Contact</h3>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>

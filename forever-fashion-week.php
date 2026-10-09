@@ -279,7 +279,7 @@ echo $header_html;
 
         <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Designer Details</h3>
+            <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
             <div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="fname">Full Name *</label>
             <input type="text" name="fname" id="fname" placeholder="Your Name" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div>
             <div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="email">E-mail Address *</label><input type="email" name="email" id="email" placeholder="E-mail Address" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div>
@@ -294,7 +294,7 @@ echo $header_html;
     <button type="button" id="verifyOtpBtn" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl cursor-pointer">Verify Code</button>
   </div>
   <div id="otpStatusNotice" class="text-xs font-semibold text-slate-500">Verification status : Pending</div>
-</div></div><h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location</h3><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label><select name="state" id="state" onchange="get_city(this.value)" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
+</div></div><h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location & Contact</h3><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label><select name="state" id="state" onchange="get_city(this.value)" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
 <option value="">Select State</option>
 <?php $strq = mysqli_query($connect,"select * from city group by state_names order by state_names");
 while($stress = mysqli_fetch_array($strq)){ ?>
