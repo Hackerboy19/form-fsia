@@ -188,6 +188,45 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
 .fx-join-links small{display:block;margin-top:3px;color:#9aa3b2;font-size:12px}
 .fx-join-links i{font-style:normal;color:var(--gold);font-size:1.3rem}
 
+/* Clickable photos */
+.fx-open{display:block;width:100%;padding:0;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.fx-open:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+.fx-hint{position:absolute;right:12px;bottom:12px;padding:6px 10px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;z-index:2}
+.fx-open:hover .fx-hint,.fx-open:focus-visible .fx-hint{opacity:1;transform:none}
+.fx-spot-img .fx-open:hover img{transform:scale(1.04)}
+.fx-spot-img .fx-open img{transition:transform .6s ease}
+.fx-spot-img .fx-hint{right:50%;transform:translate(50%,6px);bottom:20px}
+.fx-spot-img .fx-open:hover .fx-hint,.fx-spot-img .fx-open:focus-visible .fx-hint{transform:translate(50%,0)}
+
+/* Profile pop-up */
+.fx-modal{position:fixed;inset:0;margin:auto;height:fit-content;padding:0;border:0;overflow:auto;max-width:920px;width:calc(100% - 32px);max-height:calc(100% - 32px);background:var(--cream);color:var(--navy);
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.6);outline:1px solid var(--gold);outline-offset:-10px}
+.fx-modal::backdrop{background:rgba(12,19,34,.82);backdrop-filter:blur(3px)}
+.fx-modal[open]{animation:fx-pop .3s ease}
+@keyframes fx-pop{from{opacity:0;transform:translateY(16px) scale(.98)}}
+.fx-m-in{position:relative;display:grid;grid-template-columns:5fr 6fr;min-height:480px}
+.fx-m-photo{background:var(--navy);padding:28px 28px 0;display:flex;align-items:flex-end}
+.fx-m-photo img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:top;display:block;border-radius:999px 999px 0 0;outline:1px solid var(--gold);outline-offset:6px}
+.fx-m-body{padding:48px 44px 36px;display:flex;flex-direction:column}
+.fx-m-body h2{font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.1;text-transform:uppercase;margin:14px 0 14px}
+.fx-m-body .fx-role{align-self:flex-start;padding:6px 14px;border:1px solid var(--gold);color:var(--bronze);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.fx-m-body p{color:var(--slate);line-height:1.8;margin:20px 0 0}
+.fx-m-facts{margin:24px 0 0;border-top:1px solid var(--line)}
+.fx-m-facts div{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.fx-m-facts div[hidden]{display:none}
+.fx-m-facts dt{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-d)}
+.fx-m-facts dd{margin:0;font-size:.9rem;font-weight:600;text-align:right}
+.fx-m-facts a{color:var(--bronze)}
+.fx-m-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:28px}
+.fx-m-nav .fx-chip{cursor:pointer;font-family:inherit}
+.fx-m-nav .fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy)}
+.fx-m-nav span{font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--slate)}
+.fx-m-close{position:absolute;top:14px;right:14px;width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);background:#fff;
+    color:var(--navy);font-size:26px;line-height:1;cursor:pointer;z-index:2}
+.fx-m-close:hover{background:var(--navy);color:#fff}
+html.fx-lock{overflow:hidden}
+
 @media (max-width:1024px){
   .fx-grid{grid-template-columns:repeat(3,1fr)}
   .fx-hero-in,.fx-join-in{grid-template-columns:1fr}
@@ -209,8 +248,13 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
   .fx-card h3{font-size:.95rem}
   .fx-card .fx-tag{display:none}
   .fx-join{padding:72px 0}
+  .fx-hint{display:none}
+  .fx-m-in{grid-template-columns:1fr;min-height:0}
+  .fx-m-photo{padding:20px 56px 0}
+  .fx-m-photo img{aspect-ratio:1/1}
+  .fx-m-body{padding:28px 20px 24px}
 }
-@media (prefers-reduced-motion:reduce){.fx-track{animation:none}.fx-card .fx-ph img{transition:none}.fx-card:hover .fx-ph img{transform:none}}
+@media (prefers-reduced-motion:reduce){.fx-track{animation:none}.fx-modal[open]{animation:none}.fx-card .fx-ph img{transition:none}.fx-card:hover .fx-ph img{transform:none}}
 </style>
 </head>
 <body>
@@ -224,6 +268,23 @@ $total = 0;
 foreach ($groups as $g) { $total += count($g['members']); }
 $names = [];
 foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
+
+/* Everyone in page order, for the profile pop-up. $pid maps a name to its index. */
+$people = [];
+$pid = [];
+foreach ($groups as $g) {
+    foreach ($g['members'] as $m) {
+        $pid[$m[0]] = count($people);
+        $people[] = [
+            'name'  => $m[0],
+            'role'  => $m[1],
+            'team'  => $g['title'],
+            'img'   => $m[2],
+            'phone' => $m[3] ?? '',
+            'bio'   => $leadBios[$m[0]] ?? '',
+        ];
+    }
+}
 ?>
 <main class="fx">
 
@@ -274,7 +335,10 @@ foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
       <article class="fx-spot<?php echo $k % 2 ? ' flip' : ''; ?>">
         <div class="fx-spot-img">
           <span class="fx-num" aria-hidden="true">0<?php echo $k + 1; ?></span>
-          <div class="fx-arch"><img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy"></div>
+          <button type="button" class="fx-open fx-arch" data-p="<?php echo $pid[$m[0]]; ?>" aria-label="View profile: <?php echo fsia_attr($m[0]); ?>">
+            <img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy">
+            <span class="fx-hint" aria-hidden="true">View profile +</span>
+          </button>
         </div>
         <div class="fx-spot-body">
           <span class="fx-role"><?php echo fsia_attr($m[1]); ?></span>
@@ -312,10 +376,11 @@ foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
       <div class="fx-grid">
         <?php foreach ($crew as $id => $g): foreach ($g['members'] as $m): ?>
         <article class="fx-card" data-group="<?php echo fsia_attr($id); ?>">
-          <div class="fx-ph">
+          <button type="button" class="fx-open fx-ph" data-p="<?php echo $pid[$m[0]]; ?>" aria-label="View profile: <?php echo fsia_attr($m[0]); ?>">
             <img src="<?php echo fsia_attr($m[2]); ?>" alt="<?php echo fsia_attr($m[0]); ?>" loading="lazy">
             <span class="fx-tag"><?php echo fsia_attr($g['title']); ?></span>
-          </div>
+            <span class="fx-hint" aria-hidden="true">View profile +</span>
+          </button>
           <h3><?php echo fsia_attr($m[0]); ?></h3>
           <p><?php echo fsia_attr($m[1]); ?></p>
         </article>
@@ -338,6 +403,29 @@ foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
       </div>
     </div>
   </section>
+
+  <dialog class="fx-modal" id="fx-modal" aria-labelledby="fx-m-name">
+    <div class="fx-m-in">
+      <div class="fx-m-photo"><img id="fx-m-img" alt=""></div>
+      <div class="fx-m-body">
+        <span class="fx-eyebrow" id="fx-m-team"></span>
+        <h2 id="fx-m-name"></h2>
+        <span class="fx-role" id="fx-m-role"></span>
+        <p id="fx-m-bio"></p>
+        <dl class="fx-m-facts">
+          <div><dt>Team</dt><dd id="fx-m-team2"></dd></div>
+          <div><dt>Role</dt><dd id="fx-m-role2"></dd></div>
+          <div id="fx-m-phone-row"><dt>Contact</dt><dd><a id="fx-m-phone" href="#"></a></dd></div>
+        </dl>
+        <div class="fx-m-nav">
+          <button type="button" class="fx-chip" data-step="-1" aria-label="Previous person">← Prev</button>
+          <span id="fx-m-count"></span>
+          <button type="button" class="fx-chip" data-step="1" aria-label="Next person">Next →</button>
+        </div>
+      </div>
+      <button type="button" class="fx-m-close" aria-label="Close profile">×</button>
+    </div>
+  </dialog>
 </main>
 
 <?php include 'footer1806.php'; ?>
@@ -354,6 +442,68 @@ foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
       tabs.forEach(function (b) { b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); });
       cards.forEach(function (c) { c.hidden = f !== 'all' && c.getAttribute('data-group') !== f; });
     });
+  });
+
+  /* Profile pop-up: clicking a photo opens that person; Prev/Next and the arrow
+     keys walk through the photos currently visible (so they respect the filter). */
+  var people = <?php echo json_encode($people, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
+  var modal = document.getElementById('fx-modal');
+  if (!modal || typeof modal.showModal !== 'function') { return; }
+  var $ = function (id) { return document.getElementById(id); };
+  var current = 0, opener = null;
+
+  function visibleIds() {
+    /* Opened from the gallery: step through the gallery only, so a filter is respected. */
+    var inGrid = opener && opener.closest('.fx-grid');
+    return Array.prototype.filter.call(document.querySelectorAll(inGrid ? '.fx-grid .fx-open' : '.fx-open'), function (b) {
+      var card = b.closest('.fx-card');
+      return !card || !card.hidden;
+    }).map(function (b) { return +b.getAttribute('data-p'); });
+  }
+
+  function show(i) {
+    var p = people[i];
+    if (!p) { return; }
+    current = i;
+    $('fx-m-img').src = p.img;
+    $('fx-m-img').alt = p.name;
+    $('fx-m-team').textContent = p.team;
+    $('fx-m-team2').textContent = p.team;
+    $('fx-m-name').textContent = p.name;
+    $('fx-m-role').textContent = p.role;
+    $('fx-m-role2').textContent = p.role;
+    $('fx-m-bio').textContent = p.bio || (p.name + ' works with Forever Star India as ' + p.role + ', in the ' + p.team + ' group.');
+    $('fx-m-phone-row').hidden = !p.phone;
+    if (p.phone) { $('fx-m-phone').textContent = p.phone; $('fx-m-phone').href = 'tel:+91' + p.phone; }
+    var ids = visibleIds();
+    $('fx-m-count').textContent = (ids.indexOf(i) + 1) + ' / ' + ids.length;
+  }
+
+  function step(d) {
+    var ids = visibleIds(), k = ids.indexOf(current);
+    show(ids[(k + d + ids.length) % ids.length]);
+  }
+
+  document.querySelectorAll('.fx-open').forEach(function (b) {
+    b.addEventListener('click', function () {
+      opener = b;
+      show(+b.getAttribute('data-p'));
+      modal.showModal();
+      document.documentElement.classList.add('fx-lock');
+    });
+  });
+  modal.querySelectorAll('[data-step]').forEach(function (b) {
+    b.addEventListener('click', function () { step(+b.getAttribute('data-step')); });
+  });
+  modal.querySelector('.fx-m-close').addEventListener('click', function () { modal.close(); });
+  modal.addEventListener('click', function (e) { if (e.target === modal) { modal.close(); } });
+  modal.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { step(1); }
+    if (e.key === 'ArrowLeft') { step(-1); }
+  });
+  modal.addEventListener('close', function () {
+    document.documentElement.classList.remove('fx-lock');
+    if (opener) { opener.focus(); }
   });
 })();
 </script>
