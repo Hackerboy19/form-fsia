@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .card { @apply rounded-2xl border border-gold-light/70 bg-white shadow-sm; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-navy text-white hover:bg-navy-800; }
+  .btn-gold { @apply btn bg-gold text-navy hover:bg-gold-dark hover:text-white; }
+  .btn-ghost { @apply btn border border-slate-200 bg-white text-navy hover:border-gold; }
+  .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
+  .input { @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-gold focus:ring-4 focus:ring-gold/15; }
+  .label { @apply mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600; }
+}
+
+/* TipTap editor content */
+.prose-editor { min-height: 320px; outline: none; }
+.prose-editor h2 { font-size: 1.5rem; font-weight: 700; margin: 1.2em 0 .5em; }
+.prose-editor h3 { font-size: 1.2rem; font-weight: 700; margin: 1em 0 .4em; }
+.prose-editor p { margin: 0 0 .9em; line-height: 1.7; }
+.prose-editor ul { list-style: disc; padding-left: 1.4em; margin: 0 0 .9em; }
+.prose-editor ol { list-style: decimal; padding-left: 1.4em; margin: 0 0 .9em; }
+.prose-editor blockquote { border-left: 3px solid #D4AF37; padding-left: 1em; color: #526077; font-style: italic; }
+.prose-editor a { color: #B8860B; text-decoration: underline; }
+.prose-editor img { max-width: 100%; height: auto; border-radius: 12px; margin: .5em 0; }
+.prose-editor hr { border: 0; border-top: 1px solid #EADBAC; margin: 1.5em 0; }
+.prose-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #94a3b8; float: left; height: 0; pointer-events: none; }

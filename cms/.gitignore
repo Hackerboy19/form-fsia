@@ -1,0 +1,5 @@
+backend/config.php
+admin/node_modules/
+admin/dist/
+admin/.env.local
+backend/uploads-test/
