@@ -328,20 +328,11 @@ if (isset($_GET['action'])) {
             </div>
 			<div id="otpContainer"></div>
 
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">&#10024; Your Work</h3>
+            
 
-            <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="instagram">Instagram Handle</label>
-                <input type="text" name="instagram" id="instagram" placeholder="@yourprofile" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm">
-            </div>
+            
 
-            <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="message">Tell us about your work</label>
-                <textarea name="message" id="message" rows="3" placeholder="Your collections, the looks you specialise in, who you have trained, or your runway experience..." class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></textarea>
-                <!-- registration has a `comment` column but no `message` one; post both so the
-                     text lands whichever name the save script reads. -->
-                <input type="hidden" name="comment" id="commentMirror" value="">
-            </div>
+            
             
 
 
