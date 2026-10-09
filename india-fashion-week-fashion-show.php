@@ -349,56 +349,6 @@ if (isset($_GET['action'])) {
   </div>
 </section>
 
-<!-- Participation Criteria Section -->
-<section class="py-12 px-4 bg-white border-t border-slate-200">
-  <div class="max-w-5xl mx-auto">
-    <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2 font-playfair">Participation Criteria</h2>
-    <p class="text-slate-600 text-sm mb-8">India Fashion Week is open to three categories. Check yours before you register &mdash; the application itself is the same for everyone.</p>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      <div class="fsia-crit">
-        <span class="fsia-crit-tag">Category 1</span>
-        <h3>&#9986; Fashion Designer</h3>
-        <ul>
-          <li><b>Age:</b> 18 to 60 years</li>
-          <li><b>Who applies:</b> Designers at any stage &mdash; students, labels and independents</li>
-          <li><b>Helps your case:</b> Instagram handle and a short note about your collections</li>
-          <li><b>Showcase:</b> A runway slot for your line at India Fashion Week</li>
-        </ul>
-      </div>
-
-      <div class="fsia-crit">
-        <span class="fsia-crit-tag">Category 2</span>
-        <h3>&#128132; Makeup Artist</h3>
-        <ul>
-          <li><b>Age:</b> 18 to 60 years</li>
-          <li><b>Who applies:</b> Bridal, editorial, HD and airbrush artists</li>
-          <li><b>Helps your case:</b> A portfolio link and the looks you specialise in</li>
-          <li><b>Showcase:</b> Backstage and on-stage credit for the looks you create</li>
-        </ul>
-      </div>
-
-      <div class="fsia-crit">
-        <span class="fsia-crit-tag">Category 3</span>
-        <h3>&#128131; Model</h3>
-        <p>Model applications go through one of our three national pageants &mdash; pick the one that matches your age and marital status when you select Model in the form.</p>
-        <ul>
-          <li><b>Forever Miss India:</b> 18 to 35 years, unmarried</li>
-          <li><b>Forever Mrs India:</b> 21 to 50 years, married or previously married (category G-1 or G-2)</li>
-          <li><b>Forever Miss Teen India:</b> 11 to 17 years, with parent or guardian consent</li>
-          <li><b>Showcase:</b> Runway walks at India Fashion Week and the shows that follow</li>
-        </ul>
-      </div>
-
-    </div>
-
-    <div class="fsia-crit mt-6">
-      <h3>&#9989; Applies to All Three Categories</h3>
-      <p>Registering here is the first step only. Every application is reviewed by our team and shortlisted applicants are contacted on the WhatsApp number they verified &mdash; so make sure that number is the one you actually use. Entries are open from every city of India, and candidates slightly outside a stated age guideline may still be considered at the selection panel's discretion. All details submitted must be accurate; wrong information leads to disqualification at any stage.</p>
-    </div>
-  </div>
-</section>
 
 <!-- FAQ -->
 <section class="py-12 px-4 bg-slate-50 border-t border-slate-200">
@@ -502,17 +452,6 @@ if (isset($_GET['action'])) {
 .fsia-s3d__zone{font-size:.7rem;letter-spacing:.18em;color:#8a8f99;font-weight:700;margin-top:6px;}
 .fsia-s3d__open{color:#059669;font-weight:700;font-size:.95rem;margin-top:4px;}
 @media(max-width:768px){.fsia-s3d__row{flex-direction:column;align-items:stretch;}.fsia-s3d__status{min-width:0;}}
-
-/* Participation criteria — gold cards, same system as the other FSIA pages */
-.fsia-crit{background:linear-gradient(180deg,#fffdf7 0%,#fdf6e6 100%);border:1px solid #f0dca8;border-radius:18px;
-  padding:22px 22px 20px;box-shadow:0 14px 30px -22px rgba(168,121,26,.55);}
-.fsia-crit h3{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:800;color:#8B4513;margin:0 0 10px;}
-.fsia-crit p{color:#4b5563;font-size:.9rem;line-height:1.7;margin:0;}
-.fsia-crit ul{list-style:disc;margin:8px 0 0;padding-left:20px;color:#4b5563;font-size:.9rem;line-height:1.75;}
-.fsia-crit li{margin-bottom:4px;}
-.fsia-crit li::marker{color:#d4af37;}
-.fsia-crit .fsia-crit-tag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:#9C5918;background:#fbeecb;border:1px solid #f0dca8;border-radius:999px;padding:3px 10px;margin-bottom:10px;}
 
 /* FAQ — page 124 has no rows in the faq table, so these are rendered inline */
 .fsia-faq details{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin-bottom:10px;overflow:hidden;}
