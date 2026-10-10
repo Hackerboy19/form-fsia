@@ -9,6 +9,7 @@ cms/
 ├── backend/                     PHP 8.1+ JSON API (PDO, prepared statements)
 │   ├── config.sample.php        copy to config.php (git-ignored)
 │   ├── db.php                   PDO connection
+│   ├── set-password.php         CLI: create admin users / change passwords
 │   ├── lib/bootstrap.php        CORS, auth, JSON + validation helpers
 │   ├── lib/sanitize_html.php    allow-list sanitizer for article HTML
 │   └── api/
@@ -97,7 +98,19 @@ npm run build                  # static files in dist/
 Upload `dist/` anywhere, e.g. `public_html/cms-admin/`. It uses hash URLs
 (`/cms-admin/#/team`), so no server rewrite rules are needed. If the admin is
 on a different origin than the API, add that origin to `allowed_origins`.
-Sign in with the `admin_token`. It is kept in this tab's sessionStorage only.
+
+**Sign-in.** Create a username and password on the server (terminal):
+
+```bash
+php httpdocs/cms/backend/set-password.php admin           # asks for the password twice
+php httpdocs/cms/backend/set-password.php --delete admin  # remove a user
+```
+
+Users are stored as password hashes in `backend/admin_users.php` (git-ignored).
+A sign-in returns a session token signed with `admin_token`, valid 12 hours and
+kept in the tab's sessionStorage. Changing a user's password, or `admin_token`,
+ends that user's sessions. 8 failed sign-ins from one IP lock it out for 15
+minutes. The raw `admin_token` still works ("Use the admin token instead").
 
 Add or change Home/About fields in `admin/src/lib/pages.js`; no database change is needed.
 
@@ -146,7 +159,8 @@ homepage source; the editor starts from it until a tab is saved.
 
 - Every query uses prepared statements with native binding (`EMULATE_PREPARES` off);
   identifiers in SQL come from constants, never from input.
-- Writes need the admin token (constant-time compare; 300 ms delay on failure);
+- Writes need a signed 12-hour session (username + password, bcrypt) or the admin
+  token (constant-time compare; 300 ms delay on failure; sign-in throttled per IP);
   a placeholder or short token disables writes entirely.
 - Input is validated per field (lengths, enums, dates, `http(s)`/root-relative URLs only).
 - Page slugs are limited to the five managed pages.

@@ -55,6 +55,7 @@ async function request(path, { method = 'GET', body, query, token, isForm = fals
 
 export const api = {
   verifyToken: (token) => request('auth.php', { token }),
+  login: (username, password) => request('auth.php', { method: 'POST', body: { username, password }, token: '' }),
 
   listSeo: () => request('seo.php'),
   getSeo: (page) => request('seo.php', { query: { page } }),

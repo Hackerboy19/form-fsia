@@ -8,6 +8,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/users_file.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -110,15 +111,64 @@ function provided_token(): string
     return (string) ($_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '');
 }
 
+/** Username => password_hash() from admin_users.php (written by set-password.php). */
+function admin_users(): array
+{
+    static $users = null;
+    if ($users === null) {
+        $users = read_admin_users(__DIR__ . '/../admin_users.php');
+    }
+    return $users;
+}
+
+/** Secret that signs sign-in sessions: the admin token from config.php. */
+function session_secret(): string
+{
+    $secret = (string) (cms_config()['admin_token'] ?? '');
+    // A short or placeholder token would make the whole API writable; refuse it.
+    return (strlen($secret) < 32 || str_starts_with($secret, 'replace-with')) ? '' : $secret;
+}
+
+const SESSION_TTL = 12 * 3600;
+
+/**
+ * Session token handed out after a username/password sign-in:
+ * "s1.<user>.<expires>.<hmac>". The HMAC covers part of the password hash, so
+ * changing a password (or the admin token) signs that user out everywhere.
+ */
+function issue_session(string $user): array
+{
+    $expires = time() + SESSION_TTL;
+    $payload = 's1.' . bin2hex($user) . '.' . $expires;
+    return ['token' => $payload . '.' . session_mac($payload, $user), 'expires_at' => $expires];
+}
+
+function session_mac(string $payload, string $user): string
+{
+    $hash = (string) (admin_users()[$user] ?? '');
+    return hash_hmac('sha256', $payload . '|' . substr($hash, -16), session_secret());
+}
+
+function session_user(string $token): ?string
+{
+    if (!preg_match('/^(s1\.([0-9a-f]{2,128})\.(\d{10}))\.([0-9a-f]{64})$/', $token, $m)) {
+        return null;
+    }
+    $user = (string) hex2bin($m[2]);
+    if (!isset(admin_users()[$user]) || (int) $m[3] < time()) {
+        return null;
+    }
+    return hash_equals(session_mac($m[1], $user), $m[4]) ? $user : null;
+}
+
 function is_admin(): bool
 {
-    $expected = (string) (cms_config()['admin_token'] ?? '');
+    $secret = session_secret();
     $given = provided_token();
-    // A short or placeholder token would make the whole API writable; refuse it.
-    if (strlen($expected) < 32 || str_starts_with($expected, 'replace-with')) {
+    if ($secret === '' || $given === '') {
         return false;
     }
-    return $given !== '' && hash_equals($expected, $given);
+    return hash_equals($secret, $given) || session_user($given) !== null;
 }
 
 function require_admin(): void
@@ -126,6 +176,25 @@ function require_admin(): void
     if (!is_admin()) {
         usleep(300000); // slows down token guessing
         throw new ApiError('Admin token missing or invalid', 401);
+    }
+}
+
+/** Failed sign-ins per IP: max 8 in 15 minutes. File-based, no DB needed. */
+function login_throttle(bool $failed = false): void
+{
+    $dir = sys_get_temp_dir() . '/fsia-cms-login';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    $file = $dir . '/' . sha1((string) ($_SERVER['REMOTE_ADDR'] ?? '')) . '.json';
+    $now = time();
+    $hits = is_file($file) ? (array) json_decode((string) file_get_contents($file), true) : [];
+    $hits = array_values(array_filter($hits, fn ($t) => is_int($t) && $t > $now - 900));
+    if ($failed) {
+        $hits[] = $now;
+        @file_put_contents($file, json_encode($hits), LOCK_EX);
+    } elseif (count($hits) >= 8) {
+        throw new ApiError('Too many failed sign-ins. Try again in 15 minutes.', 429);
     }
 }
 
