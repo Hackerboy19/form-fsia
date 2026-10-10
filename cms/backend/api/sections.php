@@ -67,8 +67,8 @@ respond(function () {
                 $v->addError('content', 'Must be a JSON object');
             }
             $json = json_encode($content ?: new stdClass(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            if ($json !== false && strlen($json) > 65535) {
-                $v->addError('content', 'Section content is larger than 64 KB');
+            if ($json !== false && strlen($json) > 512 * 1024) {
+                $v->addError('content', 'Section content is larger than 512 KB');
             }
             $v->check();
 

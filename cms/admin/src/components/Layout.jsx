@@ -6,7 +6,7 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: '◈', end: true },
   { to: '/seo', label: 'Global SEO', icon: '⌕' },
   { group: 'Pages' },
-  { to: '/pages/index', label: 'Home page', icon: '⌂' },
+  { to: '/homepage', label: 'Homepage', icon: '⌂' },
   { to: '/pages/about', label: 'About page', icon: '✦' },
   { group: 'Content' },
   { to: '/team', label: 'Team Directory', icon: '♛' },

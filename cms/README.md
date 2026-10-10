@@ -22,7 +22,7 @@ cms/
 │   └── src/
 │       ├── lib/                 api client, auth, page/section definitions, toasts
 │       ├── components/          Layout (sidebar), Field, ImageUpload, Modal, RichTextEditor, Login
-│       └── pages/               Dashboard, SeoManager, PageEditor, TeamDirectory, NewsManager
+│       └── pages/               Dashboard, SeoManager, HomepageEditor, PageEditor, TeamDirectory, NewsManager
 ├── integration/
 │   ├── fsia_cms_client.php      fetch + cache helper for the public pages
 │   └── index.example.php        how index.php reads SEO + sections
@@ -117,6 +117,30 @@ $team = fsia_cms_get('teams.php') ?? [];                          // our-teams.p
 $news = fsia_cms_get('news.php', ['type' => 'Special', 'limit' => 12])['items'] ?? [];
 $post = fsia_cms_get('news.php', ['slug' => $_GET['slug'] ?? '']); // article page; content_html is already sanitized
 ```
+
+## 5. Homepage (hero slider, calendar, ads, social, celebrities)
+
+The live homepage is the React app from `fsia-home-clone-` (bundle in
+`/fsia-home-assets/`). The admin's **Homepage** screen edits five rows in
+`page_sections` for page `index`:
+
+| Tab | section_key | content |
+|---|---|---|
+| Hero Slider | `hero_slides` | `{items: [{id, image, title, categoryTag, venue, subtitle, badge, alt, ctaText, ctaUrl, fitMode, startDate, endDate, timerDuration, showCountdown}]}` |
+| Event Calendar | `calendar_events` | `{items: [{id, title, date, endDate, time, type, status, category, venue, city, description, eligibility, highlights[], keywords[], highlight, ctaText, ctaUrl, image}]}` |
+| Advertisement | `advertisement` | `{enabled, label, rotateSeconds, items: [{id, title, image, mobileImage, link, alt, sizeMode, width, height, mobileWidth, mobileHeight, startDate, endDate, active}]}` |
+| Social Media | `social_profiles` | `{items: [{id, name, profileName, iconName, url, description, badge, thumbnail}]}` |
+| Celebrity Jury & Guests | `celebrities` | `{items: [{id, name, role, description, image, event}]}` |
+
+`index.php` reads these rows straight from the database (no HTTP call) and prints
+them as `window.__FSIA_CMS__` before the bundle. A tab that was never saved is
+missing there and the homepage shows its built-in content; if the database is
+unreachable the page renders with the built-in content too.
+
+Slides and ads outside their start/end dates are hidden automatically.
+
+`admin/src/lib/homeDefaults.json` is the built-in content, extracted from the
+homepage source; the editor starts from it until a tab is saved.
 
 ## Security summary
 

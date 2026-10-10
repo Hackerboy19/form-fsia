@@ -10,6 +10,7 @@ import TeamDirectory from './pages/TeamDirectory';
 // The news screens carry the rich text editor (most of the bundle): load on demand.
 const NewsList = lazy(() => import('./pages/NewsManager').then((m) => ({ default: m.NewsList })));
 const NewsEditor = lazy(() => import('./pages/NewsManager').then((m) => ({ default: m.NewsEditor })));
+const HomepageEditor = lazy(() => import('./pages/HomepageEditor'));
 const loading = <div className="card h-96 animate-pulse bg-cream" />;
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="seo" element={<SeoManager />} />
+        <Route path="homepage" element={<Suspense fallback={loading}><HomepageEditor /></Suspense>} />
         <Route path="pages/:slug" element={<PageEditor />} />
         <Route path="team" element={<TeamDirectory />} />
         <Route path="news" element={<Suspense fallback={loading}><NewsList /></Suspense>} />

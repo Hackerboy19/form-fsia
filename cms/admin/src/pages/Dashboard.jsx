@@ -48,7 +48,8 @@ export default function Dashboard() {
         )}
       </div>
       <div className="card mt-6 grid gap-3 p-5 sm:grid-cols-2">
-        <Link to="/news/new" className="btn-gold">+ Write a news article</Link>
+        <Link to="/homepage" className="btn-gold">⌂ Homepage slider, calendar &amp; ads</Link>
+        <Link to="/news/new" className="btn-ghost">+ Write a news article</Link>
         <Link to="/team?new=1" className="btn-ghost">+ Add a team member</Link>
       </div>
     </>
