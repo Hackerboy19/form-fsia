@@ -30,7 +30,12 @@ async function request(path, { method = 'GET', body, query, token, isForm = fals
 
   const headers = { Accept: 'application/json' };
   const auth = token ?? tokenStore.get();
-  if (auth) headers.Authorization = `Bearer ${auth}`;
+  if (auth) {
+    headers.Authorization = `Bearer ${auth}`;
+    // Many Apache/PHP-FPM hosts (Plesk included) drop the Authorization header
+    // before PHP sees it; the API also reads this one.
+    headers['X-Admin-Token'] = auth;
+  }
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
   let res;
