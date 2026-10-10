@@ -1,0 +1,5 @@
+# Only api/*.php is reachable over the web. config.php (DB password, admin token),
+# db.php and lib/ are include-only.
+<FilesMatch "\.(php|sql|md|json|lock)$">
+  Require all denied
+</FilesMatch>
