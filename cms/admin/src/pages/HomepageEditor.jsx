@@ -24,6 +24,8 @@ const TABS = [
   { key: 'celebrities', label: 'Celebrity Jury & Guests', icon: '★' },
 ];
 
+const PREVIEW_ANCHORS = { hero_slides: 'home', calendar_events: 'schedule', advertisement: 'advertisement', social_profiles: 'social', celebrities: 'celebrities' };
+
 const AD_DEFAULTS = { enabled: true, label: 'Advertisement', rotateSeconds: 6, items: [] };
 
 function defaultsFor(key) {
@@ -115,6 +117,18 @@ function SectionTab({ sectionKey, saved, onSaved }) {
     }
   }
 
+  // Same origin as the homepage (/cms-admin/ on www.fsia.in): the draft goes
+  // through localStorage and only this browser sees it, via /?cms_preview=1.
+  function preview() {
+    try {
+      localStorage.setItem('fsia_cms_preview', JSON.stringify({ [sectionKey]: content, savedAt: Date.now() }));
+    } catch {
+      notify('Preview needs browser storage, which is blocked here', 'error');
+      return;
+    }
+    window.open(`/?cms_preview=1#${PREVIEW_ANCHORS[sectionKey]}`, 'fsia-preview');
+  }
+
   function resetToDefaults() {
     if (!window.confirm(`Replace the editor contents with the original built-in ${tab.label.toLowerCase()}? Nothing changes on the website until you save.`)) return;
     setContent(defaultsFor(sectionKey));
@@ -134,6 +148,7 @@ function SectionTab({ sectionKey, saved, onSaved }) {
         <div className="flex flex-wrap items-center gap-2">
           {dirty && <span className="text-xs font-semibold text-amber-600">Unsaved changes</span>}
           <button type="button" className="btn-ghost" onClick={resetToDefaults}>Load defaults</button>
+          <button type="button" className="btn-ghost" onClick={preview} title="Opens the homepage with these unsaved changes, only in this browser">👁 Preview on site</button>
           {dirty && <button type="button" className="btn-ghost" onClick={() => setContent(JSON.parse(clean))}>Discard</button>}
           <button type="button" className="btn-primary" onClick={save} disabled={saving || (!dirty && saved)}>
             {saving ? 'Saving…' : 'Save & publish'}

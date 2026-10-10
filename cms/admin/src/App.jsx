@@ -23,6 +23,8 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="seo" element={<SeoManager />} />
         <Route path="homepage" element={<Suspense fallback={loading}><HomepageEditor /></Suspense>} />
+        {/* The live homepage is edited on the Homepage screen; the old text blocks did not reach it. */}
+        <Route path="pages/index" element={<Navigate to="/homepage" replace />} />
         <Route path="pages/:slug" element={<PageEditor />} />
         <Route path="team" element={<TeamDirectory />} />
         <Route path="news" element={<Suspense fallback={loading}><NewsList /></Suspense>} />
