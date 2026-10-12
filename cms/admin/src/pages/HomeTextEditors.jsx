@@ -102,7 +102,7 @@ export function HeroTextEditor({ content: c, setContent }) {
         <div className="space-y-4">
           <Field label="Small label above the heading" value={c.eyebrow} onChange={(eyebrow) => set({ eyebrow })} max={80} />
           <Field label="Introduction paragraph" type="textarea" rows={5} value={c.intro} onChange={(intro) => set({ intro })} max={1000}
-            hint="Put **two stars** around words to make them bold, e.g. **4,000+ Indian cities**" />
+            hint="Enter = new line, an empty line = new paragraph. Put **two stars** around words to make them bold, e.g. **4,000+ Indian cities**" />
         </div>
       </Card>
       <Card title="Buttons">
@@ -258,7 +258,7 @@ export function FinalCtaEditor({ content: c, setContent }) {
         <div className="space-y-4">
           <Field label="Small label" value={c.badge} onChange={(badge) => set({ badge })} max={80} />
           <Field label="Heading" value={c.heading} onChange={(heading) => set({ heading })} max={80} />
-          <Field label="Paragraph" type="textarea" rows={3} value={c.text} onChange={(text) => set({ text })} max={500} hint="**two stars** around words = bold" />
+          <Field label="Paragraph" type="textarea" rows={3} value={c.text} onChange={(text) => set({ text })} max={500} hint="Enter = new line. **two stars** around words = bold" />
         </div>
       </Card>
       <Card title="Buttons">
