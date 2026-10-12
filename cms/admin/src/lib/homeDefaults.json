@@ -501,5 +501,221 @@
       "tag": "Crowned Winner",
       "fitMode": "contain"
     }
-  ]
+  ],
+  "home_hero_text": {
+    "eyebrow": "BEAUTY PAGEANTS • NATIONAL AWARDS • FASHION",
+    "line1": "REAL PEOPLE.",
+    "line2": "REAL STORIES.",
+    "line3": "A Forever INDIA.",
+    "intro": "Forever Star India (FSIA) is a premier national beauty pageant and honors institution, officially protected under Trademark Class 41 by the Government of India. Operating grassroots talent evaluations across **4,000+ Indian cities** with **1 crowned winner from every city**, delegates experience masterclass runway training and grand crowning ceremonies televised at Zee Studio Jaipur.",
+    "button1Text": "QUICK APPLY • 2026 AUDITIONS",
+    "button1Url": "https://www.fsia.in/quickapply",
+    "button2Text": "EXPLORE TITLES & AWARDS",
+    "button2Url": "",
+    "items": [
+      {
+        "label": "Trademark Class 41:",
+        "value": "Govt. of India Registered"
+      },
+      {
+        "label": "Grand Finale Arena:",
+        "value": "Zee Studio Jaipur"
+      },
+      {
+        "label": "Reach:",
+        "value": "4,000+ Cities Nationwide"
+      }
+    ]
+  },
+  "home_stats": {
+    "items": [
+      {
+        "label": "Participants",
+        "value": 10000,
+        "suffix": "+",
+        "subtext": "Aspiring candidates evaluated across India"
+      },
+      {
+        "label": "Cities Covered",
+        "value": 4000,
+        "suffix": "+",
+        "subtext": "Nationwide audition rounds and city chapter selections"
+      },
+      {
+        "label": "Awards Presented",
+        "value": 5000,
+        "suffix": "+",
+        "subtext": "Prestigious national honors and trophies conferred"
+      },
+      {
+        "label": "Contestants Crowned",
+        "value": 900,
+        "suffix": "+",
+        "subtext": "Selected delegates gracing the state and national stages"
+      }
+    ],
+    "footerTitle": "Democratic Grassroots Model:",
+    "footerText": "Auditioning talent across 28 States & Union Territories without bias.",
+    "source": "Source: Official FSIA Registered Trademark Documentation (Class 41)"
+  },
+  "home_team": {
+    "badge": "LEADERSHIP & EXPERT JURY PANEL",
+    "title": "OUR TEAM & MENTORS",
+    "subtitle": "Guiding Forever Star India with dedication, national industry pedigree, and a commitment to unlocking human potential.",
+    "items": [
+      {
+        "name": "Rajesh Agarwal",
+        "role": "Founder & CEO",
+        "designation": "Founder & CEO (Rajesh Star), Forever Star India",
+        "bio": "The visionary architect behind Forever Star India (FSIA). Committed to building a non-discriminatory national and international platform where talent receives opportunity before it is judged.",
+        "image": "https://www.fsia.in/static/media/Rajesh-Agarwal-CEO-FSIA1.9c07bfbc9cec7349d15e.jpg"
+      }
+    ],
+    "cardFooter": "Official FSIA Board",
+    "buttonText": "VIEW COMPLETE LEADERSHIP DIRECTORY →",
+    "buttonUrl": "https://www.fsia.in/our-teams.php"
+  },
+  "home_partners": {
+    "badge": "OFFICIAL ALLIANCES & BROADCAST COLLABORATORS",
+    "title": "OFFICIAL PARTNERS",
+    "subtitle": "Leading media networks, state tourism initiatives, production houses, and lifestyle brands collaborating with Forever Star India.",
+    "items": [
+      {
+        "id": "partner-bolly-orbit",
+        "name": "Bolly Orbit",
+        "logo": "https://www.fsia.in/static/media/Bolly%20Orbit%20Logo%20(1).dc1aaaef4200c6055ca7.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-bollywood-wave",
+        "name": "Bollywood Wave",
+        "logo": "https://www.fsia.in/static/media/Bollywood%20Wave%20Logo.3cadba066f8cdd15e94e.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-celebvalley",
+        "name": "Celebvalley",
+        "logo": "https://www.fsia.in/static/media/Celebvalley%20Logo.ee03d8b5dbaf9550aa0b.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-extreme-web-world",
+        "name": "Extreme Web World",
+        "logo": "https://www.fsia.in/static/media/Extreme%20Web%20World%20Logo.b43a78ec3e17b66b2c6d.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-forever-fashion",
+        "name": "Forever Fashion",
+        "logo": "https://www.fsia.in/static/media/Forever%20Fashion%20Logo.760eb1f638f42d556444.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-forever-leaves",
+        "name": "Forever Leaves",
+        "logo": "https://www.fsia.in/static/media/Forever%20Leaves%20Logo.d355f63514956496a041.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-golden-divine",
+        "name": "Golden Divine",
+        "logo": "https://www.fsia.in/static/media/Golden%20Divine%20Logo.b65cbb8479b5667673c0.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-intra-life",
+        "name": "Intra Life Private Limited",
+        "logo": "https://www.fsia.in/static/media/Intra%20Life%20Private%20Limited.5a43f7b635f99819af7a.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-jaipur-mirror",
+        "name": "Jaipur Mirror",
+        "logo": "https://www.fsia.in/static/media/Jaipur%20Mirror%20Logo.2d6ffb79310b772f5436.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-kp-productions",
+        "name": "KP Productions",
+        "logo": "https://www.fsia.in/static/media/KP%20Productions%20Logo.87c85e1536ff633a2761.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-leroy-nutrascience",
+        "name": "Leroy Nutrascience",
+        "logo": "https://www.fsia.in/static/media/Leroy%20Nutrascience.a44747e3e612420759c9.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-news-forever",
+        "name": "News Forever",
+        "logo": "https://www.fsia.in/static/media/News%20Forever%20Logo.0f0f3b524daf12136124.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-nm-academy",
+        "name": "NM Academy",
+        "logo": "https://www.fsia.in/static/media/NM%20Academy%20Logo.dcc7f0894b1418eeee24.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-rajasthan-horizon",
+        "name": "Rajasthan Horizon",
+        "logo": "https://www.fsia.in/static/media/Rajasthan%20Horizon%20Logo.746bd013dbd9b28be579.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-sangri-times",
+        "name": "Sangri Times",
+        "logo": "https://www.fsia.in/static/media/Sangri%20Times%20Logo.630665438a4edb23dc45.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-sangri-today",
+        "name": "Sangri Today",
+        "logo": "https://www.fsia.in/static/media/Sangri%20Today%20Logo.2c2fa7461d09b785c355.jpg",
+        "label": "Official FSIA Partner"
+      },
+      {
+        "id": "partner-walpar-nutritions",
+        "name": "Walpar Nutritions",
+        "logo": "https://www.fsia.in/static/media/Walpar%20Nutritions%20Logo.8bb3f713619c18a2f0cd.jpg",
+        "label": "Official FSIA Partner"
+      }
+    ],
+    "noticeTitle": "Documented FSIA Sponsors & Institutional Partners",
+    "noticeText": "Displaying verified organizations and broadcasting partners affiliated with the official portal.",
+    "buttonText": "ALL SPONSORS DIRECTORY →",
+    "buttonUrl": "https://www.fsia.in/sponsors.php"
+  },
+  "home_final_cta": {
+    "badge": "SEASON 2026 AUDITIONS & NOMINATIONS ACTIVE",
+    "heading": "STEP ONTO THE NATIONAL STAGE",
+    "text": "Join India’s premier talent and achievement movement across 4,000+ cities. Secure your city chapter audition, master runway grooming, and grand coronation stage at Zee Studio Jaipur.",
+    "background": "https://www.fsia.in/uploads/Forever-Star-India-Pageant.webp",
+    "button1Text": "QUICK APPLY • 2026 SEASON",
+    "button1Url": "https://www.fsia.in/quickapply",
+    "button2Text": "CALL HELPLINE: +91-99832-86999",
+    "button2Url": "tel:+919983286999",
+    "items": [
+      {
+        "label": "Direct Helpline",
+        "value": "+91-99832-86999",
+        "link": "tel:+919983286999",
+        "note": "Mon–Sat, 10am–7pm IST"
+      },
+      {
+        "label": "Official Email",
+        "value": "care@fsia.in",
+        "link": "mailto:care@fsia.in",
+        "note": "starindiaaward@gmail.com"
+      },
+      {
+        "label": "Headquarters",
+        "value": "Jaipur, Rajasthan",
+        "link": "",
+        "note": "Govt. Trademark Class 41"
+      }
+    ]
+  }
 }

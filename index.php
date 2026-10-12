@@ -115,10 +115,12 @@ try {
                 $c['password'],
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]
             );
+            // Hero slider, calendar, ads, social, celebrities and the home_* text blocks.
             $st = $pdo->prepare(
                 "SELECT section_key, content FROM page_sections
                  WHERE page_slug = 'index'
-                   AND section_key IN ('hero_slides', 'calendar_events', 'advertisement', 'social_profiles', 'celebrities')"
+                   AND (section_key IN ('hero_slides', 'calendar_events', 'advertisement', 'social_profiles', 'celebrities')
+                        OR section_key LIKE 'home\\_%')"
             );
             $st->execute();
             $fsia_cms = [];

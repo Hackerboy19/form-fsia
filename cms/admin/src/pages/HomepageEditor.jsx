@@ -6,6 +6,7 @@ import ImageUpload from '../components/ImageUpload';
 import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 import { useToast } from '../lib/toast';
 import DEFAULTS from '../lib/homeDefaults.json';
+import { FinalCtaEditor, HeroTextEditor, PartnersEditor, StatsEditor, TeamEditor, TEXT_VALIDATORS } from './HomeTextEditors';
 
 /*
  * Homepage (index.php) dynamic sections. Each tab is one page_sections row
@@ -16,24 +17,38 @@ import DEFAULTS from '../lib/homeDefaults.json';
  * the editor starts from.
  */
 
+// In the order the sections appear on the homepage.
 const TABS = [
+  { key: 'home_hero_text', label: 'Top Text', icon: 'T' },
   { key: 'hero_slides', label: 'Hero Slider', icon: '▶' },
+  { key: 'home_stats', label: 'Stats', icon: '#' },
   { key: 'calendar_events', label: 'Event Calendar', icon: '▦' },
   { key: 'advertisement', label: 'Advertisement', icon: '▭' },
   { key: 'social_profiles', label: 'Social Media', icon: '◎' },
   { key: 'celebrities', label: 'Celebrity Jury & Guests', icon: '★' },
+  { key: 'home_partners', label: 'Partners', icon: '◇' },
+  { key: 'home_team', label: 'CEO / Team', icon: '♛' },
+  { key: 'home_final_cta', label: 'Final Section', icon: '⚑' },
 ];
 
-const PREVIEW_ANCHORS = { hero_slides: 'home', calendar_events: 'schedule', advertisement: 'advertisement', social_profiles: 'social', celebrities: 'celebrities' };
+// Text blocks are one object each (not a list of items).
+const OBJECT_KEYS = ['home_hero_text', 'home_stats', 'home_team', 'home_partners', 'home_final_cta'];
+
+const PREVIEW_ANCHORS = {
+  home_hero_text: 'home', hero_slides: 'home', home_stats: 'stats', calendar_events: 'schedule', advertisement: 'advertisement',
+  social_profiles: 'social', celebrities: 'celebrities', home_partners: 'partners', home_team: 'team', home_final_cta: 'final-cta',
+};
 
 const AD_DEFAULTS = { enabled: true, label: 'Advertisement', rotateSeconds: 6, items: [] };
 
 function defaultsFor(key) {
-  return key === 'advertisement' ? structuredClone(AD_DEFAULTS) : { items: structuredClone(DEFAULTS[key] || []) };
+  if (key === 'advertisement') return structuredClone(AD_DEFAULTS);
+  if (OBJECT_KEYS.includes(key)) return structuredClone(DEFAULTS[key]);
+  return { items: structuredClone(DEFAULTS[key] || []) };
 }
 
 export default function HomepageEditor() {
-  const [tab, setTab] = useState('hero_slides');
+  const [tab, setTab] = useState('home_hero_text');
   const [sections, setSections] = useState(null);
   const [error, setError] = useState('');
 
@@ -45,7 +60,7 @@ export default function HomepageEditor() {
     <>
       <PageHeader
         title="Homepage"
-        description="Hero slider, event calendar, advertisement, social profiles and celebrity guests on www.fsia.in. Each tab saves separately and is live on the next page load."
+        description="Every section of the www.fsia.in homepage, top to bottom. Each tab saves separately and is live on the next page load."
       />
 
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1" role="tablist">
@@ -172,6 +187,7 @@ const named = (it, i, field = 'title') => `"${it[field] || `item ${i + 1}`}"`;
 const isUrl = (u) => !u || /^(https?:\/\/|\/(?!\/)|#|mailto:|tel:)/i.test(u.trim());
 
 const VALIDATORS = {
+  ...TEXT_VALIDATORS,
   hero_slides: ({ items }) => [
     ...(items.length ? [] : ['Add at least one slide.']),
     ...items.flatMap((s, i) => [
@@ -642,6 +658,11 @@ function CelebritiesEditor({ content, setContent }) {
 }
 
 const EDITORS = {
+  home_hero_text: HeroTextEditor,
+  home_stats: StatsEditor,
+  home_team: TeamEditor,
+  home_partners: PartnersEditor,
+  home_final_cta: FinalCtaEditor,
   hero_slides: HeroSlidesEditor,
   calendar_events: CalendarEditor,
   advertisement: AdvertisementEditor,
