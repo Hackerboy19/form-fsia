@@ -311,3 +311,76 @@ export const TEXT_VALIDATORS = {
     ...(c.items || []).flatMap((b, i) => [!isLink(b.link) && `Contact box ${named(b, i, 'label')}: link must start with https://, tel: or mailto:.`]),
   ].filter(Boolean),
 };
+
+/* ---------------- Section text of the list tabs ---------------- */
+
+const SECTION_TEXT_FIELDS = {
+  calendar_events: [
+    { name: 'badge', label: 'Small label' }, { name: 'badge2', label: 'Second label (red)' },
+    { name: 'title', label: 'Title', wide: true }, { name: 'subtitle', label: 'Description', type: 'textarea', wide: true },
+    { rows: 'highlights', label: 'Key dates next to the title', hint: 'e.g. “Jan 8 · Grand Finale”. The dot colour is a colour code like #D4AF37.' },
+    { name: 'helpBadge', label: 'Help box: small label' }, { name: 'helpTitle', label: 'Help box: heading' },
+    { name: 'helpText', label: 'Help box: text', type: 'textarea', wide: true },
+    { name: 'helpButton1Text', label: 'Help box: gold button text' }, { name: 'helpButton1Url', label: 'Help box: gold button link' },
+    { name: 'helpButton2Text', label: 'Help box: second button text' }, { name: 'helpButton2Url', label: 'Help box: second button link' },
+  ],
+  social_profiles: [
+    { name: 'badge', label: 'Small label' }, { name: 'title', label: 'Title' },
+    { name: 'subtitle', label: 'Description', type: 'textarea', wide: true },
+    { name: 'cardTag', label: 'Text at the bottom of each card' },
+    { name: 'note', label: 'Note under the cards (empty = hidden)', type: 'textarea', wide: true },
+  ],
+  celebrities: [
+    { name: 'badge', label: 'Small label' }, { name: 'title', label: 'Title' },
+    { name: 'subtitle', label: 'Description', type: 'textarea', wide: true },
+    { name: 'cardLeft', label: 'Card bottom: left text' }, { name: 'cardRight', label: 'Card bottom: right text' },
+    { name: 'box1Title', label: 'Box 1 title' }, { name: 'box2Title', label: 'Box 2 title' },
+    { name: 'box1Text', label: 'Box 1 text', type: 'textarea' }, { name: 'box2Text', label: 'Box 2 text', type: 'textarea' },
+  ],
+};
+
+/**
+ * Headings and fixed text of a list section, saved as content.header next to
+ * the items. Only edited fields need saving; the homepage fills in the rest.
+ */
+export function SectionTextCard({ sectionKey, header, defaults, onChange }) {
+  const [open, setOpen] = useState(false);
+  const h = { ...defaults, ...(header || {}) };
+  const set = (p) => onChange({ ...h, ...p });
+  return (
+    <section className="card mb-5 p-5">
+      <button type="button" className="flex w-full items-center justify-between text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span>
+          <span className="font-display text-base font-bold">Section heading &amp; text</span>
+          <span className="block text-xs text-slate-500">{h.title} — title, description and the other fixed text of this section</span>
+        </span>
+        <span className="text-sm font-semibold text-gold-dark">{open ? 'Close ▲' : 'Edit ▼'}</span>
+      </button>
+      {open && (
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {SECTION_TEXT_FIELDS[sectionKey].map((f) =>
+            f.rows ? (
+              <div key={f.rows} className="sm:col-span-2">
+                <span className="label">{f.label}</span>
+                {f.hint && <p className="mb-2 text-xs text-slate-500">{f.hint}</p>}
+                <Rows rows={h[f.rows] || []} onChange={(v) => set({ [f.rows]: v })} addLabel="Add" max={5}
+                  makeNew={() => ({ value: '', label: '', color: '#D4AF37' })}
+                  columns={[{ name: 'value', label: 'Bold part' }, { name: 'label', label: 'Text' }, { name: 'color', label: 'Dot colour' }]} />
+              </div>
+            ) : (
+              <div key={f.name} className={f.wide ? 'sm:col-span-2' : ''}>
+                <Field label={f.label} type={f.type || 'text'} rows={3} value={h[f.name] ?? ''} onChange={(v) => set({ [f.name]: v })}
+                  hint={/Url$/.test(f.name) ? linkHint : f.type === 'textarea' ? 'Enter = new line. **two stars** around words = bold' : undefined} />
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export const headerProblems = (header) => {
+  const h = header || {};
+  return Object.entries(h).filter(([k, v]) => /Url$/.test(k) && !isLink(String(v || ''))).map(([k]) => `Section text: "${k}" must start with https://, /, tel: or mailto:.`);
+};

@@ -717,5 +717,53 @@
         "note": "Govt. Trademark Class 41"
       }
     ]
+  },
+  "calendar_events_header": {
+    "badge": "Official Season 2026 & 2027 Schedule",
+    "badge2": "Zee Studio Production Hub",
+    "title": "Pageant & National Award Calendar",
+    "subtitle": "Explore official dates for nationwide auditions, teen masterclasses, state semi-finals, jury evaluations, and the grand coronation ceremony at Zee Studio Jaipur. Select any date to inspect the verified itinerary.",
+    "highlights": [
+      {
+        "value": "4,000+",
+        "label": "City Auditions",
+        "color": "#A6093D"
+      },
+      {
+        "value": "Dec 18",
+        "label": "Grand Coronation",
+        "color": "#D4AF37"
+      },
+      {
+        "value": "Dec 20",
+        "label": "Gala Felicitation",
+        "color": "#78350F"
+      }
+    ],
+    "helpBadge": "Pan-India City Chapter Inquiries",
+    "helpTitle": "Have questions about your city’s audition or award jury timeline?",
+    "helpText": "FSIA manages auditions and award screenings across 4,000+ cities in India. For direct slot confirmations, regional franchise dates, or special delegate accreditations, speak with the central secretariat.",
+    "helpButton1Text": "Apply for Auditions 2026",
+    "helpButton1Url": "https://www.fsia.in/quickapply",
+    "helpButton2Text": "Call +91-99832-86999",
+    "helpButton2Url": "tel:+919983286999"
+  },
+  "social_profiles_header": {
+    "badge": "OFFICIAL BROADCAST & COMMUNITY FEEDS",
+    "title": "CONNECT WITH FSIA",
+    "subtitle": "Follow the live crowning ceremonies, behind-the-scenes masterclasses, delegate highlights, and nationwide coronation coverage across our official verified media handles.",
+    "cardTag": "Verified Official",
+    "note": "All coronation ceremonies, contestant walk-throughs, and celebrity felicitation segments are livestreamed exclusively on the official Forever Star India YouTube and social channels."
+  },
+  "celebrities_header": {
+    "badge": "DISTINGUISHED DIGNITARIES & MENTORS",
+    "title": "CELEBRITY JURY & GUESTS",
+    "subtitle": "Distinguished Bollywood icons, national jury members, and state dignitaries gracing the grand stage at Zee Studio Jaipur.",
+    "cardLeft": "Official Grand Stage Guest",
+    "cardRight": "Zee Studio Finale",
+    "box1Title": "Government Registered Trademark • Class 41",
+    "box1Text": "Forever Star India Awards is an officially protected trademark under Govt. of India intellectual property laws, safeguarding the integrity of all titleholders and awardees.",
+    "box2Title": "Grand Finale Arena • Zee Studio Jaipur",
+    "box2Text": "The grand crowning ceremonies are produced with broadcast cameras, specialized lighting rigs, national media coverage, and live streaming to millions of viewers."
   }
 }

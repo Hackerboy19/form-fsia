@@ -6,7 +6,15 @@ import ImageUpload from '../components/ImageUpload';
 import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 import { useToast } from '../lib/toast';
 import DEFAULTS from '../lib/homeDefaults.json';
-import { FinalCtaEditor, HeroTextEditor, PartnersEditor, StatsEditor, TeamEditor, TEXT_VALIDATORS } from './HomeTextEditors';
+import { FinalCtaEditor, headerProblems, HeroTextEditor, PartnersEditor, SectionTextCard, StatsEditor, TeamEditor, TEXT_VALIDATORS } from './HomeTextEditors';
+
+/** The section-text card shown above a list tab's items. */
+function HeaderCard({ sectionKey, content, setContent }) {
+  return (
+    <SectionTextCard sectionKey={sectionKey} header={content.header} defaults={DEFAULTS[`${sectionKey}_header`]}
+      onChange={(header) => setContent({ ...content, header })} />
+  );
+}
 
 /*
  * Homepage (index.php) dynamic sections. Each tab is one page_sections row
@@ -111,7 +119,7 @@ function SectionTab({ sectionKey, saved, onSaved }) {
   }, [dirty]);
 
   async function save() {
-    const list = VALIDATORS[sectionKey](content);
+    const list = [...VALIDATORS[sectionKey](content), ...headerProblems(content.header)];
     setProblems(list);
     if (list.length) {
       notify('Please fix the highlighted items first', 'error');
@@ -386,6 +394,7 @@ function CalendarEditor({ content, setContent }) {
 
   return (
     <>
+      <HeaderCard sectionKey="calendar_events" content={content} setContent={setContent} />
       <div className="card mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-xs">
         <span className="font-bold uppercase tracking-wider text-slate-500">Calendar colours</span>
         {EVENT_TYPES.map((t) => (
@@ -602,6 +611,8 @@ const ICONS = [
 function SocialEditor({ content, setContent }) {
   const [selected, setSelected] = useState(content.items[0]?.id ?? null);
   return (
+    <>
+    <HeaderCard sectionKey="social_profiles" content={content} setContent={setContent} />
     <ListEditor
       items={content.items}
       selected={selected}
@@ -624,6 +635,7 @@ function SocialEditor({ content, setContent }) {
         </div>
       )}
     />
+    </>
   );
 }
 
@@ -634,6 +646,8 @@ function SocialEditor({ content, setContent }) {
 function CelebritiesEditor({ content, setContent }) {
   const [selected, setSelected] = useState(content.items[0]?.id ?? null);
   return (
+    <>
+    <HeaderCard sectionKey="celebrities" content={content} setContent={setContent} />
     <ListEditor
       items={content.items}
       selected={selected}
@@ -654,6 +668,7 @@ function CelebritiesEditor({ content, setContent }) {
         </div>
       )}
     />
+    </>
   );
 }
 
