@@ -232,12 +232,6 @@ const VALIDATORS = {
 /* Hero slider                                                         */
 /* ------------------------------------------------------------------ */
 
-const FIT_MODES = [
-  { value: 'auto', label: 'Auto-Adaptive', hint: 'Posters fit whole; photos fill on desktop' },
-  { value: 'contain', label: 'Full (Contain)', hint: 'Whole image visible, no cropping' },
-  { value: 'cover', label: 'Fill (Cover)', hint: 'Fills the frame, edges may crop' },
-];
-
 function HeroSlidesEditor({ content, setContent }) {
   const items = content.items;
   const [selected, setSelected] = useState(items[0]?.id ?? null);
@@ -257,7 +251,7 @@ function HeroSlidesEditor({ content, setContent }) {
       })}
       describe={(s) => ({
         title: s.title,
-        subtitle: `${s.timerDuration || 5}s • ${FIT_MODES.find((f) => f.value === s.fitMode)?.label || 'Auto'}`,
+        subtitle: `${s.timerDuration || 5} seconds`,
         image: s.image,
         badge: scheduleStatus(s.startDate, s.endDate),
       })}
@@ -278,7 +272,7 @@ function SlideForm({ slide: s, set }) {
           ))}
         </div>
         {source === 'upload' ? (
-          <ImageUpload label="Image" value={s.image} onChange={(image) => set({ image })} hint="Wide images work best (about 1600×900). Posters with text: use Full (Contain)." />
+          <ImageUpload label="Slide image" value={s.image} onChange={(image) => set({ image })} size={{ w: 1080, h: 1350, fit: 'contain' }} hint="The slider has this same 4:5 shape on phone and desktop, so an image of this size fills it exactly. Other sizes are shown whole, never cropped." />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {DEFAULTS.library_presets.map((p) => (
@@ -295,23 +289,12 @@ function SlideForm({ slide: s, set }) {
             ))}
           </div>
         )}
-        <div className="mt-4">
-          <span className="label">Display mode</span>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {FIT_MODES.map((f) => (
-              <button key={f.value} type="button" onClick={() => set({ fitMode: f.value })}
-                className={`rounded-xl border p-3 text-left transition ${s.fitMode === f.value ? 'border-gold bg-gold/10' : 'border-slate-200 hover:border-gold/50'}`}>
-                <span className="block text-sm font-semibold">{f.label}</span>
-                <span className="block text-[11px] text-slate-500">{f.hint}</span>
-              </button>
-            ))}
-          </div>
-        </div>
         {s.image && (
           <div className="mt-4">
-            <span className="label">Preview</span>
-            <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-navy">
-              <img src={assetUrl(s.image)} alt="" className={`h-full w-full ${s.fitMode === 'contain' ? 'object-contain' : 'object-cover'}`} />
+            <span className="label">Preview (same on phone and desktop)</span>
+            <div className="relative mx-auto aspect-[4/5] max-w-sm overflow-hidden rounded-xl bg-navy">
+              <img src={assetUrl(s.image)} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-105 object-cover opacity-25 blur-xl" />
+              <img src={assetUrl(s.image)} alt="" className="relative h-full w-full object-contain" />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/90 to-transparent p-4 text-white">
                 {s.categoryTag && <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{s.categoryTag}</span>}
                 <p className="font-display text-lg font-bold leading-tight">{s.title}</p>
@@ -469,7 +452,7 @@ function EventForm({ ev: e, set }) {
         <Field label="Button label" value={e.ctaText} onChange={(ctaText) => set({ ctaText })} max={40} />
         <Field label="Button link" value={e.ctaUrl} onChange={(ctaUrl) => set({ ctaUrl })} />
       </div>
-      <ImageUpload label="Event image (optional)" value={e.image} onChange={(image) => set({ image })} />
+      <ImageUpload label="Event image (optional)" value={e.image} onChange={(image) => set({ image })} size={{ w: 1600, h: 900, fit: 'cover' }} />
     </div>
   );
 }
@@ -532,8 +515,8 @@ function AdForm({ ad: a, set, label }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <ImageUpload label="Desktop image" value={a.image} onChange={(image) => set({ image })} aspect="aspect-[728/180]" hint="e.g. 728×90 or 970×250" />
-        <ImageUpload label="Mobile image (optional)" value={a.mobileImage} onChange={(mobileImage) => set({ mobileImage })} aspect="aspect-[6/5]" hint="e.g. 300×250. Empty = desktop image" />
+        <ImageUpload label="Desktop image" value={a.image} onChange={(image) => set({ image })} size={{ w: 728, h: 90, fit: 'contain' }} hint="Standard banner size. Any wide image works; it is never cropped." />
+        <ImageUpload label="Mobile image (optional)" value={a.mobileImage} onChange={(mobileImage) => set({ mobileImage })} size={{ w: 300, h: 250, fit: 'contain' }} hint="Empty = the desktop image is used on phones too." />
       </div>
 
       <div className="rounded-xl border border-gold-light bg-cream/60 p-4">
@@ -553,7 +536,7 @@ function AdForm({ ad: a, set, label }) {
             <Field label="Desktop height" type="number" value={a.height} onChange={(v) => set({ height: num(v) })} />
             <Field label="Mobile width" type="number" value={a.mobileWidth} onChange={(v) => set({ mobileWidth: num(v) })} />
             <Field label="Mobile height" type="number" value={a.mobileHeight} onChange={(v) => set({ mobileHeight: num(v) })} />
-            <p className="col-span-full text-[11px] text-slate-500">Pixels. Empty mobile size = same as desktop. Never wider than the screen; the image is cropped to fill the box.</p>
+            <p className="col-span-full text-[11px] text-slate-500">Pixels. Empty mobile size = same as desktop. Never wider than the screen; the image is never cropped (it is fitted inside the box).</p>
           </div>
         )}
       </div>
@@ -584,7 +567,7 @@ function AdPreview({ ad: a, label, mobile }) {
           <div className="mt-3 flex justify-center">
             {src ? (
               <img src={src} alt="" className={`mx-auto block ${manual ? '' : 'h-auto w-full'}`}
-                style={manual ? { width: w ? `${w}px` : undefined, height: h ? `${h}px` : undefined, maxWidth: '100%', objectFit: w && h ? 'cover' : undefined } : undefined} />
+                style={manual ? { width: w ? `${w}px` : undefined, height: h ? `${h}px` : undefined, maxWidth: '100%', objectFit: 'contain' } : undefined} />
             ) : (
               <div className="grid h-[90px] w-full place-items-center border border-dashed border-gold/50 text-xs text-slate-400">No image</div>
             )}
@@ -631,7 +614,7 @@ function SocialEditor({ content, setContent }) {
             <Field label="Badge" value={p.badge} onChange={(badge) => set({ badge })} max={40} placeholder="Official Pageant Feed" />
             <div className="sm:col-span-2"><Field label="Description" type="textarea" rows={3} value={p.description} onChange={(description) => set({ description })} max={300} /></div>
           </div>
-          <ImageUpload label="Profile image (card thumbnail)" value={p.thumbnail} onChange={(thumbnail) => set({ thumbnail })} hint="Shown at the top of the card. Optional." />
+          <ImageUpload label="Profile image (card thumbnail, optional)" value={p.thumbnail} onChange={(thumbnail) => set({ thumbnail })} size={{ w: 1600, h: 1000, fit: 'cover' }} />
         </div>
       )}
     />
@@ -658,7 +641,7 @@ function CelebritiesEditor({ content, setContent }) {
       describe={(c) => ({ title: c.name, subtitle: c.role, image: c.image })}
       renderForm={(c, set) => (
         <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]">
-          <ImageUpload label="Photo" value={c.image} onChange={(image) => set({ image })} aspect="aspect-[4/5]" hint="Portrait works best" />
+          <ImageUpload label="Photo" value={c.image} onChange={(image) => set({ image })} size={{ w: 1200, h: 900, fit: 'cover' }} hint="Landscape; keep faces near the top." />
           <div className="space-y-4">
             <Field label="Name" value={c.name} onChange={(name) => set({ name })} max={80} />
             <Field label="Role" value={c.role} onChange={(role) => set({ role })} max={100} placeholder="Celebrity Chief Guest & Jury" />

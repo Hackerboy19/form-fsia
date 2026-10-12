@@ -100,7 +100,7 @@ export default function SeoManager() {
             <h2 className="font-display text-lg font-bold">Social sharing (Open Graph)</h2>
             <Field label="OG title" value={form.og_title} onChange={set('og_title')} max={255} recommended={70} error={errors.og_title} hint="Leave empty to reuse the meta title." />
             <Field label="OG description" type="textarea" rows={3} value={form.og_description} onChange={set('og_description')} max={500} recommended={200} error={errors.og_description} hint="Leave empty to reuse the meta description." />
-            <ImageUpload label="OG image" value={form.og_image_url} onChange={set('og_image_url')} hint="1200 × 630 works best on WhatsApp, Facebook and X." aspect="aspect-[1200/630]" />
+            <ImageUpload label="OG image" value={form.og_image_url} onChange={set('og_image_url')} size={{ w: 1200, h: 630, fit: 'cover' }} hint="The picture shown when the page is shared on WhatsApp, Facebook and X." />
             {errors.og_image_url && <p className="text-xs text-red-600">{errors.og_image_url}</p>}
           </section>
         </div>

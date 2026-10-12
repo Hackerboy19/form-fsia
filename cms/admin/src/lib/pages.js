@@ -16,7 +16,7 @@ export const SECTION_SCHEMAS = {
     {
       key: 'hero',
       title: 'Hero banner',
-      image: { label: 'Hero image', hint: 'Wide image, at least 1600 × 900' },
+      image: { label: 'Hero image', size: { w: 1600, h: 900, fit: 'cover' } },
       fields: [
         { name: 'eyebrow', label: 'Small label above the title', max: 80, placeholder: 'Beauty Pageants • National Awards • Fashion' },
         { name: 'title', label: 'Headline', max: 140, required: true, placeholder: 'Real People. Real Stories. A Brighter India.' },
@@ -28,7 +28,7 @@ export const SECTION_SCHEMAS = {
     {
       key: 'about_intro',
       title: 'About block',
-      image: { label: 'Side image' },
+      image: { label: 'Side image', size: { w: 1200, h: 900, fit: 'cover' } },
       fields: [
         { name: 'heading', label: 'Heading', max: 120, required: true },
         { name: 'body', label: 'Text', type: 'textarea', max: 2000 },
@@ -50,7 +50,7 @@ export const SECTION_SCHEMAS = {
     {
       key: 'hero',
       title: 'Page header',
-      image: { label: 'Header image', hint: 'Wide image, at least 1600 × 700' },
+      image: { label: 'Header image', size: { w: 1600, h: 700, fit: 'cover' } },
       fields: [
         { name: 'eyebrow', label: 'Small label', max: 80 },
         { name: 'title', label: 'Title', max: 140, required: true, placeholder: 'About Forever Star India' },
@@ -60,7 +60,7 @@ export const SECTION_SCHEMAS = {
     {
       key: 'story',
       title: 'Our story',
-      image: { label: 'Story image' },
+      image: { label: 'Story image', size: { w: 1200, h: 900, fit: 'cover' } },
       fields: [
         { name: 'heading', label: 'Heading', max: 120 },
         { name: 'body', label: 'Story', type: 'textarea', max: 5000, rows: 8 },

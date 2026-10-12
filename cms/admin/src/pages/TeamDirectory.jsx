@@ -58,7 +58,7 @@ function MemberModal({ member, onClose, onSaved }) {
     >
       <form id="member-form" onSubmit={save} className="grid gap-5 sm:grid-cols-[200px_1fr]">
         <div>
-          <ImageUpload label="Photo" value={form.image_url} onChange={set('image_url')} aspect="aspect-[3/4]" hint={errors.image_url || 'Portrait, at least 600 × 800'} />
+          <ImageUpload label="Photo" value={form.image_url} onChange={set('image_url')} size={{ w: 900, h: 1200, fit: 'cover' }} hint={errors.image_url || 'Portrait; keep the face near the top.'} />
         </div>
         <div className="space-y-4">
           <Field label="Name *" value={form.name} onChange={set('name')} max={150} error={errors.name} required />

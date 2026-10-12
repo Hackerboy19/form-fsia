@@ -83,7 +83,7 @@ function SectionCard({ page, schema, initial }) {
         </div>
         {schema.image && (
           <div>
-            <ImageUpload label={schema.image.label} hint={schema.image.hint || errors.image_url} value={form.image_url} onChange={(v) => setForm((f) => ({ ...f, image_url: v }))} />
+            <ImageUpload label={schema.image.label} size={schema.image.size} hint={errors.image_url || schema.image.hint} value={form.image_url} onChange={(v) => setForm((f) => ({ ...f, image_url: v }))} />
           </div>
         )}
       </div>

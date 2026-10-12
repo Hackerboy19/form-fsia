@@ -198,7 +198,7 @@ export function NewsEditor() {
               hint={form.published_date > today() ? 'Future date: hidden from the site until then.' : undefined} />
           </div>
           <div className="card p-5">
-            <ImageUpload label="Featured image" value={form.featured_image_url} onChange={set('featured_image_url')} hint={errors.featured_image_url || '1200 × 630 recommended'} aspect="aspect-[1200/630]" />
+            <ImageUpload label="Featured image" value={form.featured_image_url} onChange={set('featured_image_url')} size={{ w: 1200, h: 630, fit: 'cover' }} hint={errors.featured_image_url} />
           </div>
         </aside>
       </div>

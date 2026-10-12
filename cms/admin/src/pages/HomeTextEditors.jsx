@@ -170,7 +170,7 @@ export function TeamEditor({ content: c, setContent }) {
           describe={(m) => ({ title: m.name, subtitle: m.role, image: m.image })}
           renderForm={(m, upd) => (
             <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-              <ImageUpload label="Photo" value={m.image} onChange={(image) => upd({ image })} aspect="aspect-square" hint="Square photo, face at the top" />
+              <ImageUpload label="Photo" value={m.image} onChange={(image) => upd({ image })} size={{ w: 800, h: 800, fit: 'cover' }} hint="Square; face at the top." />
               <div className="space-y-4">
                 <Field label="Name" value={m.name} onChange={(name) => upd({ name })} max={80} />
                 <Field label="Role (small gold text)" value={m.role} onChange={(role) => upd({ role })} max={60} placeholder="Founder & CEO" />
@@ -225,7 +225,7 @@ export function PartnersEditor({ content: c, setContent }) {
           describe={(p) => ({ title: p.name, subtitle: p.label, image: p.logo })}
           renderForm={(p, upd) => (
             <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-              <ImageUpload label="Logo" value={p.logo} onChange={(logo) => upd({ logo })} aspect="aspect-[4/3]" hint="Shown whole (not cropped) on white" />
+              <ImageUpload label="Logo" value={p.logo} onChange={(logo) => upd({ logo })} size={{ w: 600, h: 400, fit: 'contain' }} hint="Shown whole on white. Transparent PNG works best." />
               <div className="space-y-4">
                 <Field label="Name" value={p.name} onChange={(name) => upd({ name })} max={80} />
                 <Field label="Label under the name" value={p.label} onChange={(label) => upd({ label })} max={60} />
@@ -278,7 +278,7 @@ export function FinalCtaEditor({ content: c, setContent }) {
           ]} />
       </Card>
       <Card title="Background photo" hint="Shown very faint behind the section.">
-        <div className="max-w-md"><ImageUpload label="Image" value={c.background} onChange={(background) => set({ background })} /></div>
+        <div className="max-w-md"><ImageUpload label="Image" value={c.background} onChange={(background) => set({ background })} size={{ w: 1920, h: 1080, fit: 'cover' }} /></div>
       </Card>
     </div>
   );
