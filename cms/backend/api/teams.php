@@ -33,6 +33,16 @@ function team_find(int $id, bool $includeInactive): ?array
     return $r ? team_row($r) : null;
 }
 
+/** Columns of team_members (bio/quote/phone exist only after the 2026-10-13 migration). */
+function team_columns(): array
+{
+    static $cols = null;
+    if ($cols === null) {
+        $cols = array_column(db()->query('SHOW COLUMNS FROM team_members')->fetchAll(), 'Field');
+    }
+    return $cols;
+}
+
 /** Validates a full member record (existing values merged with the request). */
 function team_validate(array $in): array
 {
@@ -45,6 +55,24 @@ function team_validate(array $in): array
         'display_order' => $v->int('display_order', 0, -100000, 100000),
         'is_active'     => $v->bool('is_active', true) ? 1 : 0,
     ];
+
+    // Profile text: bio (pop-up paragraph), quote (leader's italic line), phone.
+    $extra = [
+        'bio'   => $v->string('bio', 2000),
+        'quote' => $v->string('quote', 255),
+        'phone' => preg_replace('/[^\d+]/', '', (string) $v->string('phone', 30)),
+    ];
+    if ($extra['phone'] !== '' && !preg_match('/^\+?\d{7,15}$/', $extra['phone'])) {
+        $v->addError('phone', 'Use a phone number like 9983599666 or +919983599666');
+    }
+    $have = team_columns();
+    foreach ($extra as $col => $val) {
+        if (in_array($col, $have, true)) {
+            $row[$col] = $val;
+        } elseif ($val !== '') {
+            $v->addError($col, 'Run the database update (cms/database/migrations/2026-10-13-team-bio-quote-phone.sql) to save this field');
+        }
+    }
 
     $links = $in['social_links'] ?? [];
     if ($links instanceof stdClass) {

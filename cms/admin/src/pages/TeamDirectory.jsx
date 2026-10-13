@@ -8,10 +8,10 @@ import ImageUpload from '../components/ImageUpload';
 import Modal from '../components/Modal';
 import { useToast } from '../lib/toast';
 
-const NEW_MEMBER = { name: '', designation: '', category: 'Mentors', image_url: '', display_order: 0, is_active: true, social_links: {} };
+const NEW_MEMBER = { name: '', designation: '', category: 'Mentors', image_url: '', bio: '', quote: '', phone: '', display_order: 0, is_active: true, social_links: {} };
 
 function MemberModal({ member, onClose, onSaved }) {
-  const [form, setForm] = useState(() => ({ ...NEW_MEMBER, ...member, social_links: { ...(member?.social_links || {}) } }));
+  const [form, setForm] = useState(() => ({ ...NEW_MEMBER, ...member, bio: member?.bio ?? '', quote: member?.quote ?? '', phone: member?.phone ?? '', social_links: { ...(member?.social_links || {}) } }));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const notify = useToast();
@@ -28,6 +28,9 @@ function MemberModal({ member, onClose, onSaved }) {
       designation: form.designation,
       category: form.category,
       image_url: form.image_url,
+      bio: form.bio,
+      quote: form.quote,
+      phone: form.phone,
       display_order: Number(form.display_order) || 0,
       is_active: form.is_active,
       social_links: Object.fromEntries(Object.entries(form.social_links).filter(([, v]) => v && v.trim())),
@@ -68,6 +71,14 @@ function MemberModal({ member, onClose, onSaved }) {
             <Field label="Display order" type="number" value={form.display_order} onChange={set('display_order')} error={errors.display_order} hint="Lower shows first" />
           </div>
           <Toggle checked={form.is_active} onChange={set('is_active')} label="Visible on the website" description="Hidden members stay here but don't appear on our-teams.php." />
+          <Field label="About (profile text)" type="textarea" rows={4} value={form.bio} onChange={set('bio')} max={2000} recommended={400} error={errors.bio}
+            hint={errors.bio || 'Shown in the profile pop-up (and under the name for Leadership). Empty = a short automatic line.'} />
+          {form.category === 'Leadership' && (
+            <Field label="Quote line (Leadership only)" value={form.quote} onChange={set('quote')} max={255} error={errors.quote}
+              placeholder="Talent should receive opportunity before it is judged." hint={errors.quote || 'The large italic line under the name on our-teams.php.'} />
+          )}
+          <Field label="Phone (optional)" value={form.phone} onChange={set('phone')} max={30} error={errors.phone} placeholder="9983599666"
+            hint={errors.phone || 'Adds a “Call” button on the profile.'} />
           <fieldset className="space-y-2">
             <legend className="label">Social links</legend>
             {SOCIAL_NETWORKS.map((net) => (

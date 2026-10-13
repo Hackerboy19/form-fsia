@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS team_members (
   designation   VARCHAR(150) NOT NULL DEFAULT '',
   category      ENUM('Leadership','Core Team','Mentors','Anchors','Media') NOT NULL,
   image_url     VARCHAR(512) NOT NULL DEFAULT '',
+  bio           TEXT         NULL,                     -- profile pop-up text
+  quote         VARCHAR(255) NOT NULL DEFAULT '',      -- leader's italic line
+  phone         VARCHAR(20)  NOT NULL DEFAULT '',
   social_links  JSON         NULL,
   display_order INT          NOT NULL DEFAULT 0,
   is_active     TINYINT(1)   NOT NULL DEFAULT 1,

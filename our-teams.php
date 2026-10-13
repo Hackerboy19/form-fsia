@@ -74,7 +74,7 @@ try {
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]
             );
             $rows = $pdo->query(
-                "SELECT name, designation, category, image_url, social_links FROM team_members
+                "SELECT * FROM team_members
                  WHERE is_active = 1
                  ORDER BY FIELD(category, 'Leadership','Core Team','Mentors','Anchors','Media'), display_order, name"
             )->fetchAll(PDO::FETCH_ASSOC);
@@ -86,8 +86,9 @@ try {
                 foreach ($rows as $r) {
                     if (!isset($fsiaTeamCats[$r['category']])) continue;
                     $links = json_decode((string) $r['social_links'], true) ?: [];
-                    $phone = preg_replace('/\D+/', '', (string) ($links['phone'] ?? $fsiaPhones[$r['name']] ?? ''));
-                    $fromDb[$fsiaTeamCats[$r['category']][0]]['members'][] = [$r['name'], $r['designation'], $r['image_url'], $phone];
+                    $phone = preg_replace('/[^\d+]/', '', (string) (($r['phone'] ?? '') ?: ($links['phone'] ?? $fsiaPhones[$r['name']] ?? '')));
+                    // [name, role, photo, phone, bio, quote]; bio/quote come from the admin (empty = built-in text).
+                    $fromDb[$fsiaTeamCats[$r['category']][0]]['members'][] = [$r['name'], $r['designation'], $r['image_url'], $phone, trim((string) ($r['bio'] ?? '')), trim((string) ($r['quote'] ?? ''))];
                 }
                 // Keep departments that have people (Leadership always, it heads the page).
                 $groups = array_filter($fromDb, fn ($g, $k) => $k === 'leadership' || $g['members'], ARRAY_FILTER_USE_BOTH);
@@ -347,7 +348,7 @@ foreach ($groups as $g) {
             'team'  => $g['title'],
             'img'   => $m[2],
             'phone' => $m[3] ?? '',
-            'bio'   => $leadBios[$m[0]] ?? '',
+            'bio'   => ($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''),
         ];
     }
 }
@@ -410,12 +411,12 @@ foreach ($groups as $g) {
           <span class="fx-role"><?php echo fsia_attr($m[1]); ?></span>
           <h3><?php echo fsia_attr($name); ?></h3>
           <?php if ($alias): ?><span class="fx-serif fx-alias"><?php echo fsia_attr($alias); ?></span><?php endif; ?>
-          <p class="fx-serif fx-line"><?php echo fsia_attr($lines[$k] ?? ''); ?></p>
-          <p><?php echo fsia_attr($leadBios[$m[0]] ?? ''); ?></p>
+          <?php $quote = ($m[5] ?? '') ?: ($lines[$k] ?? ''); if ($quote !== ''): ?><p class="fx-serif fx-line"><?php echo fsia_attr($quote); ?></p><?php endif; ?>
+          <p><?php echo nl2br(fsia_attr(($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''))); ?></p>
           <div class="fx-spot-foot">
             <span class="fx-chip">Forever Star India</span>
             <?php if (!empty($m[3])): ?>
-            <a class="fx-chip" href="tel:+91<?php echo fsia_attr($m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
+            <a class="fx-chip" href="tel:<?php echo fsia_attr(str_starts_with($m[3], '+') ? $m[3] : '+91' . $m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
           </div>
         </div>
@@ -477,7 +478,7 @@ foreach ($groups as $g) {
         <span class="fx-eyebrow" id="fx-m-team"></span>
         <h2 id="fx-m-name"></h2>
         <span class="fx-role" id="fx-m-role"></span>
-        <p id="fx-m-bio"></p>
+        <p id="fx-m-bio" style="white-space:pre-line"></p>
         <dl class="fx-m-facts">
           <div><dt>Team</dt><dd id="fx-m-team2"></dd></div>
           <div><dt>Role</dt><dd id="fx-m-role2"></dd></div>
@@ -540,7 +541,7 @@ foreach ($groups as $g) {
     $('fx-m-role2').textContent = p.role;
     $('fx-m-bio').textContent = p.bio || (p.name + ' works with Forever Star India as ' + p.role + ', in the ' + p.team + ' group.');
     $('fx-m-phone-row').hidden = !p.phone;
-    if (p.phone) { $('fx-m-phone').textContent = p.phone; $('fx-m-phone').href = 'tel:+91' + p.phone; }
+    if (p.phone) { $('fx-m-phone').textContent = p.phone; $('fx-m-phone').href = 'tel:' + (p.phone.charAt(0) === '+' ? p.phone : '+91' + p.phone); }
     var ids = visibleIds();
     $('fx-m-count').textContent = (ids.indexOf(i) + 1) + ' / ' + ids.length;
   }
