@@ -51,6 +51,55 @@ $leadBios = [
     'Jaya Chauhan' => 'Strategic director overseeing operations and growth. Brings expertise in pageant management, contestant grooming, and community building. Passionate about creating opportunities for women.',
 ];
 
+/* Live roster from the CMS (Admin -> Team Directory): active members only, in
+   the admin's order. If the CMS database can't be reached, the list above is
+   used instead, so the page always renders. */
+$fsiaTeamCats = [
+    'Leadership' => ['leadership', 'Leadership'],
+    'Core Team'  => ['core-team', 'Core Team'],
+    'Mentors'    => ['mentors', 'Mentors & Experts'],
+    'Anchors'    => ['anchors', 'Anchors'],
+    'Media'      => ['photo-video', 'Photography & Video'],
+];
+$fsiaPhones = ['Jaya Chauhan' => '9983599666'];
+try {
+    $cmsCfgFile = __DIR__ . '/cms/backend/config.php';
+    if (is_file($cmsCfgFile)) {
+        $cmsCfg = require $cmsCfgFile;
+        $c = $cmsCfg['db'] ?? null;
+        if (is_array($c)) {
+            $pdo = new PDO(
+                sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $c['host'], (int) ($c['port'] ?? 3306), $c['name']),
+                $c['user'], $c['password'],
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]
+            );
+            $rows = $pdo->query(
+                "SELECT name, designation, category, image_url, social_links FROM team_members
+                 WHERE is_active = 1
+                 ORDER BY FIELD(category, 'Leadership','Core Team','Mentors','Anchors','Media'), display_order, name"
+            )->fetchAll(PDO::FETCH_ASSOC);
+            if ($rows) {
+                $fromDb = [];
+                foreach ($fsiaTeamCats as [$slug, $title]) {
+                    $fromDb[$slug] = ['title' => $title, 'members' => []];
+                }
+                foreach ($rows as $r) {
+                    if (!isset($fsiaTeamCats[$r['category']])) continue;
+                    $links = json_decode((string) $r['social_links'], true) ?: [];
+                    $phone = preg_replace('/\D+/', '', (string) ($links['phone'] ?? $fsiaPhones[$r['name']] ?? ''));
+                    $fromDb[$fsiaTeamCats[$r['category']][0]]['members'][] = [$r['name'], $r['designation'], $r['image_url'], $phone];
+                }
+                // Keep departments that have people (Leadership always, it heads the page).
+                $groups = array_filter($fromDb, fn ($g, $k) => $k === 'leadership' || $g['members'], ARRAY_FILTER_USE_BOTH);
+            }
+            $pdo = null;
+        }
+    }
+} catch (Throwable $e) {
+    error_log('our-teams.php CMS roster: ' . $e->getMessage());
+}
+unset($cmsCfgFile, $cmsCfg, $c, $rows, $fromDb);
+
 $fsiaMeta = function ($key, $fallback = '') use ($meta_tag) {
     $v = is_array($meta_tag) && isset($meta_tag[$key]) ? trim((string) $meta_tag[$key]) : '';
     return $v !== '' ? $v : $fallback;
@@ -319,9 +368,9 @@ foreach ($groups as $g) {
         </div>
       </div>
       <div class="fx-collage" aria-hidden="true">
-        <div class="fx-arch a2"><img src="<?php echo fsia_attr($groups['mentors']['members'][4][2]); ?>" alt=""></div>
-        <div class="fx-arch a1"><img src="<?php echo fsia_attr($lead[0][2]); ?>" alt=""></div>
-        <div class="fx-arch a3"><img src="<?php echo fsia_attr($lead[1][2]); ?>" alt=""></div>
+        <div class="fx-arch a2"><img src="<?php echo fsia_attr($groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? ''); ?>" alt=""></div>
+        <div class="fx-arch a1"><img src="<?php echo fsia_attr($lead[0][2] ?? ''); ?>" alt=""></div>
+        <div class="fx-arch a3"><img src="<?php echo fsia_attr($lead[1][2] ?? $lead[0][2] ?? ''); ?>" alt=""></div>
         <div class="fx-seal"><div><b>S·8</b><span>Season</span></div></div>
       </div>
     </div>
