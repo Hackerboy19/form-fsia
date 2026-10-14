@@ -111,7 +111,7 @@ export default function PageEditor() {
 
   return (
     <>
-      <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own.`} />
+      <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own. Grey text in an empty box is what the page shows now; type to replace it, clear the box to go back to it.`} />
       {error && <p className="card mb-4 p-4 text-sm text-red-600">{error}</p>}
       <div className="space-y-6">
         {sections === null

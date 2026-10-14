@@ -77,5 +77,74 @@ export const SECTION_SCHEMAS = {
   ],
 };
 
+// our-teams.php. People (photos, names, bios, quotes) come from Team Directory;
+// these are the page's own texts and the three photos at the top.
+SECTION_SCHEMAS['our-teams'] = [
+  {
+    key: 'hero',
+    title: 'Top section: text, numbers & Season badge',
+    image: { label: 'Left photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the 5th Mentor’s photo.' },
+    fields: [
+      { name: 'eyebrow', label: 'Small label', max: 60, placeholder: 'The people behind FSIA' },
+      { name: 'title', label: 'Heading', max: 60, placeholder: 'The Faces' },
+      { name: 'title_italic', label: 'Heading, gold italic part', max: 60, placeholder: 'behind every crown' },
+      { name: 'intro', label: 'Paragraph', type: 'textarea', max: 500, placeholder: 'Founders, mentors, choreographers, anchors and storytellers…' },
+      { name: 'stat_value', label: 'Third number', max: 20, placeholder: '4,000+' },
+      { name: 'stat_label', label: 'Third number: label', max: 30, placeholder: 'Cities reached' },
+      { name: 'seal_big', label: 'Round badge: big text', max: 8, placeholder: 'S·8' },
+      { name: 'seal_small', label: 'Round badge: small text', max: 16, placeholder: 'Season' },
+    ],
+  },
+  {
+    key: 'hero_center',
+    title: 'Top section: big centre photo',
+    image: { label: 'Centre photo (big)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the first Leadership member’s photo.' },
+    fields: [],
+  },
+  {
+    key: 'hero_right',
+    title: 'Top section: right photo',
+    image: { label: 'Right photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the second Leadership member’s photo.' },
+    fields: [],
+  },
+  {
+    key: 'leadership',
+    title: 'Leadership section',
+    fields: [
+      { name: 'eyebrow', label: 'Small label', max: 60, placeholder: 'Official FSIA Board' },
+      { name: 'heading', label: 'Heading', max: 60, placeholder: 'Leadership' },
+      { name: 'chip', label: 'Tag under each leader', max: 40, placeholder: 'Forever Star India' },
+    ],
+  },
+  {
+    key: 'team_grid',
+    title: 'Team section (all members)',
+    fields: [
+      { name: 'eyebrow', label: 'Small label', max: 60, placeholder: 'Team FSIA' },
+      { name: 'heading', label: 'Heading', max: 80, placeholder: 'Mentors, Makers & Voices' },
+      { name: 'subtitle', label: 'Line under the heading', max: 200, placeholder: 'The experts who train, film, host and run every Forever Star India season.' },
+    ],
+  },
+  {
+    key: 'cta',
+    title: 'Bottom section',
+    fields: [
+      { name: 'eyebrow', label: 'Small label', max: 60, placeholder: 'Season 2026 is open' },
+      { name: 'heading', label: 'Heading', max: 60, placeholder: 'Your stage is' },
+      { name: 'heading_italic', label: 'Heading, gold italic part', max: 40, placeholder: 'waiting' },
+      { name: 'text', label: 'Paragraph', type: 'textarea', max: 500 },
+      { name: 'link1_title', label: 'Link 1: title', max: 60, placeholder: 'Quick Apply' },
+      { name: 'link1_sub', label: 'Link 1: small text', max: 80, placeholder: 'Register for the 2026 season' },
+      { name: 'link1_url', label: 'Link 1: link', type: 'url', max: 300, placeholder: 'https://www.fsia.in/quickapply' },
+      { name: 'link2_title', label: 'Link 2: title', max: 60, placeholder: 'Become a Channel Partner' },
+      { name: 'link2_sub', label: 'Link 2: small text', max: 80, placeholder: 'Bring FSIA to your city' },
+      { name: 'link2_url', label: 'Link 2: link', type: 'url', max: 300, placeholder: 'https://www.fsia.in/channel-partner' },
+      { name: 'link3_title', label: 'Link 3: title', max: 60, placeholder: '+91-99832-86999' },
+      { name: 'link3_sub', label: 'Link 3: small text', max: 80, placeholder: 'Call the FSIA helpline' },
+      { name: 'link3_url', label: 'Link 3: link', type: 'url', max: 300, placeholder: 'tel:+919983286999' },
+    ],
+  },
+];
+
 export const TEAM_CATEGORIES = ['Leadership', 'Core Team', 'Mentors', 'Anchors', 'Media'];
 export const SOCIAL_NETWORKS = ['instagram', 'facebook', 'twitter', 'linkedin', 'youtube', 'website'];

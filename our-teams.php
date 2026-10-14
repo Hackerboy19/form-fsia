@@ -62,6 +62,22 @@ $fsiaTeamCats = [
     'Media'      => ['photo-video', 'Photography & Video'],
 ];
 $fsiaPhones = ['Jaya Chauhan' => '9983599666'];
+$fsiaPage = [];
+/** A text from Admin -> Our Team page, or $default when empty. Escape when printing. */
+$pt = function (string $section, string $field, string $default) use (&$fsiaPage): string {
+    $v = $fsiaPage[$section]['content'][$field] ?? '';
+    return is_string($v) && trim($v) !== '' ? trim($v) : $default;
+};
+/** A link from the admin, limited to http(s), /path, tel: and mailto:. */
+$pl = function (string $section, string $field, string $default) use ($pt): string {
+    $v = $pt($section, $field, $default);
+    return preg_match('~^(https?://|/(?!/)|tel:|mailto:)~i', $v) ? $v : $default;
+};
+/** A section photo from the admin, or $default. */
+$pi = function (string $section, string $default) use (&$fsiaPage): string {
+    $v = $fsiaPage[$section]['image'] ?? '';
+    return $v !== '' && preg_match('~^(https?://|/(?!/))~i', $v) ? $v : $default;
+};
 try {
     $cmsCfgFile = __DIR__ . '/cms/backend/config.php';
     if (is_file($cmsCfgFile)) {
@@ -92,6 +108,15 @@ try {
                 }
                 // Keep departments that have people (Leadership always, it heads the page).
                 $groups = array_filter($fromDb, fn ($g, $k) => $k === 'leadership' || $g['members'], ARRAY_FILTER_USE_BOTH);
+            }
+            // Page texts and hero photos (Admin -> Our Team page).
+            $st = $pdo->prepare("SELECT section_key, content, image_url FROM page_sections WHERE page_slug = 'our-teams'");
+            $st->execute();
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $sec) {
+                $fsiaPage[$sec['section_key']] = [
+                    'content' => json_decode((string) $sec['content'], true) ?: [],
+                    'image'   => (string) $sec['image_url'],
+                ];
             }
             $pdo = null;
         }
@@ -359,20 +384,20 @@ foreach ($groups as $g) {
     <div class="fx-wrap fx-hero-in">
       <div>
         <span class="fx-crumb"><a href="/">Home</a> &nbsp;/&nbsp; Our Team</span>
-        <span class="fx-eyebrow">The people behind FSIA</span>
-        <h1>The Faces <span class="fx-serif">behind every crown</span></h1>
-        <p>Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur.</p>
+        <span class="fx-eyebrow"><?php echo fsia_attr($pt('hero', 'eyebrow', 'The people behind FSIA')); ?></span>
+        <h1><?php echo fsia_attr($pt('hero', 'title', 'The Faces')); ?> <span class="fx-serif"><?php echo fsia_attr($pt('hero', 'title_italic', 'behind every crown')); ?></span></h1>
+        <p><?php echo nl2br(fsia_attr($pt('hero', 'intro', "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur."))); ?></p>
         <div class="fx-stats">
           <div><b><?php echo $total; ?></b><span>Team members</span></div>
           <div><b><?php echo count($groups); ?></b><span>Departments</span></div>
-          <div><b>4,000+</b><span>Cities reached</span></div>
+          <div><b><?php echo fsia_attr($pt('hero', 'stat_value', '4,000+')); ?></b><span><?php echo fsia_attr($pt('hero', 'stat_label', 'Cities reached')); ?></span></div>
         </div>
       </div>
       <div class="fx-collage" aria-hidden="true">
-        <div class="fx-arch a2"><img src="<?php echo fsia_attr($groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? ''); ?>" alt=""></div>
-        <div class="fx-arch a1"><img src="<?php echo fsia_attr($lead[0][2] ?? ''); ?>" alt=""></div>
-        <div class="fx-arch a3"><img src="<?php echo fsia_attr($lead[1][2] ?? $lead[0][2] ?? ''); ?>" alt=""></div>
-        <div class="fx-seal"><div><b>S·8</b><span>Season</span></div></div>
+        <div class="fx-arch a2"><img src="<?php echo fsia_attr($pi('hero', $groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-arch a1"><img src="<?php echo fsia_attr($pi('hero_center', $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-arch a3"><img src="<?php echo fsia_attr($pi('hero_right', $lead[1][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-seal"><div><b><?php echo fsia_attr($pt('hero', 'seal_big', 'S·8')); ?></b><span><?php echo fsia_attr($pt('hero', 'seal_small', 'Season')); ?></span></div></div>
       </div>
     </div>
   </section>
@@ -386,8 +411,8 @@ foreach ($groups as $g) {
   <section class="fx-lead" id="leadership">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow">Official FSIA Board</span>
-        <h2>Leadership</h2>
+        <span class="fx-eyebrow"><?php echo fsia_attr($pt('leadership', 'eyebrow', 'Official FSIA Board')); ?></span>
+        <h2><?php echo fsia_attr($pt('leadership', 'heading', 'Leadership')); ?></h2>
       </div>
 
       <?php
@@ -414,7 +439,7 @@ foreach ($groups as $g) {
           <?php $quote = ($m[5] ?? '') ?: ($lines[$k] ?? ''); if ($quote !== ''): ?><p class="fx-serif fx-line"><?php echo fsia_attr($quote); ?></p><?php endif; ?>
           <p><?php echo nl2br(fsia_attr(($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''))); ?></p>
           <div class="fx-spot-foot">
-            <span class="fx-chip">Forever Star India</span>
+            <span class="fx-chip"><?php echo fsia_attr($pt('leadership', 'chip', 'Forever Star India')); ?></span>
             <?php if (!empty($m[3])): ?>
             <a class="fx-chip" href="tel:<?php echo fsia_attr(str_starts_with($m[3], '+') ? $m[3] : '+91' . $m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
@@ -428,9 +453,9 @@ foreach ($groups as $g) {
   <section class="fx-team" id="team">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow">Team FSIA</span>
-        <h2>Mentors, Makers &amp; Voices</h2>
-        <p>The experts who train, film, host and run every Forever Star India season.</p>
+        <span class="fx-eyebrow"><?php echo fsia_attr($pt('team_grid', 'eyebrow', 'Team FSIA')); ?></span>
+        <h2><?php echo fsia_attr($pt('team_grid', 'heading', 'Mentors, Makers & Voices')); ?></h2>
+        <p><?php echo fsia_attr($pt('team_grid', 'subtitle', 'The experts who train, film, host and run every Forever Star India season.')); ?></p>
       </div>
 
       <div class="fx-tabs" role="group" aria-label="Filter team">
@@ -459,14 +484,18 @@ foreach ($groups as $g) {
   <section class="fx-join">
     <div class="fx-wrap fx-join-in">
       <div>
-        <span class="fx-eyebrow">Season 2026 is open</span>
-        <h2>Your stage is <span class="fx-serif">waiting</span></h2>
-        <p>Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.</p>
+        <span class="fx-eyebrow"><?php echo fsia_attr($pt('cta', 'eyebrow', 'Season 2026 is open')); ?></span>
+        <h2><?php echo fsia_attr($pt('cta', 'heading', 'Your stage is')); ?> <span class="fx-serif"><?php echo fsia_attr($pt('cta', 'heading_italic', 'waiting')); ?></span></h2>
+        <p><?php echo nl2br(fsia_attr($pt('cta', 'text', 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.'))); ?></p>
       </div>
       <div class="fx-join-links">
-        <a href="https://www.fsia.in/quickapply"><span><b>Quick Apply</b><small>Register for the 2026 season</small></span><i>→</i></a>
-        <a href="https://www.fsia.in/channel-partner"><span><b>Become a Channel Partner</b><small>Bring FSIA to your city</small></span><i>→</i></a>
-        <a href="tel:+919983286999"><span><b>+91-99832-86999</b><small>Call the FSIA helpline</small></span><i>→</i></a>
+        <?php foreach ([
+            [1, 'Quick Apply', 'Register for the 2026 season', 'https://www.fsia.in/quickapply'],
+            [2, 'Become a Channel Partner', 'Bring FSIA to your city', 'https://www.fsia.in/channel-partner'],
+            [3, '+91-99832-86999', 'Call the FSIA helpline', 'tel:+919983286999'],
+        ] as [$n, $dt, $ds, $du]): ?>
+        <a href="<?php echo fsia_attr($pl('cta', "link{$n}_url", $du)); ?>"><span><b><?php echo fsia_attr($pt('cta', "link{$n}_title", $dt)); ?></b><small><?php echo fsia_attr($pt('cta', "link{$n}_sub", $ds)); ?></small></span><i>→</i></a>
+        <?php endforeach; ?>
       </div>
     </div>
   </section>

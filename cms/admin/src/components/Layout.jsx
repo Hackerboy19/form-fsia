@@ -8,6 +8,7 @@ const NAV = [
   { group: 'Pages' },
   { to: '/homepage', label: 'Homepage', icon: '⌂' },
   { to: '/pages/about', label: 'About page', icon: '✦' },
+  { to: '/pages/our-teams', label: 'Our Team page', icon: '♜' },
   { group: 'Content' },
   { to: '/team', label: 'Team Directory', icon: '♛' },
   { to: '/news', label: 'News Manager', icon: '✎' },
