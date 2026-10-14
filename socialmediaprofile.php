@@ -11,6 +11,60 @@ if (!isset($connect) || !$connect) {
 	}
 	exit;
 }
+
+/* Settings from the CMS admin: Our Team page -> "Social Media Profiles".
+   Stored in page_sections (page our-teams, key profiles); every field is optional
+   and the defaults reproduce the section as it was before. */
+$smp = ['visible' => '', 'mode' => '', 'types' => '', 'count' => '', 'pinned' => '', 'hidden' => '',
+        'badge' => 'Official Participants', 'heading' => 'Social Media Profiles',
+        'button_text' => 'View More Profiles', 'button_url' => 'https://starindia.fsia.in/',
+        'button_note' => 'Browse the full Star India directory'];
+try {
+	$smpCfgFile = __DIR__ . '/cms/backend/config.php';
+	if (is_file($smpCfgFile)) {
+		$smpCfg = require $smpCfgFile;
+		$smpDb = $smpCfg['db'] ?? null;
+		if (is_array($smpDb)) {
+			$smpPdo = new PDO(
+				sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $smpDb['host'], (int) ($smpDb['port'] ?? 3306), $smpDb['name']),
+				$smpDb['user'], $smpDb['password'],
+				[PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]
+			);
+			$smpSt = $smpPdo->prepare("SELECT content FROM page_sections WHERE page_slug = 'our-teams' AND section_key = 'profiles'");
+			$smpSt->execute();
+			$smpSaved = json_decode((string) $smpSt->fetchColumn(), true);
+			if (is_array($smpSaved)) {
+				foreach ($smpSaved as $k => $v) {
+					if (array_key_exists($k, $smp) && is_string($v) && trim($v) !== '') { $smp[$k] = trim($v); }
+				}
+			}
+			$smpPdo = null;
+		}
+	}
+} catch (Throwable $e) {
+	error_log('socialmediaprofile.php settings: ' . $e->getMessage());
+}
+if ($smp['visible'] === 'hide') { return; }
+if (!preg_match('~^(https?://|/(?!/))~i', $smp['button_url'])) { $smp['button_url'] = 'https://starindia.fsia.in/'; }
+$smp_count = max(4, min(40, (int) ($smp['count'] !== '' ? $smp['count'] : 20)));
+
+/* A pasted profile link -> what identifies it in `registration`: the url slug,
+   or the id of a verified_user_details_*.php?id=N link. */
+if (!function_exists('fsia_smp_parse_links')) {
+	function fsia_smp_parse_links($text) {
+		$slugs = array(); $ids = array();
+		foreach (preg_split('/[\r\n,]+/', (string) $text) as $line) {
+			$line = trim($line);
+			if ($line === '') { continue; }
+			if (preg_match('/[?&]id=(\d+)/', $line, $m)) { $ids[] = (int) $m[1]; continue; }
+			$path = parse_url($line, PHP_URL_PATH);
+			$slug = trim((string) ($path !== null && $path !== false ? $path : $line), '/');
+			$slug = basename($slug);
+			if ($slug !== '' && preg_match('/^[A-Za-z0-9._-]{1,200}$/', $slug)) { $slugs[] = $slug; }
+		}
+		return array(array_values(array_unique($slugs)), array_values(array_unique($ids)));
+	}
+}
 ?>
 <style>
 /* This partial is included by pages that load Tailwind (contact.php) and by pages
@@ -110,9 +164,9 @@ if (!isset($connect) || !$connect) {
     <div class="fsia-smp-head text-center max-w-3xl mx-auto mb-12 pt-8 px-4">
         <div class="fsia-smp-badge inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full px-4 py-1.5 mb-3">
             <span class="fsia-smp-dot w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-[0.3em]">Official Participants</span>
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-[0.3em]"><?php echo htmlspecialchars($smp['badge'], ENT_QUOTES, 'UTF-8'); ?></span>
         </div>
-        <h2 class="fsia-smp-title text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase" style="font-family:'Playfair Display', serif;">Social Media Profiles</h2>
+        <h2 class="fsia-smp-title text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase" style="font-family:'Playfair Display', serif;"><?php echo htmlspecialchars($smp['heading'], ENT_QUOTES, 'UTF-8'); ?></h2>
         <div class="fsia-smp-rule w-16 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto rounded-full mt-4"></div>
     </div>
 
@@ -151,46 +205,75 @@ if (!isset($connect) || !$connect) {
 		}
 	}
 
-	/* Two queries instead of one.
-	   The old single query ended with `completion >= 75`, and pageant registrations
-	   rarely reach that: their median completion is 45, so only 26 of the 920 rows
-	   that passed were Miss/Mrs/Teen India. With `order by rand()` the grid was
-	   awardees almost every time.
-	   Now the gate is what the card actually needs -- a name and a usable photo --
-	   and the two groups are fetched separately so pageants are always represented.
-	   Both are ordered newest-first. */
+	/* Pinned profiles first (in the order pasted in the admin), then the newest
+	   approved profiles fill the rest, shuffled from a pool of the newest so each
+	   visit shows a different set. Hidden profiles never appear. All values that go
+	   into SQL are ints or slugs checked against [A-Za-z0-9._-] and escaped. */
 	$smp_base = "SELECT year(date_of_reg) as jyear,pdate as date1,year as year1,setdefault,url,starindia_action,regtype,id as userid,first_name,last_name,image,facebook,instagram,twitter,youtube,awardee,nationalwinner,status,statewinner,citywinner,ptitle1,ptitle2,ptitle from registration
 		where (status=1 or status=3) and verification=1 and suspended=0
 		and trim(first_name) <> ''
 		and (setdefault <> '' or trim(both ',' from image) <> '')";
 
-	/* Each group pulls a pool of the 40 newest and then shuffles it, so the section
-	   stays on recent profiles but shows a different set on every page load. */
-	$smp_pool = 40; $smp_show = 10;
-	$smp_pageant = array(); $smp_other = array();
-	$q_pag = mysqli_query($connect, $smp_base." and regtype in (6,7,13) order by date_of_reg desc limit 0,".$smp_pool);
-	$q_oth = mysqli_query($connect, $smp_base." and regtype not in (6,7,13) order by date_of_reg desc limit 0,".$smp_pool);
-	if($q_pag){ while($r = mysqli_fetch_assoc($q_pag)){ $smp_pageant[] = $r; } }
-	if($q_oth){ while($r = mysqli_fetch_assoc($q_oth)){ $smp_other[] = $r; } }
+	$smp_in = function ($slugs, $ids) use ($connect) {
+		$parts = array();
+		if ($slugs) {
+			$q = array();
+			foreach ($slugs as $sl) { $e = mysqli_real_escape_string($connect, $sl); $q[] = "'$e'"; $q[] = "'/$e'"; }
+			$parts[] = 'url in (' . implode(',', $q) . ')';
+		}
+		if ($ids) { $parts[] = 'id in (' . implode(',', array_map('intval', $ids)) . ')'; }
+		return $parts ? '(' . implode(' or ', $parts) . ')' : '';
+	};
 
-	shuffle($smp_pageant);
-	shuffle($smp_other);
-	$smp_pageant = array_slice($smp_pageant, 0, $smp_show);
-	$smp_other   = array_slice($smp_other,   0, $smp_show);
+	list($smp_pin_slugs, $smp_pin_ids) = fsia_smp_parse_links($smp['pinned']);
+	list($smp_hide_slugs, $smp_hide_ids) = fsia_smp_parse_links($smp['hidden']);
+	$smp_hide_sql = $smp_in($smp_hide_slugs, $smp_hide_ids);
+	$smp_not_hidden = $smp_hide_sql !== '' ? " and not $smp_hide_sql" : '';
 
-	// interleave the two lists so both kinds show across the whole grid
 	$smp_rows = array();
-	$smp_max = max(count($smp_pageant), count($smp_other));
-	for($smp_i = 0; $smp_i < $smp_max; $smp_i++){
-		if(isset($smp_pageant[$smp_i])) $smp_rows[] = $smp_pageant[$smp_i];
-		if(isset($smp_other[$smp_i]))   $smp_rows[] = $smp_other[$smp_i];
+	$smp_pin_sql = $smp_in($smp_pin_slugs, $smp_pin_ids);
+	if ($smp_pin_sql !== '') {
+		$q_pin = mysqli_query($connect, $smp_base . " and $smp_pin_sql" . $smp_not_hidden . " limit 0,100");
+		$smp_found = array();
+		if ($q_pin) { while ($r = mysqli_fetch_assoc($q_pin)) { $smp_found[] = $r; } }
+		// keep the admin's order: position of the slug / id in the pasted list
+		$smp_rank = function ($r) use ($smp_pin_slugs, $smp_pin_ids) {
+			$i = array_search(ltrim((string) $r['url'], '/'), $smp_pin_slugs, true);
+			if ($i === false) { $i = array_search((int) $r['userid'], $smp_pin_ids, true); }
+			return $i === false ? 9999 : $i;
+		};
+		usort($smp_found, function ($a, $b) use ($smp_rank) { return $smp_rank($a) - $smp_rank($b); });
+		$smp_rows = array_slice($smp_found, 0, $smp_count);
+	}
+
+	$smp_left = $smp['mode'] === 'pinned' ? 0 : $smp_count - count($smp_rows);
+	if ($smp_left > 0) {
+		$smp_taken = array_map(function ($r) { return (int) $r['userid']; }, $smp_rows);
+		$smp_skip = ($smp_taken ? ' and id not in (' . implode(',', $smp_taken) . ')' : '') . $smp_not_hidden;
+		$smp_pool = max(40, $smp_left * 2);
+		$smp_pageant = array(); $smp_other = array();
+		if ($smp['types'] !== 'awardees') {
+			$q_pag = mysqli_query($connect, $smp_base . " and regtype in (6,7,13)" . $smp_skip . " order by date_of_reg desc limit 0," . $smp_pool);
+			if ($q_pag) { while ($r = mysqli_fetch_assoc($q_pag)) { $smp_pageant[] = $r; } }
+		}
+		if ($smp['types'] !== 'pageant') {
+			$q_oth = mysqli_query($connect, $smp_base . " and regtype not in (6,7,13)" . $smp_skip . " order by date_of_reg desc limit 0," . $smp_pool);
+			if ($q_oth) { while ($r = mysqli_fetch_assoc($q_oth)) { $smp_other[] = $r; } }
+		}
+		shuffle($smp_pageant);
+		shuffle($smp_other);
+		// interleave the two lists so both kinds show across the whole grid
+		$smp_auto = array();
+		$smp_max = max(count($smp_pageant), count($smp_other));
+		for ($smp_i = 0; $smp_i < $smp_max; $smp_i++) {
+			if (isset($smp_pageant[$smp_i])) $smp_auto[] = $smp_pageant[$smp_i];
+			if (isset($smp_other[$smp_i]))   $smp_auto[] = $smp_other[$smp_i];
+		}
+		$smp_rows = array_merge($smp_rows, array_slice($smp_auto, 0, $smp_left));
 	}
 
 	$tt = 0;
 	foreach($smp_rows as $bressp){
-	$qrys2=mysqli_fetch_array(mysqli_query($connect,"SELECT count(*) as clike from tbl_like where userid=$bressp[userid] and postid=''"));
-	$qrys22=mysqli_fetch_array(mysqli_query($connect,"SELECT count(*) as mlike from tbl_like where userid=$bressp[userid] and postid='' and cid='$_SESSION[userid]'"));
-	$qrys3=mysqli_fetch_array(mysqli_query($connect,"SELECT count(*) as ccomment from tbl_comment where user_id=$bressp[userid] and postid=''"));
 
 	if($bressp['url']<>""){
 			$url = $bressp['url'];
@@ -237,16 +320,13 @@ if (!isset($connect) || !$connect) {
 
 		$ressp[]=$bressp;
 		$ressp[$tt]['image']= ltrim($bressp['image'],",");
-		$ressp[$tt]['like']= $qrys2['clike'];
-		$ressp[$tt]['mlike']=$qrys22['mlike'];
-		$ressp[$tt]['comment']= $qrys3['ccomment'];
 		$ressp[$tt]['url']=$url;
 		$ressp[$tt]['profile']=$filename;
 		$ressp[$tt]['profile_url']=fsia_smp_profile_url($bressp['url'], isset($bressp['starindia_action']) ? $bressp['starindia_action'] : '', $url);
 ?>
         <div class="fsia-smp-card relative group w-full aspect-[4/5] rounded-[2rem] overflow-hidden shadow-lg hover:shadow-[0_20px_40px_-15px_rgba(212,175,55,0.3)] transition-all duration-500 transform hover:-translate-y-2 cursor-pointer fade-in-up">
 
-            <a class="fsia-smp-imglink vdetails" href="<?php print $ressp[$tt]['profile_url'] ?>" rel="nofollow" aria-label="<?php print $ressp[$tt]['first_name']; ?>"><img src="<?php print fsia_smp_image_url($ressp[$tt]['profile']); ?>" alt="<?php print $ressp[$tt]['first_name']; ?>" title="<?php print $ressp[$tt]['first_name']; ?>" loading="lazy" class="fsia-smp-img absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"></a>
+            <a class="fsia-smp-imglink vdetails" href="<?php print htmlspecialchars($ressp[$tt]['profile_url'], ENT_QUOTES, 'UTF-8'); ?>" rel="nofollow" aria-label="<?php print htmlspecialchars($ressp[$tt]['first_name'], ENT_QUOTES, 'UTF-8'); ?>"><img src="<?php print htmlspecialchars(fsia_smp_image_url($ressp[$tt]['profile']), ENT_QUOTES, 'UTF-8'); ?>" alt="<?php print htmlspecialchars($ressp[$tt]['first_name'], ENT_QUOTES, 'UTF-8'); ?>" title="<?php print htmlspecialchars($ressp[$tt]['first_name'], ENT_QUOTES, 'UTF-8'); ?>" loading="lazy" class="fsia-smp-img absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"></a>
 
             <div class="fsia-smp-veil absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500"></div>
 
@@ -282,11 +362,11 @@ if($ressp[$tt]['regtype']==0){
 		print $Title = "Forever Star India";
 	}
 													?></span>
-                <span class="fsia-smp-year bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/20"><?php print $ressp[$tt]['jyear']; ?></span>
+                <span class="fsia-smp-year bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/20"><?php print (int) $ressp[$tt]['jyear']; ?></span>
             </div>
 
             <div class="fsia-smp-bottom absolute bottom-0 left-0 right-0 p-6 z-10 flex flex-col justify-end h-1/2">
-                <h3 class="fsia-smp-name text-2xl md:text-3xl font-bold text-white mb-1 truncate drop-shadow-md" style="font-family:'Playfair Display', serif;"><a class="vdetails" href="<?php print $ressp[$tt]['profile_url'] ?>" rel="nofollow"><?php print $ressp[$tt]['first_name']; ?></a></h3>
+                <h3 class="fsia-smp-name text-2xl md:text-3xl font-bold text-white mb-1 truncate drop-shadow-md" style="font-family:'Playfair Display', serif;"><a class="vdetails" href="<?php print htmlspecialchars($ressp[$tt]['profile_url'], ENT_QUOTES, 'UTF-8'); ?>" rel="nofollow"><?php print htmlspecialchars($ressp[$tt]['first_name'], ENT_QUOTES, 'UTF-8'); ?></a></h3>
             </div>
         </div>
 
@@ -294,12 +374,12 @@ if($ressp[$tt]['regtype']==0){
     </div>
 
     <div class="fsia-smp-more text-center mt-12 px-4">
-        <a href="https://starindia.fsia.in/" target="_blank" rel="noopener">
-            <span>View More Profiles</span>
+        <a href="<?php echo htmlspecialchars($smp['button_url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">
+            <span><?php echo htmlspecialchars($smp['button_text'], ENT_QUOTES, 'UTF-8'); ?></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
         </a>
-        <p>Browse the full Star India directory</p>
+        <?php if ($smp['button_note'] !== ''): ?><p><?php echo htmlspecialchars($smp['button_note'], ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
     </div>
 </div>

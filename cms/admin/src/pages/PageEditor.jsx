@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PAGES, SECTION_SCHEMAS } from '../lib/pages';
 import { PageHeader } from '../components/Layout';
-import { Field } from '../components/Field';
+import { Field, SelectField } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
 import LivePreview from '../components/LivePreview';
 import { useToast } from '../lib/toast';
@@ -71,19 +71,23 @@ function SectionCard({ page, schema, initial, onDraft, onFocus }) {
 
       <div className={`grid gap-5 ${schema.image ? 'md:grid-cols-[1fr_280px]' : ''}`}>
         <div className="space-y-4">
-          {schema.fields.map((f) => (
+          {schema.fields.map((f) => (f.type === 'select' ? (
+            <SelectField key={f.name} label={f.label} value={form.content[f.name] ?? ''} options={f.options} onChange={setField(f.name)} error={errors[f.name]} />
+          ) : (
             <Field
               key={f.name}
               label={f.label + (f.required ? ' *' : '')}
-              type={f.type === 'textarea' ? 'textarea' : f.type === 'url' ? 'url' : 'text'}
+              type={f.type === 'textarea' ? 'textarea' : f.type === 'url' ? 'url' : f.type === 'number' ? 'number' : 'text'}
               rows={f.rows}
               value={form.content[f.name]}
               onChange={setField(f.name)}
-              max={f.max}
+              max={f.type === 'number' ? undefined : f.max}
+              min={f.type === 'number' ? f.min : undefined}
               placeholder={f.placeholder}
+              hint={f.hint}
               error={errors[f.name]}
             />
-          ))}
+          )))}
         </div>
         {schema.image && (
           <div>

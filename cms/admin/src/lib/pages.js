@@ -126,6 +126,32 @@ SECTION_SCHEMAS['our-teams'] = [
     ],
   },
   {
+    key: 'profiles',
+    title: 'Social Media Profiles (also shown on the Contact page)',
+    fields: [
+      { name: 'visible', label: 'Show this section', type: 'select', options: [{ value: '', label: 'Show' }, { value: 'hide', label: 'Hide on all pages' }] },
+      { name: 'mode', label: 'Which profiles', type: 'select', options: [
+        { value: '', label: 'Pinned first, then newest (changes on every visit)' },
+        { value: 'pinned', label: 'Only the pinned profiles below' },
+      ] },
+      { name: 'types', label: 'Profile types (for the automatic part)', type: 'select', options: [
+        { value: '', label: 'Pageant and awardees, mixed' },
+        { value: 'pageant', label: 'Only pageant (Miss / Mrs / Teen India)' },
+        { value: 'awardees', label: 'Only awardees' },
+      ] },
+      { name: 'count', label: 'How many profiles', type: 'number', min: 1, placeholder: '20', hint: 'Between 4 and 40. 4 per row on desktop.' },
+      { name: 'pinned', label: 'Pinned profiles (one link per line)', type: 'textarea', rows: 4, max: 4000,
+        placeholder: 'https://www.fsia.in/miss-india-contestant-2025-honey-tadepalligudem', hint: 'Open the person’s profile on the website and paste its link. Shown first, in this order.' },
+      { name: 'hidden', label: 'Never show these profiles (one link per line)', type: 'textarea', rows: 3, max: 4000,
+        placeholder: 'https://starindia.fsia.in/mrs-india-finalist-from-bhiwani' },
+      { name: 'badge', label: 'Small label', max: 60, placeholder: 'Official Participants' },
+      { name: 'heading', label: 'Heading', max: 80, placeholder: 'Social Media Profiles' },
+      { name: 'button_text', label: 'Button text', max: 40, placeholder: 'View More Profiles' },
+      { name: 'button_url', label: 'Button link', type: 'url', max: 300, placeholder: 'https://starindia.fsia.in/' },
+      { name: 'button_note', label: 'Line under the button', max: 80, placeholder: 'Browse the full Star India directory' },
+    ],
+  },
+  {
     key: 'cta',
     title: 'Bottom section',
     fields: [
