@@ -6,7 +6,7 @@
 export const PAGES = [
   { slug: 'index', label: 'Home', file: 'index.php' },
   { slug: 'about', label: 'About', file: 'about.php' },
-  { slug: 'our-teams', label: 'Our Team', file: 'our-teams.php' },
+  { slug: 'our-teams', label: 'Our Team', file: 'our-teams.php', preview: '/our-teams.php' },
   { slug: 'news-coverage', label: 'News Coverage', file: 'news-coverage.php' },
   { slug: 'special-news-coverage', label: 'Special Coverage', file: 'special-news-coverage.php' },
 ];

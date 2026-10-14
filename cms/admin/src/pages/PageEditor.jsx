@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PAGES, SECTION_SCHEMAS } from '../lib/pages';
 import { PageHeader } from '../components/Layout';
 import { Field } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
+import LivePreview from '../components/LivePreview';
 import { useToast } from '../lib/toast';
 
 /** One editable block (hero, story ...) with its own Save button. */
-function SectionCard({ page, schema, initial }) {
+function SectionCard({ page, schema, initial, onDraft, onFocus }) {
   const blank = { content: Object.fromEntries(schema.fields.map((f) => [f.name, ''])), image_url: '' };
   const start = initial
     ? { content: { ...blank.content, ...initial.content }, image_url: initial.image_url || '' }
@@ -20,6 +21,9 @@ function SectionCard({ page, schema, initial }) {
   const [saving, setSaving] = useState(false);
   const notify = useToast();
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
+
+  // Report the unsaved state to the live preview.
+  useEffect(() => { onDraft?.(schema.key, form); }, [form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setField = (name) => (v) => setForm((f) => ({ ...f, content: { ...f.content, [name]: v } }));
 
@@ -51,7 +55,7 @@ function SectionCard({ page, schema, initial }) {
   }
 
   return (
-    <section className="card p-5">
+    <section className="card p-5" onFocusCapture={() => onFocus?.(schema.key)}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-bold">{schema.title}</h2>
@@ -97,6 +101,9 @@ export default function PageEditor() {
   const schemas = SECTION_SCHEMAS[slug] || [];
   const [sections, setSections] = useState(null);
   const [error, setError] = useState('');
+  const [drafts, setDrafts] = useState({});
+  const [focusKey, setFocusKey] = useState('');
+  const onDraft = useCallback((key, form) => setDrafts((d) => ({ ...d, [key]: form })), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,10 +120,19 @@ export default function PageEditor() {
     <>
       <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own. Grey text in an empty box is what the page shows now; type to replace it, clear the box to go back to it.`} />
       {error && <p className="card mb-4 p-4 text-sm text-red-600">{error}</p>}
-      <div className="space-y-6">
-        {sections === null
-          ? schemas.map((s) => <div key={s.key} className="card h-64 animate-pulse bg-cream" />)
-          : schemas.map((s) => <SectionCard key={`${slug}-${s.key}`} page={slug} schema={s} initial={sections[s.key]} />)}
+      <div className={page.preview ? 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}>
+        <div className="space-y-6">
+          {sections === null
+            ? schemas.map((s) => <div key={s.key} className="card h-64 animate-pulse bg-cream" />)
+            : schemas.map((s) => (
+              <SectionCard key={`${slug}-${s.key}`} page={slug} schema={s} initial={sections[s.key]} onDraft={onDraft} onFocus={setFocusKey} />
+            ))}
+        </div>
+        {page.preview && (
+          <div className="xl:sticky xl:top-6">
+            <LivePreview url={page.preview} drafts={drafts} focusKey={focusKey} />
+          </div>
+        )}
       </div>
     </>
   );

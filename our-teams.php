@@ -384,20 +384,20 @@ foreach ($groups as $g) {
     <div class="fx-wrap fx-hero-in">
       <div>
         <span class="fx-crumb"><a href="/">Home</a> &nbsp;/&nbsp; Our Team</span>
-        <span class="fx-eyebrow"><?php echo fsia_attr($pt('hero', 'eyebrow', 'The people behind FSIA')); ?></span>
-        <h1><?php echo fsia_attr($pt('hero', 'title', 'The Faces')); ?> <span class="fx-serif"><?php echo fsia_attr($pt('hero', 'title_italic', 'behind every crown')); ?></span></h1>
-        <p><?php echo nl2br(fsia_attr($pt('hero', 'intro', "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur."))); ?></p>
+        <span class="fx-eyebrow" data-cms="hero.eyebrow"><?php echo fsia_attr($pt('hero', 'eyebrow', 'The people behind FSIA')); ?></span>
+        <h1><span data-cms="hero.title"><?php echo fsia_attr($pt('hero', 'title', 'The Faces')); ?></span> <span class="fx-serif" data-cms="hero.title_italic"><?php echo fsia_attr($pt('hero', 'title_italic', 'behind every crown')); ?></span></h1>
+        <p data-cms="hero.intro"><?php echo nl2br(fsia_attr($pt('hero', 'intro', "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur."))); ?></p>
         <div class="fx-stats">
           <div><b><?php echo $total; ?></b><span>Team members</span></div>
           <div><b><?php echo count($groups); ?></b><span>Departments</span></div>
-          <div><b><?php echo fsia_attr($pt('hero', 'stat_value', '4,000+')); ?></b><span><?php echo fsia_attr($pt('hero', 'stat_label', 'Cities reached')); ?></span></div>
+          <div><b data-cms="hero.stat_value"><?php echo fsia_attr($pt('hero', 'stat_value', '4,000+')); ?></b><span data-cms="hero.stat_label"><?php echo fsia_attr($pt('hero', 'stat_label', 'Cities reached')); ?></span></div>
         </div>
       </div>
       <div class="fx-collage" aria-hidden="true">
-        <div class="fx-arch a2"><img src="<?php echo fsia_attr($pi('hero', $groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-arch a1"><img src="<?php echo fsia_attr($pi('hero_center', $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-arch a3"><img src="<?php echo fsia_attr($pi('hero_right', $lead[1][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-seal"><div><b><?php echo fsia_attr($pt('hero', 'seal_big', 'S·8')); ?></b><span><?php echo fsia_attr($pt('hero', 'seal_small', 'Season')); ?></span></div></div>
+        <div class="fx-arch a2"><img data-cms-img="hero" src="<?php echo fsia_attr($pi('hero', $groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-arch a1"><img data-cms-img="hero_center" src="<?php echo fsia_attr($pi('hero_center', $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-arch a3"><img data-cms-img="hero_right" src="<?php echo fsia_attr($pi('hero_right', $lead[1][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
+        <div class="fx-seal"><div><b data-cms="hero.seal_big"><?php echo fsia_attr($pt('hero', 'seal_big', 'S·8')); ?></b><span data-cms="hero.seal_small"><?php echo fsia_attr($pt('hero', 'seal_small', 'Season')); ?></span></div></div>
       </div>
     </div>
   </section>
@@ -411,8 +411,8 @@ foreach ($groups as $g) {
   <section class="fx-lead" id="leadership">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow"><?php echo fsia_attr($pt('leadership', 'eyebrow', 'Official FSIA Board')); ?></span>
-        <h2><?php echo fsia_attr($pt('leadership', 'heading', 'Leadership')); ?></h2>
+        <span class="fx-eyebrow" data-cms="leadership.eyebrow"><?php echo fsia_attr($pt('leadership', 'eyebrow', 'Official FSIA Board')); ?></span>
+        <h2 data-cms="leadership.heading"><?php echo fsia_attr($pt('leadership', 'heading', 'Leadership')); ?></h2>
       </div>
 
       <?php
@@ -439,7 +439,7 @@ foreach ($groups as $g) {
           <?php $quote = ($m[5] ?? '') ?: ($lines[$k] ?? ''); if ($quote !== ''): ?><p class="fx-serif fx-line"><?php echo fsia_attr($quote); ?></p><?php endif; ?>
           <p><?php echo nl2br(fsia_attr(($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''))); ?></p>
           <div class="fx-spot-foot">
-            <span class="fx-chip"><?php echo fsia_attr($pt('leadership', 'chip', 'Forever Star India')); ?></span>
+            <span class="fx-chip" data-cms="leadership.chip"><?php echo fsia_attr($pt('leadership', 'chip', 'Forever Star India')); ?></span>
             <?php if (!empty($m[3])): ?>
             <a class="fx-chip" href="tel:<?php echo fsia_attr(str_starts_with($m[3], '+') ? $m[3] : '+91' . $m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
@@ -453,9 +453,9 @@ foreach ($groups as $g) {
   <section class="fx-team" id="team">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow"><?php echo fsia_attr($pt('team_grid', 'eyebrow', 'Team FSIA')); ?></span>
-        <h2><?php echo fsia_attr($pt('team_grid', 'heading', 'Mentors, Makers & Voices')); ?></h2>
-        <p><?php echo fsia_attr($pt('team_grid', 'subtitle', 'The experts who train, film, host and run every Forever Star India season.')); ?></p>
+        <span class="fx-eyebrow" data-cms="team_grid.eyebrow"><?php echo fsia_attr($pt('team_grid', 'eyebrow', 'Team FSIA')); ?></span>
+        <h2 data-cms="team_grid.heading"><?php echo fsia_attr($pt('team_grid', 'heading', 'Mentors, Makers & Voices')); ?></h2>
+        <p data-cms="team_grid.subtitle"><?php echo fsia_attr($pt('team_grid', 'subtitle', 'The experts who train, film, host and run every Forever Star India season.')); ?></p>
       </div>
 
       <div class="fx-tabs" role="group" aria-label="Filter team">
@@ -484,9 +484,9 @@ foreach ($groups as $g) {
   <section class="fx-join">
     <div class="fx-wrap fx-join-in">
       <div>
-        <span class="fx-eyebrow"><?php echo fsia_attr($pt('cta', 'eyebrow', 'Season 2026 is open')); ?></span>
-        <h2><?php echo fsia_attr($pt('cta', 'heading', 'Your stage is')); ?> <span class="fx-serif"><?php echo fsia_attr($pt('cta', 'heading_italic', 'waiting')); ?></span></h2>
-        <p><?php echo nl2br(fsia_attr($pt('cta', 'text', 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.'))); ?></p>
+        <span class="fx-eyebrow" data-cms="cta.eyebrow"><?php echo fsia_attr($pt('cta', 'eyebrow', 'Season 2026 is open')); ?></span>
+        <h2><span data-cms="cta.heading"><?php echo fsia_attr($pt('cta', 'heading', 'Your stage is')); ?></span> <span class="fx-serif" data-cms="cta.heading_italic"><?php echo fsia_attr($pt('cta', 'heading_italic', 'waiting')); ?></span></h2>
+        <p data-cms="cta.text"><?php echo nl2br(fsia_attr($pt('cta', 'text', 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.'))); ?></p>
       </div>
       <div class="fx-join-links">
         <?php foreach ([
@@ -494,7 +494,7 @@ foreach ($groups as $g) {
             [2, 'Become a Channel Partner', 'Bring FSIA to your city', 'https://www.fsia.in/channel-partner'],
             [3, '+91-99832-86999', 'Call the FSIA helpline', 'tel:+919983286999'],
         ] as [$n, $dt, $ds, $du]): ?>
-        <a href="<?php echo fsia_attr($pl('cta', "link{$n}_url", $du)); ?>"><span><b><?php echo fsia_attr($pt('cta', "link{$n}_title", $dt)); ?></b><small><?php echo fsia_attr($pt('cta', "link{$n}_sub", $ds)); ?></small></span><i>→</i></a>
+        <a data-cms-href="cta.link<?php echo $n; ?>_url" href="<?php echo fsia_attr($pl('cta', "link{$n}_url", $du)); ?>"><span><b data-cms="cta.link<?php echo $n; ?>_title"><?php echo fsia_attr($pt('cta', "link{$n}_title", $dt)); ?></b><small data-cms="cta.link<?php echo $n; ?>_sub"><?php echo fsia_attr($pt('cta', "link{$n}_sub", $ds)); ?></small></span><i>→</i></a>
         <?php endforeach; ?>
       </div>
     </div>
