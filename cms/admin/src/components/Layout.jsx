@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '◈', end: true },
   { to: '/seo', label: 'Global SEO', icon: '⌕' },
+  { to: '/site-check', label: 'Site Check', icon: '✓' },
   { group: 'Pages' },
   { to: '/homepage', label: 'Homepage', icon: '⌂' },
   { to: '/pages/about', label: 'About page', icon: '✦' },

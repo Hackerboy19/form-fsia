@@ -75,6 +75,10 @@ export const api = {
   updateNews: (id, body) => request('news.php', { method: 'PUT', query: { id }, body }),
   deleteNews: (id) => request('news.php', { method: 'DELETE', query: { id } }),
 
+  siteCheckUrls: (q) => request('sitecheck.php', { query: { action: 'urls', q } }),
+  siteCheck: (url) => request('sitecheck.php', { query: { action: 'check', url } }),
+  siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
+
   upload: (file) => {
     const form = new FormData();
     form.append('image', file);
