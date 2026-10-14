@@ -141,7 +141,7 @@ if (!function_exists('fsia_attr')) {
     <meta charset="utf-8" />
     <link rel="icon" href="favicon.ico" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#0C1322" />
+    <meta name="theme-color" content="#000000" />
     <?php
       $fsiaTitle = $fsiaMeta('meta_title', 'Our Team | Forever Star India');
       $fsiaDesc  = $fsiaMeta('descritpion', "Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.");
