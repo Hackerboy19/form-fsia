@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/users_file.php';
+require_once __DIR__ . '/rbac.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -24,6 +25,7 @@ set_exception_handler(function (Throwable $e): void {
         http_response_code(500);
     }
     echo json_encode($body);
+    audit_record(500);
 });
 
 /** Thrown by the helpers below; caught in respond() and turned into a 4xx. */
@@ -177,6 +179,7 @@ function require_admin(): void
         usleep(300000); // slows down token guessing
         throw new ApiError('Admin token missing or invalid', 401);
     }
+    rbac_enforce();
 }
 
 /** Failed sign-ins per IP: max 8 in 15 minutes. File-based, no DB needed. */
@@ -218,12 +221,14 @@ function respond(callable $handler): void
             ? [$result['data'], $result['__status']]
             : [$result, 200];
         send_json($data, $status);
+        audit_record($status);
     } catch (ApiError $e) {
         $body = ['error' => $e->getMessage()];
         if ($e->fields) {
             $body['fields'] = $e->fields;
         }
         send_json($body, $e->status);
+        audit_record($e->status);
     }
 }
 

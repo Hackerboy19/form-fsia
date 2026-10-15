@@ -14,6 +14,8 @@ const HomepageEditor = lazy(() => import('./pages/HomepageEditor'));
 const SiteCheck = lazy(() => import('./pages/SiteCheck'));
 const ServerCleanup = lazy(() => import('./pages/ServerCleanup'));
 const ProfileChanges = lazy(() => import('./pages/ProfileChanges'));
+const UsersRoles = lazy(() => import('./pages/UsersRoles'));
+const ActivityLog = lazy(() => import('./pages/ActivityLog'));
 const loading = <div className="card h-96 animate-pulse bg-cream" />;
 
 export default function App() {
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="site-check" element={<Suspense fallback={loading}><SiteCheck /></Suspense>} />
         <Route path="cleanup" element={<Suspense fallback={loading}><ServerCleanup /></Suspense>} />
         <Route path="changes" element={<Suspense fallback={loading}><ProfileChanges /></Suspense>} />
+        <Route path="users" element={<Suspense fallback={loading}><UsersRoles /></Suspense>} />
+        <Route path="activity" element={<Suspense fallback={loading}><ActivityLog /></Suspense>} />
         <Route path="homepage" element={<Suspense fallback={loading}><HomepageEditor /></Suspense>} />
         {/* The live homepage is edited on the Homepage screen; the old text blocks did not reach it. */}
         <Route path="pages/index" element={<Navigate to="/homepage" replace />} />

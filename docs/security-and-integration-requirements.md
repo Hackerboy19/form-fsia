@@ -13,7 +13,7 @@
 | `mysqli_error()` shown to visitors | `miss-universe-registration.php` and similar | Log server-side, generic message (Phase 2) |
 | Success link uses `md5(id)` (guessable) | registration redirect | Random 256-bit token (Phase 7, before payments) |
 | String-built SQL in public pages | ~75 form pages | Prepared statements via form builder (Phase 6) |
-| Single admin role, no audit | CMS | RBAC + audit log (Phase 2) |
+| Single admin role, no audit | CMS | **Built** (roles + activity log); live after upload and once an owner turns roles on |
 | No CSRF on public forms; OTP endpoint can be spammed | state pages | CSRF token + rate limit per mobile/IP (Phase 6) |
 
 ## 3. Personal data

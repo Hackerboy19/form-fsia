@@ -14,6 +14,7 @@ Rules:
 |---|---|---|
 | `fsia_profile_changes` + triggers `fsia_log_profile_update/create/delete` | Opt-in, installed from admin → Profile Changes | Admin "Uninstall" (drops the triggers, keeps the log) |
 | `site_check_baseline` | Created on first baseline save | `DROP TABLE site_check_baseline` |
+| `cms_user_roles`, `cms_audit_log` (CMS DB) | Built in Phase 2; created by the API itself (log on first change, roles when an owner turns them on). Reference SQL: `migrations/2026-10-15-roles-and-activity-log.sql` | `DROP TABLE cms_user_roles` = roles off; `DROP TABLE cms_audit_log` = history gone |
 | `team_members.category` → `VARCHAR(255)` | Migration `2026-10-15-team-multi-category.sql`, **pending on live** | Not reversible to ENUM if multi-values exist; harmless otherwise |
 
 ## Planned, by phase (proposed — not created)
@@ -21,9 +22,7 @@ Rules:
 ### Phase 2
 | Table | Purpose | Key columns |
 |---|---|---|
-| `cms_users` | Users with roles (replaces `admin_users.php` file) | `id, username UNIQUE, password_hash, role, active, created_at, last_login_at` |
-| `cms_role_permissions` | Role → permission list | `role, permission` (PK both) |
-| `cms_audit_log` | Every CMS write | `id, user_id, action, entity, entity_id, before_json, after_json, ip, created_at` — indexed on `(entity, entity_id)`, `created_at` |
+| ~~`cms_users`, `cms_role_permissions`~~ | Replaced by the simpler `cms_user_roles` (built): passwords stay in `admin_users.php`, permissions per role live in code | — |
 | `fsia_profile_index` | Derived, rebuildable profile facts | `profile_id PK, regtype, category_key, year, month, has_bio, has_banner, image_ok, seo_issues, quality_score, score_breakdown JSON, last_changed, rebuilt_at` |
 
 ### Phase 4

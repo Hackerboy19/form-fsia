@@ -17,6 +17,18 @@ A feature counts as done only when backend, DB behaviour, UI, permissions and te
 The four docs in `docs/`. No code or DB changes.
 
 ## Phase 2 – Foundations (no visible change for visitors)
+
+**Status (2026-10-15):** step 1 (roles + activity log) and the API test harness are built and tested locally; waiting for upload. Step 3 (profile index) is next.
+
+What was built for step 1, and how it keeps today's admin working:
+- Roles: Owner, Admin, Editor, Viewer (`cms/backend/lib/rbac.php`). `events_manager` and `finance` are added when those modules exist, so no role has permissions for screens that do not exist yet.
+- **Roles are off until an owner turns them on** (Settings → Users & Roles). Until then everyone keeps full access, the same as today. Turning them on makes every current user an Owner first; the last Owner can never be demoted.
+- Permissions are checked centrally in `require_admin()` from endpoint + method + action, so every existing endpoint (including the hand-patched live `teams.php`) is covered without editing it. Unknown future endpoints need `other.write` for changes.
+- Activity log (`cms_audit_log`): every change, sign-in, failed sign-in, refused request and server-file download, with user, role, IP and a redacted copy of what was sent (passwords/tokens/OTP replaced by `***`). If the log cannot be written, the change still saves.
+- Admin: Users & Roles and Activity Log screens; the menu hides what a role cannot open; the server refuses it anyway.
+- Passwords are still managed on the server with `set-password.php` (no password handling over the web).
+- Tests: `php cms/tests/api_test.php` (40 checks, needs a throwaway MariaDB user; see the file header).
+
 1. **RBAC + audit log** (Module 9) first, because every later module needs permissions.
    - Roles: `owner`, `admin`, `editor`, `events_manager`, `finance`, `viewer`. Move `admin_users.php` users into a `cms_users` table with a role, keeping the current login working.
    - `require_permission('profiles.edit')` next to `require_admin()`.

@@ -13,19 +13,28 @@ const NAV = [
   { to: '/team', label: 'Team Directory', icon: '♛' },
   { to: '/news', label: 'News Manager', icon: '✎' },
   { group: 'Tools' },
-  { to: '/site-check', label: 'Site Check', icon: '✓' },
-  { to: '/changes', label: 'Profile Changes', icon: '↻' },
-  { to: '/cleanup', label: 'Server Cleanup', icon: '🗑' },
+  { to: '/site-check', label: 'Site Check', icon: '✓', perm: 'tools.view' },
+  { to: '/changes', label: 'Profile Changes', icon: '↻', perm: 'tools.view' },
+  { to: '/cleanup', label: 'Server Cleanup', icon: '🗑', perm: 'cleanup.manage' },
+  { group: 'Settings' },
+  { to: '/users', label: 'Users & Roles', icon: '⚿', perm: 'users.manage' },
+  { to: '/activity', label: 'Activity Log', icon: '☰', perm: 'audit.view' },
 ];
 
+/** Nav items the user may open; a group heading only when something is under it. */
+function visibleNav(can) {
+  const items = NAV.filter((item) => item.group || can(item.perm));
+  return items.filter((item, i) => !item.group || (items[i + 1] && !items[i + 1].group));
+}
+
 export default function Layout() {
-  const { logout } = useAuth();
+  const { logout, me, can } = useAuth();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
   const nav = (
     <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main">
-      {NAV.map((item, i) =>
+      {visibleNav(can).map((item, i) =>
         item.group ? (
           <p key={i} className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{item.group}</p>
         ) : (
@@ -60,6 +69,11 @@ export default function Layout() {
         </div>
         {nav}
         <div className="border-t border-white/10 p-3">
+          {me && !me.legacy && (
+            <p className="px-3 pb-2 text-xs text-slate-400">
+              {me.user || 'Signed in'} · <span className="font-semibold text-gold">{me.role_label}</span>
+            </p>
+          )}
           <button type="button" onClick={logout} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white">
             ⎋ Sign out
           </button>

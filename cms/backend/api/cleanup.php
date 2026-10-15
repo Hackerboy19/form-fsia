@@ -291,6 +291,7 @@ respond(function () {
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . str_replace('"', '', basename($rel)) . '"');
         header('Content-Length: ' . filesize($real));
+        audit_record(200);
         readfile($real);
         exit;
     }

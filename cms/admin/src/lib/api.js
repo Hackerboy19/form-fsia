@@ -57,6 +57,12 @@ export const api = {
   verifyToken: (token) => request('auth.php', { token }),
   login: (username, password) => request('auth.php', { method: 'POST', body: { username, password }, token: '' }),
 
+  me: () => request('users.php', { query: { action: 'me' } }),
+  listUsers: () => request('users.php', { query: { action: 'list' } }),
+  setupRoles: () => request('users.php', { method: 'POST', query: { action: 'setup' }, body: {} }),
+  setRole: (username, role) => request('users.php', { method: 'POST', query: { action: 'set_role' }, body: { username, role } }),
+  auditList: (params) => request('audit.php', { query: { action: 'list', ...params } }),
+
   listSeo: () => request('seo.php'),
   getSeo: (page) => request('seo.php', { query: { page } }),
   saveSeo: (page, body) => request('seo.php', { method: 'PUT', query: { page }, body }),

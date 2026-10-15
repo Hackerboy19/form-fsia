@@ -2,6 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, setUnauthorizedHandler, tokenStore } from './api';
 
 const AuthContext = createContext(null);
+const FULL_ACCESS = {
+  user: '', role: 'owner', role_label: 'Owner', roles_on: false, legacy: true,
+  permissions: ['content.edit', 'tools.view', 'tools.manage', 'cleanup.manage', 'audit.view', 'users.manage', 'other.write'],
+};
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(tokenStore.get());
@@ -31,7 +35,22 @@ export function AuthProvider({ children }) {
     storeToken(res.token);
   }, [storeToken]);
 
-  const value = useMemo(() => ({ isAuthed: Boolean(token), login, loginWithPassword, logout }), [token, login, loginWithPassword, logout]);
+  // Who is signed in and what they may do. A server without users.php (older
+  // upload) has no roles, so everything stays allowed, as before.
+  const [me, setMe] = useState(null);
+  const refreshMe = useCallback(() => api.me()
+    .then(setMe)
+    .catch((e) => setMe(e.status === 404 ? FULL_ACCESS : { ...FULL_ACCESS, unknown: true })), []);
+  useEffect(() => {
+    setMe(null);
+    if (token) refreshMe();
+  }, [token, refreshMe]);
+  const can = useCallback((perm) => !perm || !me || me.permissions.includes(perm), [me]);
+
+  const value = useMemo(
+    () => ({ isAuthed: Boolean(token), login, loginWithPassword, logout, me, can, refreshMe }),
+    [token, login, loginWithPassword, logout, me, can, refreshMe],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
