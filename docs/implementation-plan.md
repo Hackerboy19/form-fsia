@@ -37,6 +37,9 @@ What was built for step 1, and how it keeps today's admin working:
 3. **Read-only profile index** (`fsia_profile_index`): one row per profile with derived fields (category, year, has_bio, has_banner, image_ok, seo issues, last_changed). Rebuilt by a cron job, so filters stop scanning `registration` live.
 
 ## Phase 3 – Profile intelligence and quality score (Modules 1, 2)
+
+**Status (2026-10-15):** first version built (Profiles & Score screen). The score is computed from the same checks as the problem filters while the list loads, so there are no database changes: Photos 30 (has a photo 15, all on the server 10, 3+ photos 5) · Biography 25 (has one 10, 150+ characters 7, 500+ characters 8) · Banners 20 (desktop 10, mobile 10, file on the server) · SEO 25 (link 5, title ≤70 7, description ≤170 8, keywords 5). Bands: Excellent 85+, Good 65+, Fair 40+, Poor below 40. Filters by band, sorts by score, shows the breakdown per profile, and adds the score to the CSV. Covered by `cms/tests/api_test.php`. Limit: up to 5,000 profiles per filter until the profile index (Phase 2 step 3) exists.
+
 - Extend Site Check filters onto the index; saved filters; bulk export.
 - Quality score 0–100 from **real, explainable checks only** (bio length, image present and loading, banner, SEO title/description, social links valid, achievements count). Weights stored in config; the score breakdown is always shown. No AI scoring unless approved (see security doc).
 - Admin "fix list": lowest-scoring profiles first.

@@ -12,6 +12,7 @@ const NewsList = lazy(() => import('./pages/NewsManager').then((m) => ({ default
 const NewsEditor = lazy(() => import('./pages/NewsManager').then((m) => ({ default: m.NewsEditor })));
 const HomepageEditor = lazy(() => import('./pages/HomepageEditor'));
 const SiteCheck = lazy(() => import('./pages/SiteCheck'));
+const Profiles = lazy(() => import('./pages/Profiles'));
 const ServerCleanup = lazy(() => import('./pages/ServerCleanup'));
 const ProfileChanges = lazy(() => import('./pages/ProfileChanges'));
 const UsersRoles = lazy(() => import('./pages/UsersRoles'));
@@ -27,6 +28,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="seo" element={<SeoManager />} />
+        <Route path="profiles" element={<Suspense fallback={loading}><Profiles /></Suspense>} />
         <Route path="site-check" element={<Suspense fallback={loading}><SiteCheck /></Suspense>} />
         <Route path="cleanup" element={<Suspense fallback={loading}><ServerCleanup /></Suspense>} />
         <Route path="changes" element={<Suspense fallback={loading}><ProfileChanges /></Suspense>} />

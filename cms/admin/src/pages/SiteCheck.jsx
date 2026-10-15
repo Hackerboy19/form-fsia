@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PageHeader } from '../components/Layout';
 import ProfileData from './ProfileData';
@@ -49,9 +50,21 @@ export default function SiteCheck() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const stop = useRef(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.siteCheckUrls().then(setLists).catch((e) => setError(e.message));
+  }, []);
+
+  // Sent here from the Profiles screen with a list of pages to open live.
+  useEffect(() => {
+    const paths = location.state?.checkPaths;
+    if (paths?.length) {
+      navigate(location.pathname, { replace: true, state: null });
+      run(paths);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

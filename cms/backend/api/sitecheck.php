@@ -412,6 +412,46 @@ function sc_file_ok(string $path, string $base = ''): bool
     return is_file($root . '/' . $rel);
 }
 
+/*
+ * Profile quality score, 0-100, from the same checks as the problem filters.
+ * Only facts read from the database and the server's files count; nothing is
+ * estimated. Each part says what it got out of what it could get.
+ *   Photos 30 · Biography 25 · Banners 20 · SEO 25
+ */
+const SC_SCORE_BANDS = ['excellent' => 85, 'good' => 65, 'fair' => 40, 'poor' => 0];
+
+function sc_quality_score(array $x): array
+{
+    $photos = 0;
+    if ($x['photos'] > 0) {
+        $photos += 15;
+        if ($x['missing'] === 0) $photos += 10;
+        if ($x['photos'] >= 3 && $x['missing'] === 0) $photos += 5;
+    }
+    $bio = $x['bio_len'] > 0 ? 10 + ($x['bio_len'] >= 150 ? 7 : 0) + ($x['bio_len'] >= 500 ? 8 : 0) : 0;
+    $banners = ($x['desktop_banner'] ? 10 : 0) + ($x['mobile_banner'] ? 10 : 0);
+    $seo = ($x['url'] ? 5 : 0)
+        + ($x['title_len'] === 0 ? 0 : ($x['title_len'] <= 70 ? 7 : 3))
+        + ($x['desc_len'] === 0 ? 0 : ($x['desc_len'] <= 170 ? 8 : 4))
+        + ($x['keywords'] ? 5 : 0);
+    $parts = [
+        ['key' => 'photos', 'label' => 'Photos', 'got' => $photos, 'max' => 30,
+         'how' => 'Has a photo 15 · all photos on the server 10 · 3 or more photos 5'],
+        ['key' => 'bio', 'label' => 'Biography', 'got' => $bio, 'max' => 25,
+         'how' => 'Has a bio 10 · 150+ characters 7 · 500+ characters 8'],
+        ['key' => 'banner', 'label' => 'Banners', 'got' => $banners, 'max' => 20,
+         'how' => 'Desktop banner on the server 10 · mobile banner on the server 10'],
+        ['key' => 'seo', 'label' => 'SEO', 'got' => $seo, 'max' => 25,
+         'how' => 'Profile link 5 · meta title up to 70 characters 7 · meta description up to 170 characters 8 · keywords 5'],
+    ];
+    $score = $photos + $bio + $banners + $seo;
+    $band = 'poor';
+    foreach (SC_SCORE_BANDS as $name => $min) {
+        if ($score >= $min) { $band = $name; break; }
+    }
+    return ['score' => $score, 'band' => $band, 'parts' => $parts];
+}
+
 function sc_profile_rows(array $f): array
 {
     $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
@@ -462,19 +502,26 @@ function sc_profile_report(array $r): array
     // Bio: any of the biography fields the profile pages show.
     $bioFields = ['fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment'];
     $hasBio = false;
+    $bioLen = 0;
     foreach ($bioFields as $k) {
-        if (!sc_blank($g($k))) { $hasBio = true; break; }
+        if (!sc_blank($g($k))) {
+            $hasBio = true;
+            $bioLen = max($bioLen, mb_strlen(trim(strip_tags(html_entity_decode($g($k), ENT_QUOTES | ENT_HTML5, 'UTF-8')))));
+        }
     }
     if (!$hasBio) $problems['bio'][] = 'No biography';
 
     // Banner: desktop (nimage2/simage2/image2) and mobile (nimage1/simage1/image1).
+    $bannerOk = [];
     foreach (['desktop' => ['nimage2', 'simage2', 'image2'], 'mobile' => ['nimage1', 'simage1', 'image1']] as $label => $keys) {
         $val = '';
         foreach ($keys as $k) {
             if (trim($g($k)) !== '') { $val = trim($g($k), " ,"); break; }
         }
+        $bannerOk[$label] = false;
         if ($val === '') $problems['banner'][] = "No $label banner";
         elseif (!sc_file_ok($val, 'images') && !sc_file_ok($val)) $problems['banner'][] = "$label banner file missing on server";
+        else $bannerOk[$label] = true;
     }
 
     // Photos: setdefault + image list, each checked on disk.
@@ -492,6 +539,13 @@ function sc_profile_report(array $r): array
     if (mb_strlen($g('meta_title')) > 70) $seo[] = 'Meta title too long (' . mb_strlen($g('meta_title')) . ')';
     if (mb_strlen($g('meta_desc')) > 170) $seo[] = 'Meta description too long (' . mb_strlen($g('meta_desc')) . ')';
     if ($seo) $problems['seo'] = $seo;
+
+    $score = sc_quality_score([
+        'photos' => count($photos), 'missing' => count($missing), 'bio_len' => $hasBio ? max($bioLen, 1) : 0,
+        'desktop_banner' => $bannerOk['desktop'], 'mobile_banner' => $bannerOk['mobile'],
+        'url' => trim($g('url')) !== '', 'title_len' => mb_strlen(trim($g('meta_title'))),
+        'desc_len' => mb_strlen(trim($g('meta_desc'))), 'keywords' => trim($g('meta_keyword')) !== '',
+    ]);
 
     $native = '';
     foreach (SC_UPDATED_COLUMNS as $k) {
@@ -512,6 +566,9 @@ function sc_profile_report(array $r): array
         'photos'   => count($photos),
         'missing_photos' => array_slice($missing, 0, 10),
         'problems' => $problems,
+        'score'    => $score['score'],
+        'band'     => $score['band'],
+        'score_parts' => $score['parts'],
         'last_changed' => $native ?: null,
         'changed_by' => null,
     ];
@@ -544,6 +601,7 @@ respond(function () {
         ];
         $want = array_values(array_intersect(explode(',', (string) query_param('problem')), ['bio', 'banner', 'image', 'seo']));
         $match = query_param('match') === 'all' ? 'all' : 'any';
+        $bandWant = array_values(array_intersect(explode(',', (string) query_param('band')), array_keys(SC_SCORE_BANDS)));
 
         $rows = sc_profile_rows($f);
         // Latest change of each profile from the change log (Tools -> Profile Changes), when it is on.
@@ -557,6 +615,9 @@ respond(function () {
         $changedDays = (int) query_param('changed_days');
         $since = $changedDays > 0 ? date('Y-m-d H:i:s', time() - $changedDays * 86400) : null;
         $counts = ['bio' => 0, 'banner' => 0, 'image' => 0, 'seo' => 0, 'ok' => 0];
+        $bands = array_fill_keys(array_keys(SC_SCORE_BANDS), 0);
+        $scoreSum = 0;
+        $scored = 0;
         $out = [];
         foreach ($rows as $r) {
             $rep = sc_profile_report($r);
@@ -567,14 +628,23 @@ respond(function () {
             if ($since !== null && ($rep['last_changed'] === null || $rep['last_changed'] < $since)) continue;
             foreach (array_keys($rep['problems']) as $k) $counts[$k]++;
             if (!$rep['problems']) $counts['ok']++;
+            $bands[$rep['band']]++;
+            $scoreSum += $rep['score'];
+            $scored++;
+            if ($bandWant && !in_array($rep['band'], $bandWant, true)) continue;
             if ($want) {
                 $hit = array_intersect($want, array_keys($rep['problems']));
                 if ($match === 'all' ? count($hit) !== count($want) : !$hit) continue;
             }
             $out[] = $rep;
         }
-        if (query_param('sort') === 'changed') {
+        $sort = query_param('sort');
+        if ($sort === 'changed') {
             usort($out, fn ($a, $b) => strcmp((string) $b['last_changed'], (string) $a['last_changed']));
+        } elseif ($sort === 'score') {
+            usort($out, fn ($a, $b) => $a['score'] <=> $b['score'] ?: $b['id'] <=> $a['id']);
+        } elseif ($sort === 'score_desc') {
+            usort($out, fn ($a, $b) => $b['score'] <=> $a['score'] ?: $b['id'] <=> $a['id']);
         }
         $page = max(1, (int) query_param('page'));
         $years = array_map('intval', array_column(site_db_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
@@ -583,6 +653,9 @@ respond(function () {
             'scanned'    => count($rows),
             'capped'     => count($rows) >= SC_PROFILE_LIMIT,
             'counts'     => $counts,
+            'bands'      => $bands,
+            'band_min'   => SC_SCORE_BANDS,
+            'avg_score'  => $scored ? (int) round($scoreSum / $scored) : null,
             'total'      => count($out),
             'page'       => $page,
             'page_size'  => SC_PAGE_SIZE,

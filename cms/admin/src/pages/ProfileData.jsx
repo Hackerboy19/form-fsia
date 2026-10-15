@@ -7,6 +7,39 @@ const PROBLEMS = [
   ['image', 'Image missing', 'bg-red-100 text-red-700'],
   ['seo', 'SEO issue', 'bg-violet-100 text-violet-700'],
 ];
+const BANDS = [
+  ['excellent', 'Excellent', 'bg-emerald-100 text-emerald-800', 'bg-emerald-500'],
+  ['good', 'Good', 'bg-sky-100 text-sky-800', 'bg-sky-500'],
+  ['fair', 'Fair', 'bg-amber-100 text-amber-800', 'bg-amber-500'],
+  ['poor', 'Poor', 'bg-red-100 text-red-700', 'bg-red-500'],
+];
+const bandOf = (k) => BANDS.find((b) => b[0] === k) || BANDS[3];
+
+/** Score chip; opens a breakdown of where the points came from. */
+function ScoreCell({ r }) {
+  const [, label, cls, bar] = bandOf(r.band);
+  if (r.score === undefined) return <span className="text-slate-400">—</span>;
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none">
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${cls}`}>
+          {r.score}<span className="font-semibold opacity-80">{label}</span>
+        </span>
+        <span className="ml-1 text-[11px] text-gold-dark underline group-open:hidden">why?</span>
+      </summary>
+      <ul className="mt-2 w-56 space-y-1.5">
+        {r.score_parts.map((p) => (
+          <li key={p.key} title={p.how}>
+            <div className="flex justify-between text-[11px]"><span>{p.label}</span><span className="font-semibold">{p.got}/{p.max}</span></div>
+            <div className="h-1.5 rounded-full bg-slate-100"><div className={`h-1.5 rounded-full ${bar}`} style={{ width: `${(p.got / p.max) * 100}%` }} /></div>
+            {p.got < p.max && <p className="text-[10px] leading-snug text-slate-400">{p.how}</p>}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const LIVE_LIMIT = 200;
 
@@ -18,13 +51,14 @@ const LIVE_LIMIT = 200;
 export default function ProfileData({ onCheckLive, disabled }) {
   const [f, setF] = useState({ category: '', year: '', month: '', status: 'approved', q: '', sort: '', changed_days: '' });
   const [problems, setProblems] = useState([]);
+  const [bands, setBands] = useState([]);
   const [match, setMatch] = useState('any');
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const params = { ...f, problem: problems.join(','), match };
+  const params = { ...f, problem: problems.join(','), match, band: bands.join(',') };
   const key = JSON.stringify(params);
 
   useEffect(() => { setPage(1); }, [key]);
@@ -43,15 +77,16 @@ export default function ProfileData({ onCheckLive, disabled }) {
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const toggle = (k) => setProblems((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
+  const toggleBand = (k) => setBands((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
 
   async function downloadCsv() {
     try {
       const all = await api.siteCheckProfiles({ ...params, all: 1 });
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lines = [['ID', 'Name', 'Category', 'Date', 'Last changed', 'Changed by', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
+      const lines = [['ID', 'Name', 'Category', 'Date', 'Score', 'Band', 'Last changed', 'Changed by', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
       all.rows.forEach((r) => lines.push([
-        r.id, r.name, r.category, r.date, r.last_changed, r.changed_by, r.link, r.photos,
+        r.id, r.name, r.category, r.date, r.score, r.band, r.last_changed, r.changed_by, r.link, r.photos,
         ...PROBLEMS.map(([k]) => (r.problems[k] || []).join('; ')),
       ].map(esc).join(',')));
       const a = document.createElement('a');
@@ -107,6 +142,8 @@ export default function ProfileData({ onCheckLive, disabled }) {
           <select className="input" value={f.sort} onChange={set('sort')}>
             <option value="">Newest joined first</option>
             <option value="changed">Recently changed first</option>
+            <option value="score">Lowest score first</option>
+            <option value="score_desc">Highest score first</option>
           </select>
         </label>
         <label>
@@ -114,6 +151,31 @@ export default function ProfileData({ onCheckLive, disabled }) {
           <input className="input" placeholder="e.g. azra or 86294" value={f.q} onChange={set('q')} />
         </label>
       </div>
+
+      {data?.bands && (
+        <div className="mt-4 rounded-xl bg-cream/60 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Quality score:</span>
+            {data.avg_score !== null && <span className="text-sm">average <b>{data.avg_score}</b>/100</span>}
+            {BANDS.map(([k, label, cls]) => {
+              const on = bands.includes(k);
+              return (
+                <button key={k} type="button" onClick={() => toggleBand(k)} aria-pressed={on}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${on ? `${cls} border-transparent ring-2 ring-gold` : 'border-slate-200 bg-white text-slate-600 hover:border-gold'}`}>
+                  {on ? '✓ ' : ''}{label} {k === 'poor' ? `< ${data.band_min.fair}` : `${data.band_min[k]}+`} ({data.bands[k].toLocaleString()})
+                </button>
+              );
+            })}
+            {bands.length > 0 && <button type="button" className="text-xs font-semibold text-gold-dark underline" onClick={() => setBands([])}>Clear</button>}
+          </div>
+          {data.scanned > 0 && (
+            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white" aria-hidden="true">
+              {BANDS.map(([k, , , bar]) => <div key={k} className={bar} style={{ width: `${(data.bands[k] / data.scanned) * 100}%` }} />)}
+            </div>
+          )}
+          <p className="mt-2 text-[11px] text-slate-500">Photos 30 · Biography 25 · Banners 20 · SEO 25. Counted only from what is in the database and on the server.</p>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Show profiles with:</span>
@@ -167,9 +229,9 @@ export default function ProfileData({ onCheckLive, disabled }) {
 
       {data?.rows.length > 0 && (
         <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="bg-cream/60 text-[11px] uppercase tracking-wider text-slate-500">
-              <tr><th className="p-3">Profile</th><th className="p-3">Category</th><th className="p-3">Joined</th><th className="p-3">Last changed</th><th className="p-3">What is missing</th></tr>
+              <tr><th className="p-3">Profile</th><th className="p-3">Score</th><th className="p-3">Category</th><th className="p-3">Joined</th><th className="p-3">Last changed</th><th className="p-3">What is missing</th></tr>
             </thead>
             <tbody>
               {data.rows.map((r) => (
@@ -178,6 +240,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
                     {r.link ? <a href={r.link} target="_blank" rel="noreferrer" className="font-semibold underline decoration-gold/50 hover:text-gold-dark">{r.name}</a> : <span className="font-semibold">{r.name}</span>}
                     <span className="block text-[11px] text-slate-400">#{r.id} · {r.photos} photo{r.photos === 1 ? '' : 's'}{r.status === 3 ? ' · title holder' : ''}</span>
                   </td>
+                  <td className="p-3"><ScoreCell r={r} /></td>
                   <td className="p-3 text-slate-600">{r.category}</td>
                   <td className="whitespace-nowrap p-3 text-slate-600">{r.date}</td>
                   <td className="p-3 text-xs text-slate-600">

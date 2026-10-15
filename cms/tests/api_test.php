@@ -47,7 +47,26 @@ file_put_contents("$tmp/backend/config.php", '<?php return ' . var_export([
     'pages' => ['index', 'about', 'our-teams'],
     'uploads' => ['dir' => "$tmp/uploads", 'base_url' => '/uploads', 'max_bytes' => 1048576, 'max_pixels' => 2000],
     'debug' => true,
+    'site_root' => "$tmp/site",
 ], true) . ';');
+
+// A tiny "site": the registration table in the same database, and image files on disk.
+$pdo->exec("CREATE TABLE registration (id INT PRIMARY KEY, first_name VARCHAR(100), last_name VARCHAR(100), regtype INT, status INT,
+    date_of_reg DATETIME, url VARCHAR(255), setdefault TEXT, image TEXT, nimage1 VARCHAR(255), nimage2 VARCHAR(255),
+    fullbio TEXT, meta_title VARCHAR(255), meta_desc TEXT, meta_keyword VARCHAR(255))");
+foreach (['missindia_profile/a1.webp', 'missindia_profile/a2.webp', 'missindia_profile/a3.webp', 'missindia_profile/c1.webp', 'missindia_profile/c2.webp', 'images/d.jpg', 'images/m.jpg'] as $f) {
+    @mkdir(dirname("$tmp/site/$f"), 0700, true);
+    file_put_contents("$tmp/site/$f", 'x');
+}
+$ins = $pdo->prepare('INSERT INTO registration VALUES (?, ?, ?, 6, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+// A: everything there -> 100
+$ins->execute([1, 'Asha', 'Full', '2026-01-05', 'asha-full', 'missindia_profile/a1.webp', 'missindia_profile/a2.webp,missindia_profile/a3.webp', 'm.jpg', 'd.jpg',
+    '<p>' . str_repeat('Asha has worked in theatre for years. ', 20) . '</p>', 'Asha Full | Miss India 2026', 'Asha Full is a Miss India 2026 finalist from Pune.', 'asha, miss india']);
+// B: one photo that is not on the server, nothing else but the link -> 15 + 5 = 20
+$ins->execute([2, 'Bina', 'Bare', '2026-02-05', 'bina-bare', 'missindia_profile/gone.webp', '', '', '', '', '', '', '']);
+// C: 2 photos, 200-character bio, desktop banner, long title, no keywords -> 25 + 17 + 10 + 16 = 68
+$ins->execute([3, 'Chitra', 'Half', '2026-03-05', 'chitra-half', 'missindia_profile/c1.webp', 'missindia_profile/c2.webp', '', 'd.jpg',
+    str_repeat('b', 200), str_repeat('T', 80), 'A short description.', '']);
 $passwords = ['owner1' => 'Owner-pass-1', 'editor1' => 'Editor-pass-1', 'viewer1' => 'Viewer-pass-1'];
 function write_users(string $tmp, array $passwords): void
 {
@@ -207,6 +226,24 @@ check('never stores tokens', !str_contains(json_encode($rows), $token));
 check('filters by result and user', $s === 200 && $d['total'] > 0 && !array_filter($d['rows'], fn ($r) => $r['status'] !== 403 || $r['username'] !== 'viewer1'));
 [$s, $d] = call('GET', 'audit.php?action=list&q=' . urlencode("x' OR 1=1 -- %_"), $editor);
 check('search input is not SQL', $s === 200 && $d['total'] === 0, "got $s");
+
+echo "Profile quality score\n";
+[$s, $d, $raw] = call('GET', 'sitecheck.php?action=profiles&sort=score', $editor);
+$byId = [];
+foreach ($d['rows'] ?? [] as $r) {
+    $byId[$r['id']] = $r;
+}
+check('profiles load with a score', $s === 200 && count($byId) === 3, "got $s " . substr($raw, 0, 300));
+check('a complete profile scores 100 (excellent)', ($byId[1]['score'] ?? null) === 100 && $byId[1]['band'] === 'excellent', json_encode($byId[1]['score_parts'] ?? null));
+check('a bare profile scores 20 (poor)', ($byId[2]['score'] ?? null) === 20 && $byId[2]['band'] === 'poor', json_encode($byId[2]['score_parts'] ?? null));
+check('a half-done profile scores 68 (good)', ($byId[3]['score'] ?? null) === 68 && $byId[3]['band'] === 'good', json_encode($byId[3]['score_parts'] ?? null));
+check('parts add up to the score', array_sum(array_column($byId[3]['score_parts'] ?? [], 'got')) === 68 && array_sum(array_column($byId[3]['score_parts'] ?? [], 'max')) === 100);
+check('lowest score first', array_column($d['rows'], 'id') === [2, 3, 1], json_encode(array_column($d['rows'], 'id')));
+check('band counts and average', $d['bands'] === ['excellent' => 1, 'good' => 1, 'fair' => 0, 'poor' => 1] && $d['avg_score'] === 63, json_encode([$d['bands'], $d['avg_score']]));
+[$s, $d] = call('GET', 'sitecheck.php?action=profiles&band=poor,fair', $editor);
+check('filter by band', array_column($d['rows'], 'id') === [2], json_encode(array_column($d['rows'], 'id')));
+[$s, $d] = call('GET', 'sitecheck.php?action=profiles&band=excellent&problem=bio', $editor);
+check('band and problem filters combine', $d['total'] === 0);
 
 echo "Logging failure never breaks a request\n";
 $pdo->exec("RENAME TABLE `$dbName`.cms_audit_log TO `$dbName`.cms_audit_log_x");
