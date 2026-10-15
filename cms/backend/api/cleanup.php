@@ -185,6 +185,18 @@ function cl_check_path(string $rel): array
     return [$rel, $real];
 }
 
+/**
+ * Old copies of config files hold database passwords and API keys. The preview
+ * shows that such a value is there, never the value itself.
+ */
+function cl_redact_secrets(string $text): string
+{
+    $name = '[\w$\'"\[\]-]*(?:pass(?:word|wd)?|pwd|secret|token|api[_-]?key|private[_-]?key|client[_-]?secret|salt|auth[_-]?key)[\w\'"\]-]*';
+    // $password = 'x';  'password' => "x",  define('API_KEY', 'x');  DB_PASSWORD=x
+    $text = preg_replace('/(' . $name . '\s*(?:=>|=|:|,)\s*)([\'"])(.*?)\2/i', '$1$2***$2', $text);
+    return preg_replace('/^(\s*' . $name . '\s*=\s*)([^\'"\s][^\s#;]*)/im', '$1***', $text);
+}
+
 /** What a file holds, for the preview in the admin: text, image, zip listing or basic facts. */
 function cl_preview(string $rel, string $real): array
 {
@@ -233,7 +245,7 @@ function cl_preview(string $rel, string $real): array
     if (!mb_check_encoding($raw, 'UTF-8')) {
         $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
     }
-    return array_merge($out, ['kind' => 'text', 'text' => $raw, 'truncated' => $truncated, 'lines' => substr_count($raw, "\n") + 1]);
+    return array_merge($out, ['kind' => 'text', 'text' => cl_redact_secrets($raw), 'truncated' => $truncated, 'lines' => substr_count($raw, "\n") + 1]);
 }
 
 function cl_move(string $from, string $to): void

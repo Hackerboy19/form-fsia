@@ -136,7 +136,7 @@ export default function PageEditor() {
       <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own. Grey text in an empty box is what the page shows now; type to replace it, clear the box to go back to it.`} />
       {error && <p className="card mb-4 p-4 text-sm text-red-600">{error}</p>}
       <div className={page.preview ? 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {sections === null
             ? schemas.map((s) => <div key={s.key} className="card h-64 animate-pulse bg-cream" />)
             : schemas.map((s) => (
@@ -144,7 +144,7 @@ export default function PageEditor() {
             ))}
         </div>
         {page.preview && (
-          <div className="xl:sticky xl:top-6">
+          <div className="min-w-0 xl:sticky xl:top-6">
             <LivePreview url={page.preview} drafts={drafts} focusKey={focusKey} baseline={sections ? baseline : null} reloadKey={reloadKey} />
           </div>
         )}

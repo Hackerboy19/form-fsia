@@ -57,6 +57,8 @@ function sc_curl(string $url, bool $range)
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => $range,
         CURLOPT_MAXREDIRS      => 4,
+        CURLOPT_PROTOCOLS      => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+        CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT        => $range ? 20 : 40,
         CURLOPT_USERAGENT      => 'FSIA-SiteCheck/1.0 (+admin)',
@@ -592,10 +594,13 @@ respond(function () {
 
     if (request_method() === 'GET' && $action === 'profiles') {
         @set_time_limit(120);
+        // A year or month that is not a real one is ignored, like an unknown category.
+        $year = (int) query_param('year');
+        $month = (int) query_param('month');
         $f = [
             'category' => (string) query_param('category'),
-            'year'     => (string) query_param('year'),
-            'month'    => (string) query_param('month'),
+            'year'     => $year >= 1990 && $year <= 2100 ? (string) $year : '',
+            'month'    => $month >= 1 && $month <= 12 ? (string) $month : '',
             'status'   => query_param('status') === 'all' ? 'all' : 'approved',
             'q'        => mb_substr(trim((string) query_param('q')), 0, 80),
         ];

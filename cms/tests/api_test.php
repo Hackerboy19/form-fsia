@@ -67,7 +67,7 @@ $ins->execute([2, 'Bina', 'Bare', '2026-02-05', 'bina-bare', 'missindia_profile/
 // C: 2 photos, 200-character bio, desktop banner, long title, no keywords -> 25 + 17 + 10 + 16 = 68
 $ins->execute([3, 'Chitra', 'Half', '2026-03-05', 'chitra-half', 'missindia_profile/c1.webp', 'missindia_profile/c2.webp', '', 'd.jpg',
     str_repeat('b', 200), str_repeat('T', 80), 'A short description.', '']);
-$passwords = ['owner1' => 'Owner-pass-1', 'editor1' => 'Editor-pass-1', 'viewer1' => 'Viewer-pass-1'];
+$passwords = ['owner1' => 'Owner-pass-1', 'admin1' => 'Admin-pass-1', 'editor1' => 'Editor-pass-1', 'viewer1' => 'Viewer-pass-1'];
 function write_users(string $tmp, array $passwords): void
 {
     $hashes = array_map(fn ($p) => password_hash($p, PASSWORD_DEFAULT, ['cost' => 4]), $passwords);
@@ -149,11 +149,13 @@ check('any user can open Users & Roles', $s === 200, "got $s");
 
 echo "Turning roles on\n";
 [$s, $d] = call('POST', 'users.php?action=setup', $owner, []);
-check('setup makes every user an owner', $s === 200 && count(array_filter($d['users'], fn ($u) => $u['role'] === 'owner')) === 3, json_encode($d));
+check('setup makes every user an owner', $s === 200 && count(array_filter($d['users'], fn ($u) => $u['role'] === 'owner')) === count($passwords), json_encode($d));
 [$s] = call('POST', 'users.php?action=setup', $owner, []);
 check('setup twice is refused', $s === 409, "got $s");
 [$s] = call('POST', 'users.php?action=set_role', $owner, ['username' => 'editor1', 'role' => 'editor']);
 [$s2] = call('POST', 'users.php?action=set_role', $owner, ['username' => 'viewer1', 'role' => 'viewer']);
+call('POST', 'users.php?action=set_role', $owner, ['username' => 'admin1', 'role' => 'admin']);
+$admin = login('admin1', $passwords['admin1']);
 check('owner can give roles', $s === 200 && $s2 === 200, "got $s / $s2");
 [$s] = call('POST', 'users.php?action=set_role', $owner, ['username' => 'viewer1', 'role' => 'superuser']);
 check('unknown role is refused', $s === 422 || $s === 400, "got $s");
@@ -190,6 +192,50 @@ check('cannot turn the change log on', $s === 403, "got $s");
 [$s] = call('GET', 'seo.php?page=about', $viewer);
 check('public reads still work', $s === 200, "got $s");
 
+echo "Permission matrix (every role against every protected action)\n";
+// [label, method, path, body, roles that must be allowed]. "Allowed" = not refused with 401/403;
+// the action itself may still answer 4xx for the empty test input.
+$all = ['owner', 'admin', 'editor', 'viewer'];
+$matrix = [
+    ['Read page text / SEO / team / news (public)', 'GET', 'seo.php?page=about', null, ['owner', 'admin', 'editor', 'viewer', 'none']],
+    ['Edit page text', 'PUT', 'sections.php?page=about&key=hero', ['content' => ['title' => 'x'], 'image_url' => ''], ['owner', 'admin', 'editor']],
+    ['Edit SEO', 'PUT', 'seo.php?page=about', $seoBody, ['owner', 'admin', 'editor']],
+    ['Add team member', 'POST', 'teams.php', [], ['owner', 'admin', 'editor']],
+    ['Delete team member', 'DELETE', 'teams.php?id=999999', null, ['owner', 'admin', 'editor']],
+    ['Write news', 'POST', 'news.php', [], ['owner', 'admin', 'editor']],
+    ['Upload image', 'POST', 'upload.php', [], ['owner', 'admin', 'editor']],
+    ['Profiles & Score / Site Check: view', 'GET', 'sitecheck.php?action=profiles', null, ['owner', 'admin', 'editor', 'viewer']],
+    ['Site Check: save baseline', 'POST', 'sitecheck.php?action=baseline', ['pages' => []], ['owner', 'admin']],
+    ['Profile Changes: view', 'GET', 'changelog.php?action=status', null, ['owner', 'admin', 'editor', 'viewer']],
+    ['Profile Changes: turn on/off', 'POST', 'changelog.php?action=uninstall', [], ['owner', 'admin']],
+    ['Server Cleanup: scan / preview / download', 'GET', 'cleanup.php?action=trash_list', null, ['owner', 'admin']],
+    ['Server Cleanup: move to Trash', 'POST', 'cleanup.php?action=trash', ['paths' => []], ['owner', 'admin']],
+    ['Users & Roles: view', 'GET', 'users.php?action=list', null, ['owner']],
+    ['Users & Roles: change a role', 'POST', 'users.php?action=set_role', ['username' => 'nobody', 'role' => 'viewer'], ['owner']],
+    ['Activity Log: view', 'GET', 'audit.php?action=list', null, ['owner', 'admin']],
+];
+$tokens = ['owner' => $owner, 'admin' => $admin, 'editor' => $editor, 'viewer' => $viewer, 'none' => ''];
+$md = "| Action | Owner | Admin | Editor | Viewer | Not signed in |\n|---|---|---|---|---|---|\n";
+$matrixOk = true;
+foreach ($matrix as [$label, $method, $path, $body, $allowed]) {
+    $cells = [];
+    foreach ($tokens as $role => $tok) {
+        [$s] = call($method, $path, $tok === '' ? null : $tok, $body);
+        $isAllowed = $s !== 401 && $s !== 403;
+        $want = in_array($role, $allowed, true);
+        if ($isAllowed !== $want) {
+            $matrixOk = false;
+            echo "    mismatch: $label as $role got $s\n";
+        }
+        $cells[] = ($isAllowed ? 'Allowed' : 'Refused') . " ($s)";
+    }
+    $md .= "| $label | " . implode(' | ', $cells) . " |\n";
+}
+check('every role gets exactly the access it should (server-side)', $matrixOk);
+if ($out = getenv('MATRIX_OUT')) {
+    file_put_contents($out, $md);
+}
+
 echo "Owner, admin token and new users\n";
 [$s] = call('GET', 'cleanup.php?action=nothing', $owner);
 check('owner passes the permission check', $s !== 403 && $s !== 401, "got $s");
@@ -202,6 +248,7 @@ check('rewriting the users file signs old sessions out', $s === 401, "got $s");
 $owner = login('owner1', $passwords['owner1']);
 $editor = login('editor1', $passwords['editor1']);
 $viewer = login('viewer1', $passwords['viewer1']);
+$admin = login('admin1', $passwords['admin1']);
 $newbie = login('newbie', 'Newbie-pass-1');
 [$s, $d] = call('GET', 'users.php?action=me', $newbie);
 check('a user added later is a viewer until given a role', $d['role'] === 'viewer', json_encode($d));
@@ -214,7 +261,10 @@ check('...and then loses Users & Roles', $s === 403, "got $s");
 echo "Activity log\n";
 [$s, $d] = call('GET', 'audit.php?action=list', $editor);
 check('owner (editor1 now) can read it', $s === 200 && $d['total'] > 0, "got $s");
-$rows = $d['rows'] ?? [];
+$rows = [];
+foreach (['endpoint=seo.php&user=editor1', 'result=denied&user=viewer1', 'endpoint=auth.php', 'endpoint=users.php'] as $f) {
+    $rows = array_merge($rows, call('GET', "audit.php?action=list&$f", $editor)[1]['rows'] ?? []);
+}
 $has = fn (callable $f) => (bool) array_filter($rows, $f);
 check('records content changes with user and role', $has(fn ($r) => $r['endpoint'] === 'seo.php' && $r['username'] === 'editor1' && $r['role'] === 'editor' && $r['status'] === 200));
 check('records refused requests', $has(fn ($r) => $r['username'] === 'viewer1' && $r['status'] === 403));
@@ -245,11 +295,130 @@ check('filter by band', array_column($d['rows'], 'id') === [2], json_encode(arra
 [$s, $d] = call('GET', 'sitecheck.php?action=profiles&band=excellent&problem=bio', $editor);
 check('band and problem filters combine', $d['total'] === 0);
 
+echo "Profile filters\n";
+// 230 more profiles in another category, spread over years and months.
+$ins2 = $pdo->prepare("INSERT INTO registration VALUES (?, ?, 'Test', 7, 1, ?, ?, '', '', '', '', ?, '', '', '')");
+for ($i = 0; $i < 230; $i++) {
+    $ins2->execute([1000 + $i, "Mrs$i", sprintf('%d-%02d-10', 2024 + ($i % 2), 1 + $i % 12), "mrs-$i", $i % 3 ? 'bio' : '']);
+}
+$q = fn (string $qs) => call('GET', "sitecheck.php?action=profiles&$qs", $editor)[1];
+check('search by name', array_column($q('q=Asha')['rows'], 'id') === [1]);
+check('search by ID', in_array(2, array_column($q('q=2')['rows'], 'id'), true));
+check('filter by category', $q('category=miss-india')['total'] === 3 && $q('category=mrs-india')['total'] === 230);
+$sqlCount = fn (string $where) => (int) $pdo->query("SELECT COUNT(*) FROM registration WHERE regtype = 7 AND $where")->fetchColumn();
+check('filter by year and month match the database', $q('category=mrs-india&year=2024')['total'] === $sqlCount('YEAR(date_of_reg) = 2024')
+    && $q('category=mrs-india&year=2024&month=3')['total'] === $sqlCount('YEAR(date_of_reg) = 2024 AND MONTH(date_of_reg) = 3'));
+$seen = [];
+foreach ([1, 2, 3] as $pg) {
+    foreach ($q("category=mrs-india&page=$pg")['rows'] as $r) {
+        $seen[] = $r['id'];
+    }
+}
+check('pagination: 230 rows over 3 pages, none missing or repeated', count($seen) === 230 && count(array_unique($seen)) === 230, count($seen) . ' / ' . count(array_unique($seen)));
+$any = $q('problem=bio,image&match=any&all=1')['rows'];
+$both = $q('problem=bio,image&match=all&all=1')['rows'];
+check('combined problems: "all" is a subset of "any" and needs both',
+    count($both) <= count($any) && !array_filter($both, fn ($r) => !isset($r['problems']['bio'], $r['problems']['image'])) && !array_filter($any, fn ($r) => !isset($r['problems']['bio']) && !isset($r['problems']['image'])));
+$u = $q('category=zzz&year=abc&problem=nonsense&band=xyz');
+check('unknown filter values are ignored, not errors', ($u['total'] ?? null) === 233, json_encode(array_diff_key($u ?? [], ['rows' => 1, 'paths' => 1])));
+[$s, $d] = call('GET', 'sitecheck.php?action=profiles&q=' . urlencode("' OR 1=1 -- "), $editor);
+check('search text is not SQL', $s === 200 && $d['total'] === 0, "got $s");
+[$s, $d] = call('GET', 'sitecheck.php?action=profiles&q=' . urlencode('<script>alert(1)</script>'), $editor);
+check('script in search returns plain JSON', $s === 200 && $d['total'] === 0);
+check('score is the same on every run', $q('q=Chitra')['rows'][0]['score_parts'] === $q('q=Chitra')['rows'][0]['score_parts']);
+$pdo->exec("UPDATE registration SET fullbio = REPEAT('b', 600) WHERE id = 3");
+$after = $q('q=Chitra')['rows'][0];
+check('a longer bio changes only the bio part (68 -> 76)', $after['score'] === 76 && array_column($after['score_parts'], 'got', 'key') === ['photos' => 25, 'bio' => 25, 'banner' => 10, 'seo' => 16], json_encode($after['score_parts']));
+
+echo "Profile Changes (change log)\n";
+$pdo->exec('ALTER TABLE registration ADD mobile VARCHAR(20) NULL');
+[$s, $d, $raw] = call('POST', 'changelog.php?action=install', $admin, []);
+check('turns on (self-test, then triggers)', $s === 200 && $d['on'] === true, "got $s " . substr($raw, 0, 200));
+$pdo->exec("UPDATE registration SET meta_title = 'New title', mobile = '9000000001' WHERE id = 1");
+[$s, $d] = call('GET', 'changelog.php?action=list&q=1', $viewer);
+$c = $d['rows'][0] ?? [];
+check('records what changed, before and after', ($c['profile_id'] ?? 0) === 1 && in_array('meta_title', $c['fields'] ?? [], true) && ($c['changes']['meta_title'][1] ?? '') === 'New title', json_encode($c));
+check('mobile change is noted without its value', in_array('mobile', $c['fields'] ?? [], true) && !str_contains(json_encode($c), '9000000001'));
+[$s, $d] = call('POST', 'changelog.php?action=uninstall', $admin, []);
+$left = (int) $pdo->query("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '$dbName'")->fetchColumn();
+check('turns off and leaves no triggers', $s === 200 && $left === 0, "triggers left: $left");
+
+echo "News: script cannot be stored\n";
+[$s, $d, $raw] = call('POST', 'news.php', $editor, ['title' => 'XSS test', 'content_html' => '<p>Hi</p><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">x</a><iframe src="//evil"></iframe>']);
+$html = (string) ($d['content_html'] ?? '');
+check('script, event handlers, javascript: links and iframes are removed', $s === 201 && str_contains($html, '<p>Hi</p>') && !preg_match('/script|onerror|javascript:|iframe/i', $html), "got $s $html");
+[$s] = call('POST', 'news.php', $editor, ['title' => 'Bad image', 'featured_image_url' => 'javascript:alert(1)']);
+check('javascript: image address is refused', $s === 422, "got $s");
+
+echo "Image upload\n";
+function upload(string $tok, string $file, string $name): array
+{
+    global $httpPort;
+    $ch = curl_init("http://127.0.0.1:$httpPort/api/upload.php");
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ["X-Admin-Token: $tok"],
+        CURLOPT_POSTFIELDS => ['image' => new CURLFile($file, '', $name)]]);
+    $raw = (string) curl_exec($ch);
+    return [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode($raw, true)];
+}
+file_put_contents("$tmp/fake.jpg", '<?php echo "hi"; ?>');
+file_put_contents("$tmp/x.svg", '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>');
+$im = imagecreatetruecolor(20, 10);
+imagepng($im, "$tmp/ok.png");
+[$s] = upload($editor, "$tmp/fake.jpg", 'photo.jpg');
+check('PHP renamed to .jpg is refused', $s === 415, "got $s");
+[$s] = upload($editor, "$tmp/x.svg", 'x.svg');
+check('SVG is refused', $s === 415, "got $s");
+[$s, $d] = upload($editor, "$tmp/ok.png", 'ok.png');
+check('a real image is stored under a random name', $s === 201 && preg_match('#/[0-9a-f]{32}\.png$#', (string) ($d['url'] ?? '')) && ($d['width'] ?? 0) === 20, "got $s " . json_encode($d));
+[$s] = upload($viewer, "$tmp/ok.png", 'ok.png');
+check('a viewer cannot upload', $s === 403, "got $s");
+
+echo "Sessions\n";
+[$s] = call('GET', 'auth.php', substr($editor, 0, -1) . (substr($editor, -1) === 'a' ? 'b' : 'a'));
+check('a changed token is refused', $s === 401, "got $s");
+$parts = explode('.', $editor);
+$parts[1] = bin2hex('owner1');
+[$s] = call('GET', 'auth.php', implode('.', $parts));
+check('another user\'s name in a token is refused', $s === 401, "got $s");
+
+echo "Server Cleanup safety\n";
+file_put_contents("$tmp/site/old-page.php.bak", "<?php echo 'old';");
+file_put_contents("$tmp/site/config.php", "<?php \$db_pass = 'Real-Secret-1';");
+file_put_contents("$tmp/site/config.php.bak", "<?php\n\$host = 'localhost';\n\$password = 'Sup3r-Secret-9';\n\$db_pass=\"Other-Secret-2\";\ndefine('API_KEY', 'Key-Secret-3');\n");
+foreach (['../config.php', 'config.php', 'cms/backend/config.php', 'missindia_profile/../config.php', '/etc/passwd'] as $bad) {
+    [$s] = call('GET', 'cleanup.php?action=preview&path=' . urlencode($bad), $admin);
+    check("refuses $bad", $s === 422, "got $s");
+}
+[$s, $d] = call('GET', 'cleanup.php?action=preview&path=old-page.php.bak', $admin);
+check('previews a real backup file', $s === 200 && ($d['kind'] ?? '') === 'text', "got $s");
+[$s, $d] = call('GET', 'cleanup.php?action=preview&path=config.php.bak', $admin);
+file_put_contents("$tmp/site/.env.bak", "DB_PASSWORD=Env-Secret-4\nAPP_NAME=fsia\n");
+[$s2, $d2] = call('GET', 'cleanup.php?action=preview&path=.env.bak', $admin);
+check('...also in .env style files', $s2 === 200 && (!str_contains(json_encode($d2), 'Env-Secret-4') && str_contains((string) $d2['text'], 'APP_NAME=fsia')), "got $s2 " . json_encode($d2['text'] ?? $d2));
+check('preview hides passwords and keys in old config copies', $s === 200 && !preg_match('/Sup3r-Secret-9|Other-Secret-2|Key-Secret-3/', json_encode($d)) && str_contains((string) ($d['text'] ?? ''), 'localhost'), json_encode($d['text'] ?? $d));
+[$s, $d] = call('POST', 'cleanup.php?action=trash', $admin, ['paths' => ['old-page.php.bak']]);
+check('moves a file to Trash', $s === 200 && ($d['moved'] ?? 0) === 1 && !is_file("$tmp/site/old-page.php.bak"), json_encode($d));
+[$s, $d] = call('GET', 'cleanup.php?action=trash_list', $admin);
+$batch = $d['batches'][0]['batch'] ?? '';
+[$s] = call('POST', 'cleanup.php?action=restore', $admin, ['batch' => $batch]);
+check('restores it', $s === 200 && is_file("$tmp/site/old-page.php.bak"), "got $s");
+call('POST', 'cleanup.php?action=trash', $admin, ['paths' => ['old-page.php.bak']]);
+$batch = call('GET', 'cleanup.php?action=trash_list', $admin)[1]['batches'][0]['batch'] ?? '';
+[$s, $d] = call('POST', 'cleanup.php?action=purge', $admin, ['batch' => $batch]);
+check('cannot delete for good before 7 days', $s === 422, "got $s");
+
 echo "Logging failure never breaks a request\n";
 $pdo->exec("RENAME TABLE `$dbName`.cms_audit_log TO `$dbName`.cms_audit_log_x");
 $pdo->exec("CREATE VIEW `$dbName`.cms_audit_log AS SELECT 1 AS id");
 [$s] = call('PUT', 'seo.php?page=about', $editor, $seoBody);
 check('a change still saves when the log cannot be written', $s === 200, "got $s");
+
+echo "Sign-in rate limit\n";
+for ($i = 0; $i < 9; $i++) {
+    [$s] = call('POST', 'auth.php', null, ['username' => 'owner1', 'password' => 'wrong']);
+}
+check('after 8 failed sign-ins the next try is blocked', $s === 429, "got $s");
+@unlink(sys_get_temp_dir() . '/fsia-cms-login/' . sha1('127.0.0.1') . '.json');
 
 echo "\n$count checks, $failures failed\n";
 exit($failures ? 1 : 0);
