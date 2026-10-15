@@ -9,7 +9,7 @@ import LivePreview from '../components/LivePreview';
 import { useToast } from '../lib/toast';
 
 /** One editable block (hero, story ...) with its own Save button. */
-function SectionCard({ page, schema, initial, onDraft, onFocus }) {
+function SectionCard({ page, schema, initial, onDraft, onFocus, onSaved }) {
   const blank = { content: Object.fromEntries(schema.fields.map((f) => [f.name, ''])), image_url: '' };
   const start = initial
     ? { content: { ...blank.content, ...initial.content }, image_url: initial.image_url || '' }
@@ -45,6 +45,7 @@ function SectionCard({ page, schema, initial, onDraft, onFocus }) {
       const next = { content: { ...blank.content, ...res.content }, image_url: res.image_url || '' };
       setForm(next);
       setSaved(next);
+      onSaved?.(schema.key, res);
       notify(`${schema.title} saved`);
     } catch (e) {
       setErrors({ ...(e.fields || {}), ...(e.fields?.content ? { _: e.fields.content } : {}) });
@@ -108,6 +109,16 @@ export default function PageEditor() {
   const [drafts, setDrafts] = useState({});
   const [focusKey, setFocusKey] = useState('');
   const onDraft = useCallback((key, form) => setDrafts((d) => ({ ...d, [key]: form })), []);
+  const [reloadKey, setReloadKey] = useState(0);
+  // After a save the preview reloads, so it shows the real page with the saved content.
+  const onSaved = useCallback((key, res) => {
+    setSections((s) => ({ ...(s || {}), [key]: res }));
+    setReloadKey((k) => k + 1);
+  }, []);
+  // What the page shows now for each field: the saved text, or the page's default (the placeholder).
+  const baseline = Object.fromEntries(schemas.map((s) => [s.key, Object.fromEntries(s.fields
+    .filter((f) => !['select', 'number', 'url'].includes(f.type))
+    .map((f) => [f.name, String(sections?.[s.key]?.content?.[f.name] || '').trim() || f.placeholder || ''])) ]));
 
   useEffect(() => {
     let cancelled = false;
@@ -129,12 +140,12 @@ export default function PageEditor() {
           {sections === null
             ? schemas.map((s) => <div key={s.key} className="card h-64 animate-pulse bg-cream" />)
             : schemas.map((s) => (
-              <SectionCard key={`${slug}-${s.key}`} page={slug} schema={s} initial={sections[s.key]} onDraft={onDraft} onFocus={setFocusKey} />
+              <SectionCard key={`${slug}-${s.key}`} page={slug} schema={s} initial={sections[s.key]} onDraft={onDraft} onFocus={setFocusKey} onSaved={onSaved} />
             ))}
         </div>
         {page.preview && (
           <div className="xl:sticky xl:top-6">
-            <LivePreview url={page.preview} drafts={drafts} focusKey={focusKey} />
+            <LivePreview url={page.preview} drafts={drafts} focusKey={focusKey} baseline={sections ? baseline : null} reloadKey={reloadKey} />
           </div>
         )}
       </div>

@@ -13,6 +13,31 @@ require_once __DIR__ . '/../lib/bootstrap.php';
  */
 
 const TEAM_CATEGORIES = ['Leadership', 'Core Team', 'Mentors', 'Anchors', 'Media'];
+
+/**
+ * "Leadership, Jury": one or more categories, comma separated. The five page sections
+ * above plus any other group name (letters, numbers, spaces, & . ' -), at most 8.
+ * Needs the VARCHAR column from database/migrations/2026-10-15-team-multi-category.sql.
+ */
+function team_categories(Validator $v, mixed $raw): string
+{
+    $parts = array_values(array_unique(array_filter(array_map('trim', explode(',', is_string($raw) ? $raw : '')), 'strlen')));
+    if (!$parts) {
+        $v->addError('category', 'Choose at least one category');
+        return '';
+    }
+    foreach ($parts as $p) {
+        if (mb_strlen($p) > 40 || !preg_match("/^[\\p{L}\\p{N} &.'-]+$/u", $p)) {
+            $v->addError('category', "Not a valid category: $p");
+            return '';
+        }
+    }
+    if (count($parts) > 8) {
+        $v->addError('category', 'At most 8 categories');
+        return '';
+    }
+    return implode(', ', $parts);
+}
 const SOCIAL_KEYS = ['instagram', 'facebook', 'twitter', 'linkedin', 'youtube', 'website'];
 
 function team_row(array $r): array
@@ -50,7 +75,7 @@ function team_validate(array $in): array
     $row = [
         'name'          => $v->string('name', 150, true),
         'designation'   => $v->string('designation', 150),
-        'category'      => $v->enum('category', TEAM_CATEGORIES),
+        'category'      => team_categories($v, $in['category'] ?? 'Mentors'),
         'image_url'     => $v->url('image_url'),
         'display_order' => $v->int('display_order', 0, -100000, 100000),
         'is_active'     => $v->bool('is_active', true) ? 1 : 0,
@@ -120,15 +145,13 @@ respond(function () {
             }
             $cat = query_param('category');
             if ($cat !== null && $cat !== '') {
-                if (!in_array($cat, TEAM_CATEGORIES, true)) {
-                    throw new ApiError('Unknown category');
-                }
-                $where[] = 'category = ?';
-                $params[] = $cat;
+                $where[] = "FIND_IN_SET(?, REPLACE(category, ', ', ','))";
+                $params[] = trim($cat);
             }
             $sql = 'SELECT * FROM team_members'
                 . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-                . " ORDER BY FIELD(category, 'Leadership','Core Team','Mentors','Anchors','Media'), display_order, name";
+                . " ORDER BY FIELD(SUBSTRING_INDEX(category, ',', 1), 'Leadership','Core Team','Mentors','Anchors','Media') = 0,
+                    FIELD(SUBSTRING_INDEX(category, ',', 1), 'Leadership','Core Team','Mentors','Anchors','Media'), display_order, name";
             $st = db()->prepare($sql);
             $st->execute($params);
             return array_map('team_row', $st->fetchAll());

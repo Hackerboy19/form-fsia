@@ -5,7 +5,7 @@
 
 export const PAGES = [
   { slug: 'index', label: 'Home', file: 'index.php' },
-  { slug: 'about', label: 'About', file: 'about.php' },
+  { slug: 'about', label: 'About', file: 'about.php', preview: '/about.php' },
   { slug: 'our-teams', label: 'Our Team', file: 'our-teams.php', preview: '/our-teams.php' },
   { slug: 'news-coverage', label: 'News Coverage', file: 'news-coverage.php' },
   { slug: 'special-news-coverage', label: 'Special Coverage', file: 'special-news-coverage.php' },
@@ -52,26 +52,27 @@ export const SECTION_SCHEMAS = {
       title: 'Page header',
       image: { label: 'Header image', size: { w: 1600, h: 700, fit: 'cover' } },
       fields: [
-        { name: 'eyebrow', label: 'Small label', max: 80 },
-        { name: 'title', label: 'Title', max: 140, required: true, placeholder: 'About Forever Star India' },
-        { name: 'subtitle', label: 'Subtitle', type: 'textarea', max: 400 },
+        { name: 'eyebrow', label: 'Badge label (e.g. About)', max: 80, placeholder: 'About' },
+        { name: 'title', label: 'Main Title', max: 140, required: true, placeholder: 'Forever Star India' },
+        { name: 'subtitle', label: 'Subtitle', type: 'textarea', max: 400, placeholder: 'Beauty Pageants & Awards' },
       ],
     },
     {
       key: 'story',
-      title: 'Our story',
-      image: { label: 'Story image', size: { w: 1200, h: 900, fit: 'cover' } },
+      title: 'The Purpose Behind Forever Star India',
+      image: { label: 'Purpose image', size: { w: 1200, h: 900, fit: 'cover' } },
       fields: [
-        { name: 'heading', label: 'Heading', max: 120 },
-        { name: 'body', label: 'Story', type: 'textarea', max: 5000, rows: 8 },
+        { name: 'heading', label: 'Heading', max: 120, placeholder: 'The Purpose Behind Forever Star India' },
+        { name: 'story', label: 'Purpose Story / Text', type: 'textarea', max: 5000, rows: 8 },
       ],
     },
     {
       key: 'mission',
-      title: 'Mission & vision',
+      title: 'Our Mission, Goals & Vision',
       fields: [
-        { name: 'mission', label: 'Mission', type: 'textarea', max: 800 },
-        { name: 'vision', label: 'Vision', type: 'textarea', max: 800 },
+        { name: 'mission', label: 'Our Mission (one point per line)', type: 'textarea', max: 1200, rows: 6 },
+        { name: 'goals', label: 'Our Goals (one point per line)', type: 'textarea', max: 1200, rows: 6 },
+        { name: 'vision', label: 'Our Vision (one point per line)', type: 'textarea', max: 1200, rows: 6 },
       ],
     },
   ],
@@ -172,5 +173,9 @@ SECTION_SCHEMAS['our-teams'] = [
   },
 ];
 
-export const TEAM_CATEGORIES = ['Leadership', 'Core Team', 'Mentors', 'Anchors', 'Media'];
+// The five page sections of our-teams.php, then further groups a member can also belong to.
+export const TEAM_CORE_CATEGORIES = ['Leadership', 'Core Team', 'Mentors', 'Anchors', 'Media'];
+export const TEAM_CATEGORIES = [...TEAM_CORE_CATEGORIES, 'Jury', 'Fashion Designers', 'Makeup Artists', 'Special Guests', 'Performers', 'Influencers', 'State Directors', 'National Winners', 'Achievers'];
+/** "Leadership, Jury" -> ['Leadership', 'Jury']: a member can sit in several categories. */
+export const splitCategories = (value) => String(value || '').split(',').map((s) => s.trim()).filter(Boolean);
 export const SOCIAL_NETWORKS = ['instagram', 'facebook', 'twitter', 'linkedin', 'youtube', 'website'];

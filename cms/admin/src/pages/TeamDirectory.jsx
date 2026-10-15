@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, assetUrl } from '../lib/api';
-import { SOCIAL_NETWORKS, TEAM_CATEGORIES } from '../lib/pages';
+import { SOCIAL_NETWORKS, TEAM_CATEGORIES, TEAM_CORE_CATEGORIES, splitCategories } from '../lib/pages';
 import { PageHeader } from '../components/Layout';
-import { Field, SelectField, Toggle } from '../components/Field';
+import { Field, Toggle } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
 import Modal from '../components/Modal';
 import { useToast } from '../lib/toast';
@@ -67,13 +67,13 @@ function MemberModal({ member, onClose, onSaved }) {
           <Field label="Name *" value={form.name} onChange={set('name')} max={150} error={errors.name} required />
           <Field label="Designation" value={form.designation} onChange={set('designation')} max={150} error={errors.designation} placeholder="e.g. Rampwalk Expert" />
           <div className="grid grid-cols-2 gap-4">
-            <SelectField label="Category" value={form.category} options={TEAM_CATEGORIES} onChange={set('category')} error={errors.category} />
+            <CategoryPicker value={form.category} onChange={set('category')} error={errors.category} />
             <Field label="Display order" type="number" value={form.display_order} onChange={set('display_order')} error={errors.display_order} hint="Lower shows first" />
           </div>
           <Toggle checked={form.is_active} onChange={set('is_active')} label="Visible on the website" description="Hidden members stay here but don't appear on our-teams.php." />
           <Field label="About (profile text)" type="textarea" rows={4} value={form.bio} onChange={set('bio')} max={2000} recommended={400} error={errors.bio}
             hint={errors.bio || 'Shown in the profile pop-up (and under the name for Leadership). Empty = a short automatic line.'} />
-          {form.category === 'Leadership' && (
+          {splitCategories(form.category).includes('Leadership') && (
             <Field label="Quote line (Leadership only)" value={form.quote} onChange={set('quote')} max={255} error={errors.quote}
               placeholder="Talent should receive opportunity before it is judged." hint={errors.quote || 'The large italic line under the name on our-teams.php.'} />
           )}
@@ -103,6 +103,42 @@ function MemberModal({ member, onClose, onSaved }) {
   );
 }
 
+/** Several categories per member: the page sections as checkboxes, anything else typed in "Other". */
+function CategoryPicker({ value, onChange, error }) {
+  const current = splitCategories(value);
+  const custom = current.filter((c) => !TEAM_CORE_CATEGORIES.includes(c));
+  const toggle = (cat) => {
+    const next = current.includes(cat) ? current.filter((c) => c !== cat) : [...current, cat];
+    onChange(next.join(', '));
+  };
+  const setCustom = (text) => {
+    const core = current.filter((c) => TEAM_CORE_CATEGORIES.includes(c));
+    onChange([...core, ...splitCategories(text)].join(', '));
+  };
+  return (
+    <div className="col-span-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+      <span className="label font-bold text-navy">Category (select one or more, or add Other)</span>
+      <div className="flex flex-wrap gap-2">
+        {TEAM_CORE_CATEGORIES.map((cat) => {
+          const on = current.includes(cat);
+          return (
+            <label key={cat} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${on ? 'border-navy bg-navy text-gold' : 'border-slate-300 bg-white text-slate-700'}`}>
+              <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(cat)} />
+              {on ? '✓ ' : '+ '}{cat}
+            </label>
+          );
+        })}
+      </div>
+      <div className="border-t border-slate-200 pt-2">
+        <span className="text-[11px] font-semibold text-slate-500">Other (type a category not in the list):</span>
+        <input className="input mt-1 !py-1 text-xs" placeholder="e.g. Jury, Special Guests (comma separated)" defaultValue={custom.join(', ')}
+          onChange={(e) => setCustom(e.target.value)} />
+      </div>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export default function TeamDirectory() {
   const [params, setParams] = useSearchParams();
   const [members, setMembers] = useState(null);
@@ -118,14 +154,14 @@ export default function TeamDirectory() {
 
   const counts = useMemo(() => {
     const c = { All: members?.length || 0 };
-    TEAM_CATEGORIES.forEach((cat) => { c[cat] = members?.filter((m) => m.category === cat).length || 0; });
+    TEAM_CATEGORIES.forEach((cat) => { c[cat] = members?.filter((m) => splitCategories(m.category).includes(cat)).length || 0; });
     return c;
   }, [members]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (members || []).filter(
-      (m) => (category === 'All' || m.category === category) && (!q || `${m.name} ${m.designation}`.toLowerCase().includes(q)),
+      (m) => (category === 'All' || splitCategories(m.category).includes(category)) && (!q || `${m.name} ${m.designation}`.toLowerCase().includes(q)),
     );
   }, [members, category, query]);
 
@@ -209,7 +245,11 @@ export default function TeamDirectory() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3"><span className="rounded-full bg-cream-2 px-2.5 py-1 text-xs font-semibold text-gold-bronze">{m.category}</span></td>
+                <td className="px-4 py-3">
+                  <span className="flex flex-wrap gap-1">
+                    {splitCategories(m.category).map((c) => <span key={c} className="rounded-full bg-cream-2 px-2.5 py-1 text-xs font-semibold text-gold-bronze">{c}</span>)}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-center tabular-nums">{m.display_order}</td>
                 <td className="px-4 py-3"><Toggle checked={m.is_active} onChange={() => toggleActive(m)} label={m.is_active ? 'Shown' : 'Hidden'} /></td>
                 <td className="px-4 py-3 text-right">
