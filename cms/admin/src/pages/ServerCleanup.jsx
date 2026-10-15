@@ -61,6 +61,14 @@ export default function ServerCleanup() {
   const [selected, setSelected] = useState({}); // path -> size
   const [search, setSearch] = useState('');
   const [confirm, setConfirm] = useState(false);
+  const [preview, setPreview] = useState(null); // { item, data?, error? }
+
+  function openPreview(item) {
+    setPreview({ item });
+    api.cleanupPreview(item.path)
+      .then((data) => setPreview((p) => (p?.item.path === item.path ? { item, data } : p)))
+      .catch((e) => setPreview((p) => (p?.item.path === item.path ? { item, error: e.message } : p)));
+  }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
@@ -211,7 +219,7 @@ export default function ServerCleanup() {
                           <th className="p-3">File</th>
                           <th className="p-3">Size</th>
                           <th className="p-3">Last changed</th>
-                          <th className="p-3"><span className="sr-only">Copy</span></th>
+                          <th className="p-3"><span className="sr-only">Preview and copy</span></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -219,16 +227,17 @@ export default function ServerCleanup() {
                           <tr key={i.path} className={`border-t border-slate-100 ${selected[i.path] !== undefined ? 'bg-gold/5' : ''}`}>
                             <td className="p-3"><input type="checkbox" checked={selected[i.path] !== undefined} onChange={() => toggle(i)} aria-label={`Select ${i.path}`} /></td>
                             <td className="p-3">
-                              <label className="flex cursor-pointer items-center gap-3" onClick={(e) => { e.preventDefault(); toggle(i); }}>
+                              <button type="button" className="flex items-center gap-3 text-left hover:text-gold-dark" onClick={() => openPreview(i)} title="Preview this file">
                                 {IMG.test(i.path) && (
                                   <img src={`${SITE}/${i.path.split('/').map(encodeURIComponent).join('/')}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-lg bg-cream object-cover" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
                                 )}
-                                <span className="break-all font-mono text-xs">{i.path}</span>
-                              </label>
+                                <span className="break-all font-mono text-xs underline decoration-slate-300 underline-offset-2">{i.path}</span>
+                              </button>
                             </td>
                             <td className="whitespace-nowrap p-3 text-slate-600">{formatBytes(i.size)}</td>
                             <td className="whitespace-nowrap p-3 text-slate-600">{i.date}</td>
-                            <td className="p-3">
+                            <td className="whitespace-nowrap p-3">
+                              <button type="button" className="mr-3 text-xs font-semibold text-gold-dark underline" onClick={() => openPreview(i)}>👁 Preview</button>
                               <button type="button" className="text-xs font-semibold text-gold-dark underline" onClick={() => api.cleanupDownload(i.path).catch((e) => setError(e.message))}>
                                 ⤓ Copy
                               </button>
@@ -256,6 +265,19 @@ export default function ServerCleanup() {
         </>
       )}
 
+      <Modal open={!!preview} title={preview ? preview.item.path.split('/').pop() : ''} onClose={() => setPreview(null)} width="max-w-4xl"
+        footer={preview && (
+          <>
+            <button type="button" className="btn-ghost" onClick={() => api.cleanupDownload(preview.item.path).catch((e) => setError(e.message))}>⤓ Copy</button>
+            <button type="button" className={selected[preview.item.path] !== undefined ? 'btn-ghost' : 'btn-gold'} onClick={() => toggle(preview.item)}>
+              {selected[preview.item.path] !== undefined ? '✓ Selected for Trash' : 'Select for Trash'}
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setPreview(null)}>Close</button>
+          </>
+        )}>
+        {preview && <FilePreview item={preview.item} data={preview.data} error={preview.error} />}
+      </Modal>
+
       <Modal open={confirm} title="Move to Trash?" onClose={() => !busy && setConfirm(false)} width="max-w-lg"
         footer={(
           <>
@@ -270,6 +292,64 @@ export default function ServerCleanup() {
           <li>⏳ They can be deleted for good only after <b>7 days</b>.</li>
         </ul>
       </Modal>
+    </>
+  );
+}
+
+/** Shows what a file holds before it is moved: text, image, the list inside a zip, or basic facts. */
+function FilePreview({ item, data, error }) {
+  const facts = (
+    <p className="mb-3 break-all text-xs text-slate-500">
+      <span className="font-mono">{item.path}</span> · {formatBytes(item.size)} · last changed {data?.date || item.date}
+    </p>
+  );
+  if (error) return <>{facts}<p className="text-sm text-red-600">{error}</p></>;
+  if (!data) return <>{facts}<div className="h-48 animate-pulse rounded-xl bg-cream" /></>;
+
+  if (data.kind === 'image') {
+    return (
+      <>
+        {facts}
+        <div className="grid place-items-center rounded-xl bg-[repeating-conic-gradient(#f1ede3_0%_25%,#fff_0%_50%)] bg-[length:20px_20px] p-3">
+          <img src={data.url} alt="" referrerPolicy="no-referrer" className="max-h-[60vh] max-w-full rounded-lg object-contain" />
+        </div>
+        {data.width && <p className="mt-2 text-xs text-slate-500">{data.width} × {data.height} px</p>}
+      </>
+    );
+  }
+  if (data.kind === 'text') {
+    return (
+      <>
+        {facts}
+        <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap break-all rounded-xl bg-navy p-4 font-mono text-[11px] leading-relaxed text-slate-100">{data.text || '(empty file)'}</pre>
+        <p className="mt-2 text-xs text-slate-500">
+          {data.lines.toLocaleString()} lines shown{data.truncated ? ' · only the first 64 KB; use Copy for the whole file' : ''}.
+        </p>
+      </>
+    );
+  }
+  if (data.kind === 'zip') {
+    return (
+      <>
+        {facts}
+        <p className="mb-2 text-sm font-semibold">{data.total_entries.toLocaleString()} item{data.total_entries === 1 ? '' : 's'} inside this zip{data.total_entries > data.entries.length ? ` (first ${data.entries.length} shown)` : ''}:</p>
+        <ul className="max-h-[55vh] divide-y divide-slate-100 overflow-auto rounded-xl border border-slate-100 text-xs">
+          {data.entries.map((e) => (
+            <li key={e.name} className="flex gap-3 px-3 py-1.5">
+              <span className="min-w-0 flex-1 break-all font-mono">{e.name}</span>
+              <span className="whitespace-nowrap text-slate-500">{e.name.endsWith('/') ? 'folder' : formatBytes(e.size)}</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  }
+  return (
+    <>
+      {facts}
+      <p className="rounded-xl bg-cream p-4 text-sm text-slate-600">
+        This file cannot be shown here{data.mime ? ` (${data.mime})` : ''}. Use <b>Copy</b> to open it on your computer.
+      </p>
     </>
   );
 }

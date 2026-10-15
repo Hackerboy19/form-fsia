@@ -10,6 +10,7 @@ require_once __DIR__ . '/../lib/site_db.php';
  * The database is never changed.
  *
  * GET  /api/cleanup.php?action=scan                 -> groups of unwanted files
+ * GET  /api/cleanup.php?action=preview&path=x       -> what the file holds (text, image, zip list)
  * POST /api/cleanup.php?action=trash   {paths:[]}   -> move files to Trash
  * GET  /api/cleanup.php?action=trash_list           -> what is in Trash
  * POST /api/cleanup.php?action=restore {batch, paths?}
@@ -184,6 +185,57 @@ function cl_check_path(string $rel): array
     return [$rel, $real];
 }
 
+/** What a file holds, for the preview in the admin: text, image, zip listing or basic facts. */
+function cl_preview(string $rel, string $real): array
+{
+    $size = (int) filesize($real);
+    $out = ['path' => $rel, 'size' => $size, 'date' => date('Y-m-d H:i', (int) filemtime($real)), 'kind' => 'other'];
+    $ext = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
+
+    if (preg_match('/^(jpe?g|png|webp|gif|jfif|avif|svg|bmp|ico)$/', $ext)) {
+        $dim = @getimagesize($real);
+        return array_merge($out, ['kind' => 'image', 'url' => rtrim((string) (cms_config()['site_url'] ?? 'https://www.fsia.in'), '/') . '/' . implode('/', array_map('rawurlencode', explode('/', $rel))),
+            'width' => $dim[0] ?? null, 'height' => $dim[1] ?? null]);
+    }
+    if ($ext === 'zip' && class_exists('ZipArchive')) {
+        $zip = new ZipArchive();
+        if ($zip->open($real) === true) {
+            $entries = [];
+            for ($i = 0; $i < min($zip->numFiles, 500); $i++) {
+                $st = $zip->statIndex($i);
+                $entries[] = ['name' => $st['name'], 'size' => (int) $st['size']];
+            }
+            $n = $zip->numFiles;
+            $zip->close();
+            return array_merge($out, ['kind' => 'zip', 'entries' => $entries, 'total_entries' => $n]);
+        }
+    }
+    if (preg_match('/^(mp4|mov|webm|mkv|avi|mp3|wav|pdf|rar|7z|tar|tgz|bz2)$/', $ext)) {
+        return array_merge($out, ['mime' => function_exists('mime_content_type') ? (string) @mime_content_type($real) : '']);
+    }
+
+    // Everything else: show it as text when it is text (logs, .bak copies, .sql, .htaccess-broken, .gz of text).
+    $limit = 65536;
+    if ($ext === 'gz' && function_exists('gzopen')) {
+        $h = @gzopen($real, 'rb');
+        $raw = $h ? (string) gzread($h, $limit + 1) : '';
+        if ($h) gzclose($h);
+    } else {
+        $h = @fopen($real, 'rb');
+        $raw = $h ? (string) fread($h, $limit + 1) : '';
+        if ($h) fclose($h);
+    }
+    if ($raw !== '' && str_contains(substr($raw, 0, 8000), "\0")) {
+        return array_merge($out, ['mime' => function_exists('mime_content_type') ? (string) @mime_content_type($real) : '']);
+    }
+    $truncated = strlen($raw) > $limit || ($ext !== 'gz' && $size > $limit);
+    $raw = substr($raw, 0, $limit);
+    if (!mb_check_encoding($raw, 'UTF-8')) {
+        $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+    }
+    return array_merge($out, ['kind' => 'text', 'text' => $raw, 'truncated' => $truncated, 'lines' => substr_count($raw, "\n") + 1]);
+}
+
 function cl_move(string $from, string $to): void
 {
     $dir = dirname($to);
@@ -225,6 +277,11 @@ respond(function () {
 
     if ($method === 'GET' && $action === 'scan') {
         return cl_scan();
+    }
+
+    if ($method === 'GET' && $action === 'preview') {
+        [$rel, $real] = cl_check_path((string) query_param('path'));
+        return cl_preview($rel, $real);
     }
 
     if ($method === 'GET' && $action === 'download') {

@@ -86,6 +86,7 @@ export const api = {
   changelogList: (params) => request('changelog.php', { query: { action: 'list', ...params } }),
 
   cleanupScan: () => request('cleanup.php', { query: { action: 'scan' } }),
+  cleanupPreview: (path) => request('cleanup.php', { query: { action: 'preview', path } }),
   cleanupTrash: (paths) => request('cleanup.php', { method: 'POST', query: { action: 'trash' }, body: { paths } }),
   cleanupTrashList: () => request('cleanup.php', { query: { action: 'trash_list' } }),
   cleanupRestore: (batch, paths) => request('cleanup.php', { method: 'POST', query: { action: 'restore' }, body: { batch, paths } }),
