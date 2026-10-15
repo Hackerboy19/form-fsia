@@ -9,6 +9,8 @@ require_once __DIR__ . '/../lib/bootstrap.php';
  *
  * GET  /api/sitecheck.php?action=urls[&q=text]  -> main pages + profile URLs from the root .htaccess
  * GET  /api/sitecheck.php?action=check&url=/x   -> check one page
+ * GET  /api/sitecheck.php?action=profiles&category=&year=&month=&status=&problem=bio,banner,image,seo&page=
+ *                                               -> profiles from the database with missing bio/banner/photos/SEO
  * POST /api/sitecheck.php?action=baseline       -> body {pages:[{url,title,description,keywords,canonical,h1}]}
  */
 
@@ -358,6 +360,199 @@ function sc_profile_urls(): array
     return array_keys($urls);
 }
 
+// --- Profile data (from the site's registration table) -----------------------
+
+/* Category filter -> regtype values, labels as the site shows them. */
+const SC_CATEGORIES = [
+    'miss-india'     => ['Miss India', [6]],
+    'mrs-india'      => ['Mrs India', [7]],
+    'miss-teen'      => ['Miss Teen India', [13]],
+    'super-women'    => ['Super Women', [9, 2, 32, 40]],
+    'super-heroes'   => ['Super Heroes', [8, 1]],
+    'fashion'        => ['Fashion Designer', [10]],
+    'makeup'         => ['Makeup Artist', [11]],
+    'trainer'        => ['Pageant Trainer', [12]],
+    'business'       => ['Business Award', [26]],
+    'international'  => ['International Award', [14]],
+    'miss-universe'  => ['Miss Universe', [30]],
+    'mrs-universe'   => ['Mrs Universe', [31]],
+];
+const SC_PROFILE_LIMIT = 5000;
+const SC_PAGE_SIZE = 100;
+
+/** Runs a query on the site's database. The CMS shares it on most setups; otherwise
+    the site's own config.php (which defines $connect) is used. */
+function sc_site_rows(string $sql, array $params = []): array
+{
+    static $link = null;
+    if ($link === null) {
+        try {
+            $has = db()->query("SHOW TABLES LIKE 'registration'")->fetchColumn();
+            if ($has) {
+                $link = db();
+            }
+        } catch (Throwable $e) {
+            $link = null;
+        }
+        if ($link === null) {
+            $cfg = (string) (cms_config()['site_root'] ?? dirname(__DIR__, 3)) . '/config.php';
+            if (!is_file($cfg)) {
+                throw new ApiError('Cannot reach the profiles database (no config.php in the site folder).', 500);
+            }
+            $connect = (function (string $cfg) {
+                ob_start();
+                include $cfg;
+                ob_end_clean();
+                return $connect ?? null;
+            })($cfg);
+            if (!$connect instanceof mysqli) {
+                throw new ApiError('Cannot reach the profiles database.', 500);
+            }
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+            mysqli_set_charset($connect, 'utf8mb4');
+            $link = $connect;
+        }
+    }
+    if ($link instanceof PDO) {
+        $st = $link->prepare($sql);
+        $st->execute($params);
+        return $st->fetchAll(PDO::FETCH_ASSOC);
+    }
+    $st = $link->prepare($sql);
+    if ($params) {
+        $st->bind_param(str_repeat('s', count($params)), ...array_map('strval', $params));
+    }
+    $st->execute();
+    $res = $st->get_result();
+    return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+function sc_category_of(int $regtype): string
+{
+    foreach (SC_CATEGORIES as $key => [, $types]) {
+        if (in_array($regtype, $types, true)) return $key;
+    }
+    return 'other';
+}
+
+function sc_blank($v): bool
+{
+    return trim(strip_tags(html_entity_decode((string) $v, ENT_QUOTES | ENT_HTML5, 'UTF-8')), " \t\n\r\0\x0B\xC2\xA0,") === '';
+}
+
+/** Is an image path (as stored in the database) present on the server? */
+function sc_file_ok(string $path, string $base = ''): bool
+{
+    $path = trim($path);
+    if ($path === '') return false;
+    if (preg_match('#^https?://(www\.)?fsia\.in/(.*)$#i', $path, $m)) {
+        $path = rawurldecode($m[2]);
+        $base = '';
+    } elseif (preg_match('#^https?://#i', $path)) {
+        return true; // hosted elsewhere: cannot check from here
+    }
+    $root = (string) (cms_config()['site_root'] ?? dirname(__DIR__, 3));
+    $rel = ltrim(($base !== '' ? $base . '/' : '') . ltrim($path, '/'), '/');
+    return is_file($root . '/' . $rel);
+}
+
+function sc_profile_rows(array $f): array
+{
+    $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
+        'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
+        'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1'];
+    $have = array_column(sc_site_rows('SHOW COLUMNS FROM registration'), 'Field');
+    $cols = array_values(array_intersect($want, $have));
+
+    $where = ['1=1'];
+    $params = [];
+    if (($f['status'] ?? 'approved') === 'approved') {
+        $where[] = '(status = 1 OR status = 3)';
+        if (in_array('verification', $have, true)) $where[] = 'verification = 1';
+        if (in_array('suspended', $have, true)) $where[] = 'suspended = 0';
+    }
+    if (!empty($f['category'])) {
+        if ($f['category'] === 'other') {
+            $all = array_merge(...array_map(fn ($c) => $c[1], array_values(SC_CATEGORIES)));
+            $where[] = 'regtype NOT IN (' . implode(',', $all) . ')';
+        } elseif (isset(SC_CATEGORIES[$f['category']])) {
+            $where[] = 'regtype IN (' . implode(',', SC_CATEGORIES[$f['category']][1]) . ')';
+        }
+    }
+    if (!empty($f['year'])) {
+        $where[] = 'YEAR(date_of_reg) = ?';
+        $params[] = (int) $f['year'];
+    }
+    if (!empty($f['month'])) {
+        $where[] = 'MONTH(date_of_reg) = ?';
+        $params[] = (int) $f['month'];
+    }
+    if (($f['q'] ?? '') !== '') {
+        $where[] = "(CONCAT_WS(' ', first_name, last_name) LIKE ? OR url LIKE ? OR id = ?)";
+        $like = '%' . $f['q'] . '%';
+        array_push($params, $like, $like, (int) $f['q']);
+    }
+    $sql = 'SELECT ' . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ' FROM registration WHERE ' . implode(' AND ', $where)
+        . ' ORDER BY date_of_reg DESC, id DESC LIMIT ' . SC_PROFILE_LIMIT;
+    return sc_site_rows($sql, $params);
+}
+
+function sc_profile_report(array $r): array
+{
+    $g = fn ($k) => (string) ($r[$k] ?? '');
+    $problems = [];
+
+    // Bio: any of the biography fields the profile pages show.
+    $bioFields = ['fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment'];
+    $hasBio = false;
+    foreach ($bioFields as $k) {
+        if (!sc_blank($g($k))) { $hasBio = true; break; }
+    }
+    if (!$hasBio) $problems['bio'][] = 'No biography';
+
+    // Banner: desktop (nimage2/simage2/image2) and mobile (nimage1/simage1/image1).
+    foreach (['desktop' => ['nimage2', 'simage2', 'image2'], 'mobile' => ['nimage1', 'simage1', 'image1']] as $label => $keys) {
+        $val = '';
+        foreach ($keys as $k) {
+            if (trim($g($k)) !== '') { $val = trim($g($k), " ,"); break; }
+        }
+        if ($val === '') $problems['banner'][] = "No $label banner";
+        elseif (!sc_file_ok($val, 'images') && !sc_file_ok($val)) $problems['banner'][] = "$label banner file missing on server";
+    }
+
+    // Photos: setdefault + image list, each checked on disk.
+    $photos = array_values(array_unique(array_filter(array_map('trim', array_merge(explode(',', $g('setdefault')), explode(',', $g('image')))), fn ($p) => $p !== '')));
+    $missing = array_values(array_filter($photos, fn ($p) => !sc_file_ok($p)));
+    if (!$photos) $problems['image'][] = 'No photo';
+    elseif ($missing) $problems['image'][] = count($missing) . ' of ' . count($photos) . ' photos missing on server';
+
+    // SEO: empty fields fall back to auto-generated text on the page.
+    $seo = [];
+    if (trim($g('url')) === '') $seo[] = 'No profile link (url)';
+    if (trim($g('meta_title')) === '') $seo[] = 'No meta title (auto)';
+    if (trim($g('meta_desc')) === '') $seo[] = 'No meta description (auto)';
+    if (trim($g('meta_keyword')) === '') $seo[] = 'No meta keywords (auto)';
+    if (mb_strlen($g('meta_title')) > 70) $seo[] = 'Meta title too long (' . mb_strlen($g('meta_title')) . ')';
+    if (mb_strlen($g('meta_desc')) > 170) $seo[] = 'Meta description too long (' . mb_strlen($g('meta_desc')) . ')';
+    if ($seo) $problems['seo'] = $seo;
+
+    $slug = ltrim(trim($g('url')), '/');
+    $edited = $g('starindia_action') === 'edited';
+    $cat = sc_category_of((int) $g('regtype'));
+    return [
+        'id'       => (int) $g('id'),
+        'name'     => trim($g('first_name') . ' ' . $g('last_name')) ?: '(no name)',
+        'category' => $cat === 'other' ? 'Other (' . (int) $g('regtype') . ')' : SC_CATEGORIES[$cat][0],
+        'date'     => substr($g('date_of_reg'), 0, 10),
+        'status'   => (int) $g('status'),
+        'path'     => $slug !== '' && !$edited ? '/' . $slug : '',
+        'link'     => $slug !== '' ? ($edited ? 'https://starindia.fsia.in/' : 'https://www.fsia.in/') . $slug : '',
+        'photos'   => count($photos),
+        'missing_photos' => array_slice($missing, 0, 10),
+        'problems' => $problems,
+    ];
+}
+
 respond(function () {
     require_admin();
     $action = query_param('action') ?? '';
@@ -371,6 +566,47 @@ respond(function () {
             'profiles_total' => count($profiles),
             'profiles'       => $profiles,
             'matches'        => array_slice($matches, 0, 200),
+        ];
+    }
+
+    if (request_method() === 'GET' && $action === 'profiles') {
+        @set_time_limit(120);
+        $f = [
+            'category' => (string) query_param('category'),
+            'year'     => (string) query_param('year'),
+            'month'    => (string) query_param('month'),
+            'status'   => query_param('status') === 'all' ? 'all' : 'approved',
+            'q'        => mb_substr(trim((string) query_param('q')), 0, 80),
+        ];
+        $want = array_values(array_intersect(explode(',', (string) query_param('problem')), ['bio', 'banner', 'image', 'seo']));
+        $match = query_param('match') === 'all' ? 'all' : 'any';
+
+        $rows = sc_profile_rows($f);
+        $counts = ['bio' => 0, 'banner' => 0, 'image' => 0, 'seo' => 0, 'ok' => 0];
+        $out = [];
+        foreach ($rows as $r) {
+            $rep = sc_profile_report($r);
+            foreach (array_keys($rep['problems']) as $k) $counts[$k]++;
+            if (!$rep['problems']) $counts['ok']++;
+            if ($want) {
+                $hit = array_intersect($want, array_keys($rep['problems']));
+                if ($match === 'all' ? count($hit) !== count($want) : !$hit) continue;
+            }
+            $out[] = $rep;
+        }
+        $page = max(1, (int) query_param('page'));
+        $years = array_map('intval', array_column(sc_site_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
+        return [
+            'scanned'    => count($rows),
+            'capped'     => count($rows) >= SC_PROFILE_LIMIT,
+            'counts'     => $counts,
+            'total'      => count($out),
+            'page'       => $page,
+            'page_size'  => SC_PAGE_SIZE,
+            'rows'       => query_param('all') === '1' ? $out : array_slice($out, ($page - 1) * SC_PAGE_SIZE, SC_PAGE_SIZE),
+            'paths'      => array_values(array_filter(array_column($out, 'path'))),
+            'years'      => array_values(array_filter($years, fn ($y) => $y > 2000)),
+            'categories' => [...array_map(fn ($k, $c) => ['key' => $k, 'label' => $c[0]], array_keys(SC_CATEGORIES), SC_CATEGORIES), ['key' => 'other', 'label' => 'Other']],
         ];
     }
 

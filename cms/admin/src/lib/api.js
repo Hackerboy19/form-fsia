@@ -77,6 +77,7 @@ export const api = {
 
   siteCheckUrls: (q) => request('sitecheck.php', { query: { action: 'urls', q } }),
   siteCheck: (url) => request('sitecheck.php', { query: { action: 'check', url } }),
+  siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
   upload: (file) => {

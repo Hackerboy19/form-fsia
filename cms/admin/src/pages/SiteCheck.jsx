@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { PageHeader } from '../components/Layout';
+import ProfileData from './ProfileData';
 
 const SITE = 'https://www.fsia.in';
 const LEVELS = {
@@ -21,18 +22,29 @@ const pick = (list, n) => {
 // Most serious issue level of a page; 'ok' when it has none.
 const RANK = { error: 0, change: 1, warn: 2, info: 3, ok: 4 };
 const worst = (r) => (r.issues || []).reduce((w, i) => (RANK[i.level] < RANK[w] ? i.level : w), 'ok');
+const SEO_TEXT = /title|description|keywords|canonical|H1|noindex|share image/i;
+// Result filters: which pages each one keeps.
+const FILTERS = {
+  all: ['All pages', () => true],
+  problems: ['With problems', (r) => !['ok', 'info'].includes(worst(r))],
+  error: ['Errors (page or server)', (r) => r.issues.some((i) => i.level === 'error' && !/image/i.test(i.text))],
+  images: ['Broken images', (r) => (r.images?.broken?.length || 0) > 0],
+  seo: ['SEO issues', (r) => r.issues.some((i) => i.level !== 'info' && SEO_TEXT.test(i.text))],
+  change: ['SEO changed since baseline', (r) => r.issues.some((i) => i.level === 'change')],
+  slow: ['Slow or unstable', (r) => r.issues.some((i) => /slow|overloaded|second try/i.test(i.text))],
+};
 
 /** Checks pages of the live site: opens, images, SEO tags, and changes since the saved baseline. */
 export default function SiteCheck() {
   const [lists, setLists] = useState(null);
-  const [mode, setMode] = useState('main');
+  const [mode, setMode] = useState('data');
   const [count, setCount] = useState(25);
   const [query, setQuery] = useState('');
   const [matches, setMatches] = useState([]);
   const [custom, setCustom] = useState('');
   const [results, setResults] = useState([]);
   const [progress, setProgress] = useState(null); // { done, total }
-  const [onlyProblems, setOnlyProblems] = useState(false);
+  const [filter, setFilter] = useState('all');
   const [open, setOpen] = useState(null);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
@@ -58,8 +70,8 @@ export default function SiteCheck() {
       .map((s) => (s.startsWith('http') ? s : s.startsWith('/') ? s : `/${s}`));
   }
 
-  async function run() {
-    const urls = [...new Set(targets())];
+  async function run(list) {
+    const urls = [...new Set(Array.isArray(list) ? list : targets())];
     if (!urls.length) { setMsg('No pages to check.'); return; }
     setMsg(''); setError(''); setResults([]); setOpen(null);
     stop.current = false;
@@ -103,7 +115,7 @@ export default function SiteCheck() {
     images: rows.reduce((n, r) => n + (r.images?.broken?.length || 0), 0),
   }), [rows]);
 
-  const shown = onlyProblems ? rows.filter((r) => !['ok', 'info'].includes(worst(r))) : rows;
+  const shown = rows.filter(FILTERS[filter][1]);
   const running = progress && !progress.finished;
 
   async function saveBaseline() {
@@ -132,6 +144,7 @@ export default function SiteCheck() {
   }
 
   const MODES = [
+    ['data', 'Profile data', 'filter: bio, banner, photos, SEO'],
     ['main', 'Main pages', lists ? `${lists.main.length} pages` : ''],
     ['random', 'Random profiles', 'a sample'],
     ['search', 'Find a profile', 'by name'],
@@ -164,6 +177,7 @@ export default function SiteCheck() {
         </div>
 
         <div className="mt-4">
+          {mode === 'data' && <ProfileData disabled={running} onCheckLive={(paths) => run(paths)} />}
           {mode === 'main' && lists && <p className="text-sm text-slate-600">{lists.main.join('  ·  ')}</p>}
           {mode === 'random' && (
             <label className="flex items-center gap-3 text-sm">
@@ -191,7 +205,7 @@ export default function SiteCheck() {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {!running ? (
-            <button type="button" className="btn-gold" onClick={run} disabled={!lists}>▶ Start check</button>
+            mode !== 'data' && <button type="button" className="btn-gold" onClick={run} disabled={!lists}>▶ Start check</button>
           ) : (
             <button type="button" className="btn-danger" onClick={() => { stop.current = true; }}>■ Stop</button>
           )}
@@ -226,10 +240,17 @@ export default function SiteCheck() {
             ))}
           </div>
 
-          <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
-            <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
-            Show only pages with problems
-          </label>
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter results">
+            {Object.entries(FILTERS).map(([k, [label, keep]]) => {
+              const n = rows.filter(keep).length;
+              return (
+                <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${filter === k ? 'border-gold bg-gold/15 text-navy' : 'border-slate-200 text-slate-600 hover:border-gold'}`}>
+                  {label} ({n})
+                </button>
+              );
+            })}
+          </div>
 
           <div className="mt-3 space-y-2">
             {shown.map((r) => {
