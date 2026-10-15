@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
+require_once __DIR__ . '/../lib/site_db.php';
 
 /*
  * Site Check (admin only): opens pages of the live site the way a visitor does
@@ -342,7 +343,7 @@ function sc_baseline_get(string $url): ?array
 
 function sc_profile_urls(): array
 {
-    $file = (string) (cms_config()['site_root'] ?? dirname(__DIR__, 3)) . '/.htaccess';
+    $file = site_root() . '/.htaccess';
     if (!is_file($file)) {
         return [];
     }
@@ -380,53 +381,6 @@ const SC_CATEGORIES = [
 const SC_PROFILE_LIMIT = 5000;
 const SC_PAGE_SIZE = 100;
 
-/** Runs a query on the site's database. The CMS shares it on most setups; otherwise
-    the site's own config.php (which defines $connect) is used. */
-function sc_site_rows(string $sql, array $params = []): array
-{
-    static $link = null;
-    if ($link === null) {
-        try {
-            $has = db()->query("SHOW TABLES LIKE 'registration'")->fetchColumn();
-            if ($has) {
-                $link = db();
-            }
-        } catch (Throwable $e) {
-            $link = null;
-        }
-        if ($link === null) {
-            $cfg = (string) (cms_config()['site_root'] ?? dirname(__DIR__, 3)) . '/config.php';
-            if (!is_file($cfg)) {
-                throw new ApiError('Cannot reach the profiles database (no config.php in the site folder).', 500);
-            }
-            $connect = (function (string $cfg) {
-                ob_start();
-                include $cfg;
-                ob_end_clean();
-                return $connect ?? null;
-            })($cfg);
-            if (!$connect instanceof mysqli) {
-                throw new ApiError('Cannot reach the profiles database.', 500);
-            }
-            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-            mysqli_set_charset($connect, 'utf8mb4');
-            $link = $connect;
-        }
-    }
-    if ($link instanceof PDO) {
-        $st = $link->prepare($sql);
-        $st->execute($params);
-        return $st->fetchAll(PDO::FETCH_ASSOC);
-    }
-    $st = $link->prepare($sql);
-    if ($params) {
-        $st->bind_param(str_repeat('s', count($params)), ...array_map('strval', $params));
-    }
-    $st->execute();
-    $res = $st->get_result();
-    return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-}
-
 function sc_category_of(int $regtype): string
 {
     foreach (SC_CATEGORIES as $key => [, $types]) {
@@ -451,7 +405,7 @@ function sc_file_ok(string $path, string $base = ''): bool
     } elseif (preg_match('#^https?://#i', $path)) {
         return true; // hosted elsewhere: cannot check from here
     }
-    $root = (string) (cms_config()['site_root'] ?? dirname(__DIR__, 3));
+    $root = site_root();
     $rel = ltrim(($base !== '' ? $base . '/' : '') . ltrim($path, '/'), '/');
     return is_file($root . '/' . $rel);
 }
@@ -461,7 +415,7 @@ function sc_profile_rows(array $f): array
     $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
         'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
         'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1'];
-    $have = array_column(sc_site_rows('SHOW COLUMNS FROM registration'), 'Field');
+    $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
     $cols = array_values(array_intersect($want, $have));
 
     $where = ['1=1'];
@@ -494,7 +448,7 @@ function sc_profile_rows(array $f): array
     }
     $sql = 'SELECT ' . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ' FROM registration WHERE ' . implode(' AND ', $where)
         . ' ORDER BY date_of_reg DESC, id DESC LIMIT ' . SC_PROFILE_LIMIT;
-    return sc_site_rows($sql, $params);
+    return site_db_rows($sql, $params);
 }
 
 function sc_profile_report(array $r): array
@@ -595,7 +549,7 @@ respond(function () {
             $out[] = $rep;
         }
         $page = max(1, (int) query_param('page'));
-        $years = array_map('intval', array_column(sc_site_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
+        $years = array_map('intval', array_column(site_db_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
         return [
             'scanned'    => count($rows),
             'capped'     => count($rows) >= SC_PROFILE_LIMIT,

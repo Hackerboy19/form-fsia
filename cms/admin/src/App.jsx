@@ -12,6 +12,7 @@ const NewsList = lazy(() => import('./pages/NewsManager').then((m) => ({ default
 const NewsEditor = lazy(() => import('./pages/NewsManager').then((m) => ({ default: m.NewsEditor })));
 const HomepageEditor = lazy(() => import('./pages/HomepageEditor'));
 const SiteCheck = lazy(() => import('./pages/SiteCheck'));
+const ServerCleanup = lazy(() => import('./pages/ServerCleanup'));
 const loading = <div className="card h-96 animate-pulse bg-cream" />;
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="seo" element={<SeoManager />} />
         <Route path="site-check" element={<Suspense fallback={loading}><SiteCheck /></Suspense>} />
+        <Route path="cleanup" element={<Suspense fallback={loading}><ServerCleanup /></Suspense>} />
         <Route path="homepage" element={<Suspense fallback={loading}><HomepageEditor /></Suspense>} />
         {/* The live homepage is edited on the Homepage screen; the old text blocks did not reach it. */}
         <Route path="pages/index" element={<Navigate to="/homepage" replace />} />

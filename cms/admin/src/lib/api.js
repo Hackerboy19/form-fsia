@@ -80,6 +80,26 @@ export const api = {
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
+  cleanupScan: () => request('cleanup.php', { query: { action: 'scan' } }),
+  cleanupTrash: (paths) => request('cleanup.php', { method: 'POST', query: { action: 'trash' }, body: { paths } }),
+  cleanupTrashList: () => request('cleanup.php', { query: { action: 'trash_list' } }),
+  cleanupRestore: (batch, paths) => request('cleanup.php', { method: 'POST', query: { action: 'restore' }, body: { batch, paths } }),
+  cleanupPurge: (batch) => request('cleanup.php', { method: 'POST', query: { action: 'purge' }, body: { batch } }),
+  // Saves a copy of a file (e.g. a log) to the admin's computer.
+  cleanupDownload: async (path) => {
+    const url = new URL(`${BASE}/cleanup.php`, window.location.href);
+    url.searchParams.set('action', 'download');
+    url.searchParams.set('path', path);
+    const t = tokenStore.get();
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Token': t } });
+    if (!res.ok) throw new ApiError((await res.json().catch(() => null))?.error || `Download failed (${res.status})`, res.status);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await res.blob());
+    a.download = path.split('/').pop();
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+
   upload: (file) => {
     const form = new FormData();
     form.append('image', file);

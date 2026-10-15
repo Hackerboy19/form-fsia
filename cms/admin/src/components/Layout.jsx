@@ -5,7 +5,6 @@ import { useAuth } from '../lib/auth';
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '◈', end: true },
   { to: '/seo', label: 'Global SEO', icon: '⌕' },
-  { to: '/site-check', label: 'Site Check', icon: '✓' },
   { group: 'Pages' },
   { to: '/homepage', label: 'Homepage', icon: '⌂' },
   { to: '/pages/about', label: 'About page', icon: '✦' },
@@ -13,6 +12,9 @@ const NAV = [
   { group: 'Content' },
   { to: '/team', label: 'Team Directory', icon: '♛' },
   { to: '/news', label: 'News Manager', icon: '✎' },
+  { group: 'Tools' },
+  { to: '/site-check', label: 'Site Check', icon: '✓' },
+  { to: '/cleanup', label: 'Server Cleanup', icon: '🗑' },
 ];
 
 export default function Layout() {
