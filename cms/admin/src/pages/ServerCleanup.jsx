@@ -221,7 +221,7 @@ export default function ServerCleanup() {
                             <td className="p-3">
                               <label className="flex cursor-pointer items-center gap-3" onClick={(e) => { e.preventDefault(); toggle(i); }}>
                                 {IMG.test(i.path) && (
-                                  <img src={`${SITE}/${i.path.split('/').map(encodeURIComponent).join('/')}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-lg bg-cream object-cover" />
+                                  <img src={`${SITE}/${i.path.split('/').map(encodeURIComponent).join('/')}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-lg bg-cream object-cover" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
                                 )}
                                 <span className="break-all font-mono text-xs">{i.path}</span>
                               </label>
@@ -310,7 +310,7 @@ function TrashTab({ trash, reload, setMsg, setError }) {
       {trash.batches.map((b) => (
         <div key={b.batch} className="card overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 p-4">
-            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(open === b.batch ? null : b.batch)} aria-expanded={open === b.batch}>
+            <button type="button" className="w-full min-w-0 text-left sm:w-auto sm:flex-1" onClick={() => setOpen(open === b.batch ? null : b.batch)} aria-expanded={open === b.batch}>
               <p className="font-semibold">Moved {ago(b.at)} <span className="font-normal text-slate-500">· {new Date(b.at).toLocaleString()}</span></p>
               <p className="text-xs text-slate-500">{b.count} file{b.count === 1 ? '' : 's'} · {formatBytes(b.bytes)} · {open === b.batch ? 'hide list ▲' : 'show list ▼'}</p>
             </button>
