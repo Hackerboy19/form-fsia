@@ -379,6 +379,8 @@ const SC_CATEGORIES = [
     'mrs-universe'   => ['Mrs Universe', [31]],
 ];
 const SC_PROFILE_LIMIT = 5000;
+/* Columns some setups use for "last edited"; the first one present is shown as Last changed. */
+const SC_UPDATED_COLUMNS = ['updated_at', 'updated_on', 'modified_at', 'modified_on', 'last_updated', 'last_update', 'update_date', 'edit_date', 'modify_date'];
 const SC_PAGE_SIZE = 100;
 
 function sc_category_of(int $regtype): string
@@ -414,7 +416,8 @@ function sc_profile_rows(array $f): array
 {
     $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
         'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
-        'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1'];
+        'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1',
+        ...SC_UPDATED_COLUMNS];
     $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
     $cols = array_values(array_intersect($want, $have));
 
@@ -490,6 +493,11 @@ function sc_profile_report(array $r): array
     if (mb_strlen($g('meta_desc')) > 170) $seo[] = 'Meta description too long (' . mb_strlen($g('meta_desc')) . ')';
     if ($seo) $problems['seo'] = $seo;
 
+    $native = '';
+    foreach (SC_UPDATED_COLUMNS as $k) {
+        if (!empty($r[$k]) && !str_starts_with((string) $r[$k], '0000')) { $native = substr((string) $r[$k], 0, 19); break; }
+    }
+
     $slug = ltrim(trim($g('url')), '/');
     $edited = $g('starindia_action') === 'edited';
     $cat = sc_category_of((int) $g('regtype'));
@@ -504,6 +512,8 @@ function sc_profile_report(array $r): array
         'photos'   => count($photos),
         'missing_photos' => array_slice($missing, 0, 10),
         'problems' => $problems,
+        'last_changed' => $native ?: null,
+        'changed_by' => null,
     ];
 }
 
@@ -536,10 +546,25 @@ respond(function () {
         $match = query_param('match') === 'all' ? 'all' : 'any';
 
         $rows = sc_profile_rows($f);
+        // Latest change of each profile from the change log (Tools -> Profile Changes), when it is on.
+        $latest = [];
+        if (site_db_has_table('fsia_profile_changes')) {
+            foreach (site_db_rows('SELECT c.profile_id, c.changed_at, c.actor, c.db_user, c.action FROM fsia_profile_changes c
+                    JOIN (SELECT profile_id, MAX(id) AS mid FROM fsia_profile_changes GROUP BY profile_id) m ON m.mid = c.id') as $c) {
+                $latest[(int) $c['profile_id']] = $c;
+            }
+        }
+        $changedDays = (int) query_param('changed_days');
+        $since = $changedDays > 0 ? date('Y-m-d H:i:s', time() - $changedDays * 86400) : null;
         $counts = ['bio' => 0, 'banner' => 0, 'image' => 0, 'seo' => 0, 'ok' => 0];
         $out = [];
         foreach ($rows as $r) {
             $rep = sc_profile_report($r);
+            if (isset($latest[$rep['id']]) && (string) $latest[$rep['id']]['changed_at'] >= (string) $rep['last_changed']) {
+                $rep['last_changed'] = (string) $latest[$rep['id']]['changed_at'];
+                $rep['changed_by'] = site_change_who($latest[$rep['id']]['actor'], $latest[$rep['id']]['db_user']);
+            }
+            if ($since !== null && ($rep['last_changed'] === null || $rep['last_changed'] < $since)) continue;
             foreach (array_keys($rep['problems']) as $k) $counts[$k]++;
             if (!$rep['problems']) $counts['ok']++;
             if ($want) {
@@ -548,9 +573,13 @@ respond(function () {
             }
             $out[] = $rep;
         }
+        if (query_param('sort') === 'changed') {
+            usort($out, fn ($a, $b) => strcmp((string) $b['last_changed'], (string) $a['last_changed']));
+        }
         $page = max(1, (int) query_param('page'));
         $years = array_map('intval', array_column(site_db_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
         return [
+            'change_log' => (bool) $latest || site_db_has_table('fsia_profile_changes'),
             'scanned'    => count($rows),
             'capped'     => count($rows) >= SC_PROFILE_LIMIT,
             'counts'     => $counts,

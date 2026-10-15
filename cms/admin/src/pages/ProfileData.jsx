@@ -16,7 +16,7 @@ const LIVE_LIMIT = 200;
  * pages can then be opened live by the Site Check.
  */
 export default function ProfileData({ onCheckLive, disabled }) {
-  const [f, setF] = useState({ category: '', year: '', month: '', status: 'approved', q: '' });
+  const [f, setF] = useState({ category: '', year: '', month: '', status: 'approved', q: '', sort: '', changed_days: '' });
   const [problems, setProblems] = useState([]);
   const [match, setMatch] = useState('any');
   const [page, setPage] = useState(1);
@@ -49,9 +49,9 @@ export default function ProfileData({ onCheckLive, disabled }) {
     try {
       const all = await api.siteCheckProfiles({ ...params, all: 1 });
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lines = [['ID', 'Name', 'Category', 'Date', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
+      const lines = [['ID', 'Name', 'Category', 'Date', 'Last changed', 'Changed by', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
       all.rows.forEach((r) => lines.push([
-        r.id, r.name, r.category, r.date, r.link, r.photos,
+        r.id, r.name, r.category, r.date, r.last_changed, r.changed_by, r.link, r.photos,
         ...PROBLEMS.map(([k]) => (r.problems[k] || []).join('; ')),
       ].map(esc).join(',')));
       const a = document.createElement('a');
@@ -64,7 +64,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label>
           <span className="label">Category</span>
           <select className="input" value={f.category} onChange={set('category')}>
@@ -94,6 +94,22 @@ export default function ProfileData({ onCheckLive, disabled }) {
           </select>
         </label>
         <label>
+          <span className="label">Changed</span>
+          <select className="input" value={f.changed_days} onChange={set('changed_days')}>
+            <option value="">Any time</option>
+            <option value="1">In the last 24 hours</option>
+            <option value="7">In the last 7 days</option>
+            <option value="30">In the last 30 days</option>
+          </select>
+        </label>
+        <label>
+          <span className="label">Sort</span>
+          <select className="input" value={f.sort} onChange={set('sort')}>
+            <option value="">Newest joined first</option>
+            <option value="changed">Recently changed first</option>
+          </select>
+        </label>
+        <label>
           <span className="label">Name / ID</span>
           <input className="input" placeholder="e.g. azra or 86294" value={f.q} onChange={set('q')} />
         </label>
@@ -120,6 +136,11 @@ export default function ProfileData({ onCheckLive, disabled }) {
       </div>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {data && !data.change_log && (f.sort === 'changed' || f.changed_days) && (
+        <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+          Change dates come from <b>Tools → Profile Changes</b>. Turn it on there; from then on every profile edit is recorded with its date and who made it.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
@@ -146,9 +167,9 @@ export default function ProfileData({ onCheckLive, disabled }) {
 
       {data?.rows.length > 0 && (
         <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-cream/60 text-[11px] uppercase tracking-wider text-slate-500">
-              <tr><th className="p-3">Profile</th><th className="p-3">Category</th><th className="p-3">Joined</th><th className="p-3">What is missing</th></tr>
+              <tr><th className="p-3">Profile</th><th className="p-3">Category</th><th className="p-3">Joined</th><th className="p-3">Last changed</th><th className="p-3">What is missing</th></tr>
             </thead>
             <tbody>
               {data.rows.map((r) => (
@@ -159,6 +180,14 @@ export default function ProfileData({ onCheckLive, disabled }) {
                   </td>
                   <td className="p-3 text-slate-600">{r.category}</td>
                   <td className="whitespace-nowrap p-3 text-slate-600">{r.date}</td>
+                  <td className="p-3 text-xs text-slate-600">
+                    {r.last_changed ? (
+                      <>
+                        <span className="whitespace-nowrap font-semibold text-navy">{r.last_changed.slice(0, 16)}</span>
+                        {r.changed_by && <span className="mt-0.5 block max-w-[14rem] break-words text-[11px] text-slate-500">by {r.changed_by}</span>}
+                      </>
+                    ) : <span className="text-slate-400">—</span>}
+                  </td>
                   <td className="p-3">
                     {Object.keys(r.problems).length === 0 ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">✓ Complete</span>

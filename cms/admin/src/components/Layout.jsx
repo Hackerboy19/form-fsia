@@ -14,6 +14,7 @@ const NAV = [
   { to: '/news', label: 'News Manager', icon: '✎' },
   { group: 'Tools' },
   { to: '/site-check', label: 'Site Check', icon: '✓' },
+  { to: '/changes', label: 'Profile Changes', icon: '↻' },
   { to: '/cleanup', label: 'Server Cleanup', icon: '🗑' },
 ];
 

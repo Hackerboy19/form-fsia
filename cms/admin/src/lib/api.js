@@ -80,6 +80,11 @@ export const api = {
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
+  changelogStatus: () => request('changelog.php', { query: { action: 'status' } }),
+  changelogInstall: () => request('changelog.php', { method: 'POST', query: { action: 'install' }, body: {} }),
+  changelogUninstall: () => request('changelog.php', { method: 'POST', query: { action: 'uninstall' }, body: {} }),
+  changelogList: (params) => request('changelog.php', { query: { action: 'list', ...params } }),
+
   cleanupScan: () => request('cleanup.php', { query: { action: 'scan' } }),
   cleanupTrash: (paths) => request('cleanup.php', { method: 'POST', query: { action: 'trash' }, body: { paths } }),
   cleanupTrashList: () => request('cleanup.php', { query: { action: 'trash_list' } }),
