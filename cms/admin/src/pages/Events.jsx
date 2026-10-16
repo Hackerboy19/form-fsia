@@ -6,6 +6,7 @@ import { PageHeader } from '../components/Layout';
 import { Field, SelectField } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
 import Modal from '../components/Modal';
+import { promoLib } from '../lib/promoBar';
 
 const PHASE = {
   draft: ['Draft', 'bg-slate-100 text-slate-600'],
@@ -35,36 +36,28 @@ const BAR_GUESTS = 2; // same as EVENT_BAR_GUESTS in backend/lib/events.php
 const barGuests = (guests) => (guests || []).filter((g) => g.featured && String(g.name || '').trim()).slice(0, BAR_GUESTS);
 const GUEST_ROLES = ['Celebrity Chief Guest', 'Chief Guest', 'Guest of Honour', 'Special Guest', 'Jury', 'Host'];
 
-/** The bar visitors see (same look as /cms/promo.js). `mobile` = phone layout, `flat` = full-width as on the page. */
-function PromoPreview({ e, mobile = false, flat = false }) {
-  const when = range(e.starts_at, e.ends_at);
-  const line = [when, [e.venue, e.city].filter(Boolean).join(', '), mobile ? '' : e.summary].filter(Boolean).join(' · ');
-  const img = mobile ? (e.banner_mobile || e.banner_desktop) : (e.banner_desktop || e.banner_mobile);
-  const stars = barGuests(e.guests);
-  return (
-    <div className={`relative flex items-center gap-3 bg-navy px-3 py-2.5 pr-11 text-[#F6F2E8] shadow-lg ${flat ? '' : 'rounded-xl'}`}>
-      {img && <img src={assetUrl(img)} alt="" className={`${mobile ? 'h-11 max-w-[70px]' : 'h-12 max-w-[160px]'} w-auto shrink-0 rounded-lg object-cover`} />}
-      {mobile && !img && stars[0]?.photo && <img src={assetUrl(stars[0].photo)} alt="" className="h-10 w-10 shrink-0 rounded-full border-2 border-gold object-cover" />}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-bold text-gold">{e.title || 'Event title'}</p>
-        {line && <p className="truncate text-xs text-slate-300">{line}</p>}
-        {mobile && stars[0] && <p className="truncate text-[11px] text-[#F3D98B]">★ {stars[0].role ? `${stars[0].role}: ` : ''}{stars[0].name}</p>}
-      </div>
-      {!mobile && stars.map((g) => (
-        <div key={g.name} className="flex max-w-[220px] shrink-0 items-center gap-2 border-l border-white/15 pl-3">
-          {g.photo
-            ? <img src={assetUrl(g.photo)} alt="" className="h-11 w-11 shrink-0 rounded-full border-2 border-gold object-cover" />
-            : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-gold text-gold">★</span>}
-          <div className="min-w-0">
-            {g.role && <p className="truncate text-[10px] font-bold uppercase tracking-wider text-gold">{g.role}</p>}
-            <p className="truncate text-sm font-semibold">{g.name}</p>
-          </div>
-        </div>
-      ))}
-      <span className="shrink-0 whitespace-nowrap rounded-full bg-gold px-3.5 py-2 text-xs font-bold text-navy">{e.cta_label || 'Register now'}</span>
-      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-lg text-slate-400">×</span>
-    </div>
-  );
+/** The bar visitors see: built by /cms/promo.js itself. `mobile` = phone card. */
+function PromoPreview({ e, mobile = false }) {
+  const holder = useRef(null);
+  const data = {
+    id: e.id || 0, title: e.title, summary: e.summary, starts_at: e.starts_at ? String(e.starts_at).replace('T', ' ') : '',
+    ends_at: e.ends_at ? String(e.ends_at).replace('T', ' ') : '', venue: e.venue, city: e.city,
+    banner_desktop: e.banner_desktop, banner_mobile: e.banner_mobile, cta_label: e.cta_label, cta_url: e.cta_url || '#',
+    guests: barGuests(e.guests).map((g) => ({ name: g.name, role: g.role, photo: g.photo })),
+  };
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const ro = new ResizeObserver(([x]) => setNarrow(x.contentRect.width < 1180));
+    if (holder.current) ro.observe(holder.current);
+    return () => ro.disconnect();
+  }, []);
+  const key = JSON.stringify(data) + mobile + narrow;
+  useEffect(() => {
+    const box = holder.current;
+    if (!box) return;
+    box.replaceChildren(promoLib().build(data, { mobile, narrow, preview: true, asset: assetUrl }));
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <div ref={holder} />;
 }
 
 /* Same page rules as backend/lib/events.php (events_norm_path, events_rule_matches). */
@@ -202,7 +195,7 @@ function PagePreview({ e }) {
               style={{ width: w, height: h, border: 0, background: '#fff' }} />
             {willShow && (
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
-                <PromoPreview e={e} mobile={device === 'mobile'} flat />
+                <PromoPreview e={e} mobile={device === 'mobile'} />
               </div>
             )}
           </div>
@@ -265,7 +258,10 @@ function EventForm({ initial, groups, onClose, onSaved }) {
       <div className="space-y-6">
         <section>
           <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Preview: what visitors see at the bottom of the page</p>
-          <PromoPreview e={f} />
+          <div className="space-y-3">
+            <div><p className="mb-1 text-[11px] font-semibold text-slate-500">🖥 Computer</p><div className="overflow-hidden rounded-xl"><PromoPreview e={f} /></div></div>
+            <div className="max-w-[390px]"><p className="mb-1 text-[11px] font-semibold text-slate-500">📱 Phone</p><div className="rounded-2xl bg-slate-200/70 pt-3"><PromoPreview e={f} mobile /></div></div>
+          </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2">
