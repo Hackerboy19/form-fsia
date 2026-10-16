@@ -16,19 +16,26 @@ const BANDS = [
 const bandOf = (k) => BANDS.find((b) => b[0] === k) || BANDS[3];
 const STARINDIA_ADMIN = 'https://starindia.fsia.in/admin/';
 
-/** Opens the starindia admin with the profile ID on the clipboard (that admin has no per-profile links). */
+/** Section of the starindia admin profile editor that fixes each kind of problem. */
+const FIX_TAB = { seo: 'seo', banner: 'hero', bio: 'identity', image: 'gallery' };
+const TAB_LABEL = { seo: 'SEO', hero: 'Hero', identity: 'Identity', gallery: 'Photo Gallery' };
+
+/** Link that opens this profile, at the right section, in the starindia admin (see starindia-admin/admin-enhancements.js). */
+function starindiaUrl(r, tab = 'identity') {
+  const slug = (r.link || '').replace(/\/+$/, '').split('/').pop() || '';
+  const p = new URLSearchParams({ 'fsia-open': String(r.id), q: slug, n: r.name || '', year: (r.date || '').slice(0, 4), tab });
+  return `${STARINDIA_ADMIN}#${p.toString()}`;
+}
+
 function FixLink({ r }) {
-  const [copied, setCopied] = useState(false);
   return (
-    <a href={STARINDIA_ADMIN} target="_blank" rel="noreferrer" title={`Opens the starindia admin. Search #${r.id} there.`}
-      onClick={() => { navigator.clipboard?.writeText(String(r.id)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 4000); }).catch(() => {}); }}
+    <a href={starindiaUrl(r)} target="_blank" rel="noreferrer" title={`Opens profile #${r.id} in the starindia admin`}
       className="mt-1.5 inline-block rounded-lg bg-navy px-2.5 py-1 text-[11px] font-bold text-white hover:bg-navy/80">
-      {copied ? `ID ${r.id} copied, search it there ↗` : 'Fix in starindia admin ↗'}
+      Fix in starindia admin ↗
     </a>
   );
 }
 
-/** Score chip; opens a breakdown of where the points came from. */
 function ScoreCell({ r }) {
   const [, label, cls, bar] = bandOf(r.band);
   if (r.score === null) {
@@ -296,6 +303,10 @@ export default function ProfileData({ onCheckLive, disabled }) {
                           <li key={k} className="text-xs">
                             <span className={`mr-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${cls}`}>{label.split(' ')[0]}</span>
                             {r.problems[k].join(', ')}
+                            {(() => {
+                              const tab = k === 'image' && r.problems[k].some((t) => /logo/i.test(t)) ? 'identity' : FIX_TAB[k];
+                              return <a href={starindiaUrl(r, tab)} target="_blank" rel="noreferrer" className="ml-1.5 whitespace-nowrap font-semibold text-gold-dark underline" title={`Open the ${TAB_LABEL[tab]} section of this profile in the starindia admin`}>Fix ↗</a>;
+                            })()}
                           </li>
                         ))}
                       </ul>
