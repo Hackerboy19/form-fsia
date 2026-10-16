@@ -19,13 +19,13 @@ const NAV = [
   { to: '/changes', label: 'Profile Changes', icon: '↻', perm: 'tools.view' },
   { to: '/cleanup', label: 'Server Cleanup', icon: '🗑', perm: 'cleanup.manage' },
   { group: 'Settings' },
-  { to: '/users', label: 'Users & Roles', icon: '⚿', perm: 'users.manage' },
+  { to: '/users', label: 'Users & Roles', icon: '⚿', perm: 'users.manage', needsRoles: true },
   { to: '/activity', label: 'Activity Log', icon: '☰', perm: 'audit.view' },
 ];
 
 /** Nav items the user may open; a group heading only when something is under it. */
-function visibleNav(can) {
-  const items = NAV.filter((item) => item.group || can(item.perm));
+function visibleNav(can, me) {
+  const items = NAV.filter((item) => item.group || (can(item.perm) && (!item.needsRoles || me?.roles_available)));
   return items.filter((item, i) => !item.group || (items[i + 1] && !items[i + 1].group));
 }
 
@@ -36,7 +36,7 @@ export default function Layout() {
 
   const nav = (
     <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main">
-      {visibleNav(can).map((item, i) =>
+      {visibleNav(can, me).map((item, i) =>
         item.group ? (
           <p key={i} className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{item.group}</p>
         ) : (
@@ -71,7 +71,7 @@ export default function Layout() {
         </div>
         {nav}
         <div className="border-t border-white/10 p-3">
-          {me && !me.legacy && (
+          {me && !me.legacy && me.roles_available && (
             <p className="px-3 pb-2 text-xs text-slate-400">
               {me.user || 'Signed in'} · <span className="font-semibold text-gold">{me.role_label}</span>
             </p>

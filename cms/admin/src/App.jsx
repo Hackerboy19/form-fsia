@@ -20,7 +20,7 @@ const ActivityLog = lazy(() => import('./pages/ActivityLog'));
 const loading = <div className="card h-96 animate-pulse bg-cream" />;
 
 export default function App() {
-  const { isAuthed } = useAuth();
+  const { isAuthed, me } = useAuth();
   if (!isAuthed) return <Login />;
 
   return (
@@ -32,7 +32,8 @@ export default function App() {
         <Route path="site-check" element={<Suspense fallback={loading}><SiteCheck /></Suspense>} />
         <Route path="cleanup" element={<Suspense fallback={loading}><ServerCleanup /></Suspense>} />
         <Route path="changes" element={<Suspense fallback={loading}><ProfileChanges /></Suspense>} />
-        <Route path="users" element={<Suspense fallback={loading}><UsersRoles /></Suspense>} />
+        {/* Single-admin setup: Users & Roles only exists once config.php sets roles_enabled. */}
+        <Route path="users" element={me?.roles_available ? <Suspense fallback={loading}><UsersRoles /></Suspense> : <Navigate to="/" replace />} />
         <Route path="activity" element={<Suspense fallback={loading}><ActivityLog /></Suspense>} />
         <Route path="homepage" element={<Suspense fallback={loading}><HomepageEditor /></Suspense>} />
         {/* The live homepage is edited on the Homepage screen; the old text blocks did not reach it. */}

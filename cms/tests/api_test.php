@@ -40,7 +40,10 @@ foreach (['api', 'lib'] as $dir) {
     }
 }
 copy("$backend/db.php", "$tmp/backend/db.php");
-file_put_contents("$tmp/backend/config.php", '<?php return ' . var_export([
+function write_config(bool $roles): void
+{
+    global $tmp, $host, $port, $dbName, $dbUser, $dbPass, $token;
+    file_put_contents("$tmp/backend/config.php", '<?php return ' . var_export([
     'db' => ['host' => $host, 'port' => $port, 'name' => $dbName, 'user' => $dbUser, 'password' => $dbPass],
     'admin_token' => $token,
     'allowed_origins' => [],
@@ -48,7 +51,10 @@ file_put_contents("$tmp/backend/config.php", '<?php return ' . var_export([
     'uploads' => ['dir' => "$tmp/uploads", 'base_url' => '/uploads', 'max_bytes' => 1048576, 'max_pixels' => 2000],
     'debug' => true,
     'site_root' => "$tmp/site",
+    'roles_enabled' => $roles,
 ], true) . ';');
+}
+write_config(false);
 
 // A tiny "site": the registration table in the same database, and image files on disk.
 $pdo->exec("CREATE TABLE registration (id INT PRIMARY KEY, first_name VARCHAR(100), last_name VARCHAR(100), regtype INT, status INT,
@@ -142,10 +148,21 @@ check('bad token is refused', $s === 401, "got $s");
 echo "Before roles are turned on (nothing changes for anyone)\n";
 [$s, $d] = call('GET', 'users.php?action=me', $viewer);
 check('every user is an owner', $s === 200 && $d['role'] === 'owner' && $d['roles_on'] === false, json_encode($d));
+write_config(true);
+[$s, $d] = call('GET', 'users.php?action=me', $viewer);
+check('with roles allowed but not turned on, still everyone owner', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === true, json_encode($d));
+write_config(false);
 [$s, $d, $raw] = call('PUT', 'seo.php?page=about', $viewer, $seoBody);
 check('any user can still edit content', $s === 200, "got $s $raw");
-[$s] = call('GET', 'users.php?action=list', $editor);
-check('any user can open Users & Roles', $s === 200, "got $s");
+
+echo "Single admin (roles switched off in config.php, the default)\n";
+[$s, $d] = call('GET', 'users.php?action=me', $editor);
+check('me answers, roles not available', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === false, json_encode($d));
+[$s] = call('POST', 'users.php?action=setup', $owner, []);
+check('roles cannot be turned on from the admin', $s === 409, "got $s");
+[$s] = call('GET', 'users.php?action=list', $owner);
+check('Users & Roles answers "switched off"', $s === 409, "got $s");
+write_config(true);
 
 echo "Turning roles on\n";
 [$s, $d] = call('POST', 'users.php?action=setup', $owner, []);

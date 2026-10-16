@@ -1,6 +1,15 @@
 # Deployment and Rollback Checklist
 
-The deployment is the CMS admin tools zip: Profiles & Score, Users & Roles, Activity Log, Site Check, Profile Changes and Server Cleanup, plus the audit fixes.
+The deployment is the CMS admin tools zip: Profiles & Score, Activity Log, Site Check, Profile Changes and Server Cleanup, plus the audit fixes.
+
+**Login:** the upload does not touch `config.php` or `admin_users.php`, so the current admin username and password keep working. There is one admin with full access. Roles stay switched off: the Users & Roles screen is hidden and cannot be turned on from the admin. To use them later, add `'roles_enabled' => true` to `cms/backend/config.php`.
+
+**Simulated upload (2026-10-16):**
+- Method: the zip was extracted over a copy of the old live version (commit 3315ddd), with an existing admin login.
+- Only the 8 listed backend files and `cms-admin-test/` changed. `config.php`, `admin_users.php`, `.htaccess`, `auth.php`, `teams.php`, `sections.php`, `seo.php`, `news.php` and `upload.php` stayed byte-for-byte the same.
+- `cms/tests/upgrade_check.php`: 29/29 passed with the existing login.
+- All 12 admin screens worked at 1280 and 390 px, with no errors and no sign-outs.
+- A save through the UI persisted after a reload.
 
 **Database:** the upload makes no changes to existing tables.
 - `cms_audit_log` is created on the first logged change.
@@ -47,7 +56,7 @@ The deployment is the CMS admin tools zip: Profiles & Score, Users & Roles, Acti
 |---|---|
 | Anything in the CMS API breaks | Upload the `bootstrap.php` (and other API files) downloaded in step 1. Delete `cms/backend/lib/rbac.php`, `cms/backend/api/users.php`, `cms/backend/api/audit.php`. |
 | New admin screens misbehave | Keep using `/cms-admin/`; delete `/cms-admin-test/` |
-| Roles locked someone out | Sign in with the `config.php` admin token (always Owner), or `DROP TABLE cms_user_roles;` (roles off, everyone full access) |
+| Roles locked someone out (only possible after `roles_enabled` was set) | Remove `'roles_enabled' => true` from config.php: everyone is back to full access |
 | Change log triggers cause trouble | Profile Changes → Turn off (drops the triggers), or `DROP TRIGGER fsia_log_profile_update; DROP TRIGGER fsia_log_profile_create; DROP TRIGGER fsia_log_profile_delete;` |
 | Activity log grows too big | `DELETE FROM cms_audit_log WHERE created_at < NOW() - INTERVAL 180 DAY;` |
 

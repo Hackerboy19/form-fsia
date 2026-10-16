@@ -36,6 +36,10 @@ return [
         'max_pixels' => 6000,          // longest side
     ],
 
+    // Roles for several admin users (Owner/Admin/Editor/Viewer). Leave false for a
+    // single admin: everyone who signs in then has full access, as before.
+    'roles_enabled' => false,
+
     // true only on a development machine: error responses then include details.
     'debug' => false,
 ];

@@ -9,6 +9,8 @@
 | Editor | Edit content; view the tools |
 | Viewer | View only |
 
+**Current setup: single admin.** `roles_enabled` is not set in `config.php`, so every signed-in admin has Owner rights, and the Users & Roles screen is hidden. `users.php` answers only `?action=me`; setup and role changes return 409. The matrix below applies only once `'roles_enabled' => true` is added.
+
 How roles behave:
 - Roles stay off until an owner turns them on. Until then every signed-in user has Owner rights, as before.
 - The `config.php` admin token always acts as Owner.

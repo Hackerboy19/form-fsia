@@ -5,6 +5,8 @@ require_once __DIR__ . '/../lib/bootstrap.php';
 /*
  * Roles for CMS admin users. Passwords stay in admin_users.php (set-password.php).
  *
+ * Only "me" works unless config.php has 'roles_enabled' => true.
+ *
  * GET  /api/users.php?action=me              -> who am I, my role and permissions
  * GET  /api/users.php?action=list            -> users, roles, whether roles are on
  * POST /api/users.php?action=setup           -> turn roles on: every current user becomes an owner
@@ -66,7 +68,12 @@ respond(function () {
             'role_label'  => RBAC_ROLES[$me['role']]['label'],
             'permissions' => rbac_perms($me['role']),
             'roles_on'    => rbac_roles_on(),
+            'roles_available' => rbac_roles_enabled(),
         ];
+    }
+
+    if (!rbac_roles_enabled()) {
+        throw new ApiError("Roles are switched off. Add 'roles_enabled' => true to config.php to use them.", 409);
     }
 
     if ($method === 'GET' && $action === 'list') {

@@ -4,6 +4,10 @@ declare(strict_types=1);
 /*
  * Roles and the activity log for the CMS admin.
  *
+ * Roles are switched off unless config.php has 'roles_enabled' => true. While
+ * off, every signed-in admin has full access (the single-admin setup), the
+ * Users & Roles screen is hidden and roles cannot be turned on from the admin.
+ *
  * Roles stay off until an owner turns them on (Users & Roles screen, which
  * creates cms_user_roles and makes every current user an owner). Until then
  * every signed-in user keeps full access, exactly as before. Once on, a user
@@ -80,9 +84,14 @@ function rbac_user(): ?string
  * Role of a user. 'owner' while roles are off (no cms_user_roles table, or an
  * empty one); 'viewer' for users missing from the table once roles are on.
  */
+function rbac_roles_enabled(): bool
+{
+    return (cms_config()['roles_enabled'] ?? false) === true;
+}
+
 function rbac_role_of(string $user): string
 {
-    if ($user === RBAC_TOKEN_USER) {
+    if ($user === RBAC_TOKEN_USER || !rbac_roles_enabled()) {
         return 'owner';
     }
     try {
@@ -105,6 +114,9 @@ function rbac_role_of(string $user): string
 
 function rbac_roles_on(): bool
 {
+    if (!rbac_roles_enabled()) {
+        return false;
+    }
     try {
         return (int) db()->query('SELECT COUNT(*) FROM cms_user_roles')->fetchColumn() > 0;
     } catch (PDOException $e) {
