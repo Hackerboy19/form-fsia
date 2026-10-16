@@ -25,7 +25,6 @@ declare(strict_types=1);
 const RBAC_PERMISSIONS = [
     'content.edit'   => 'Edit pages, SEO, team and news; upload images',
     'tools.view'     => 'Open Site Check and Profile Changes',
-    'profiles.edit'  => 'Fix profiles: SEO, bio and banners',
     'tools.manage'   => 'Save the Site Check baseline; turn the change log on or off',
     'cleanup.manage' => 'Server Cleanup: look at, download, move, restore and delete files',
     'audit.view'     => 'See the activity log',
@@ -35,8 +34,8 @@ const RBAC_PERMISSIONS = [
 
 const RBAC_ROLES = [
     'owner'  => ['label' => 'Owner',  'about' => 'Everything, including roles',        'perms' => ['*']],
-    'admin'  => ['label' => 'Admin',  'about' => 'Everything except giving roles',     'perms' => ['content.edit', 'tools.view', 'profiles.edit', 'tools.manage', 'cleanup.manage', 'audit.view', 'other.write']],
-    'editor' => ['label' => 'Editor', 'about' => 'Edit content; look at the tools',    'perms' => ['content.edit', 'tools.view', 'profiles.edit']],
+    'admin'  => ['label' => 'Admin',  'about' => 'Everything except giving roles',     'perms' => ['content.edit', 'tools.view', 'tools.manage', 'cleanup.manage', 'audit.view', 'other.write']],
+    'editor' => ['label' => 'Editor', 'about' => 'Edit content; look at the tools',    'perms' => ['content.edit', 'tools.view']],
     'viewer' => ['label' => 'Viewer', 'about' => 'Look only; cannot change anything', 'perms' => ['tools.view']],
 ];
 
@@ -60,8 +59,6 @@ function rbac_required_permission(string $script, string $method, string $action
         case 'news.php':
         case 'upload.php':
             return $write ? 'content.edit' : null;
-        case 'profiles.php':
-            return $write ? 'profiles.edit' : 'tools.view';
         case 'sitecheck.php':
         case 'changelog.php':
             return $write ? 'tools.manage' : 'tools.view';

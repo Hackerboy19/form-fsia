@@ -86,16 +86,6 @@ export const api = {
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
-  getProfile: (id) => request('profiles.php', { query: { id } }),
-  saveProfile: (id, fields) => request('profiles.php', { method: 'PUT', query: { id }, body: { fields } }),
-  uploadBanner: (id, which, file) => {
-    const form = new FormData();
-    form.append('which', which);
-    form.append('image', file);
-    return request('profiles.php', { method: 'POST', query: { id, action: 'banner' }, body: form, isForm: true });
-  },
-  undoProfile: (batch) => request('profiles.php', { method: 'POST', query: { action: 'undo' }, body: { batch } }),
-
   changelogStatus: () => request('changelog.php', { query: { action: 'status' } }),
   changelogInstall: () => request('changelog.php', { method: 'POST', query: { action: 'install' }, body: {} }),
   changelogUninstall: () => request('changelog.php', { method: 'POST', query: { action: 'uninstall' }, body: {} }),

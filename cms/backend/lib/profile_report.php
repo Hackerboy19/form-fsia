@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /*
  * Profile checks shared by Site Check / Profiles & Score (sitecheck.php) and the
- * profile editor (profiles.php): what is missing, the quality score, categories.
+ * starindia checks (starindia.php): what is missing, the quality score, categories.
  */
 
 require_once __DIR__ . '/site_db.php';
@@ -76,20 +76,24 @@ function sc_quality_score(array $x): array
         if ($x['photos'] >= 3 && $x['missing'] === 0) $photos += 5;
     }
     $bio = $x['bio_len'] > 0 ? 10 + ($x['bio_len'] >= 150 ? 7 : 0) + ($x['bio_len'] >= 500 ? 8 : 0) : 0;
-    $banners = ($x['desktop_banner'] ? 10 : 0) + ($x['mobile_banner'] ? 10 : 0);
+    $hero = isset($x['hero_ok']);   // starindia profiles have one hero image instead of two banners
+    $tMax = $x['title_max'] ?? 70;
+    $dMax = $x['desc_max'] ?? 170;
+    $banners = $hero ? ($x['hero_ok'] ? 20 : 0) : ($x['desktop_banner'] ? 10 : 0) + ($x['mobile_banner'] ? 10 : 0);
     $seo = ($x['url'] ? 5 : 0)
-        + ($x['title_len'] === 0 ? 0 : ($x['title_len'] <= 70 ? 7 : 3))
-        + ($x['desc_len'] === 0 ? 0 : ($x['desc_len'] <= 170 ? 8 : 4))
+        + ($x['title_len'] === 0 ? 0 : ($x['title_len'] <= $tMax ? 7 : 3))
+        + ($x['desc_len'] === 0 ? 0 : ($x['desc_len'] <= $dMax ? 8 : 4))
         + ($x['keywords'] ? 5 : 0);
     $parts = [
         ['key' => 'photos', 'label' => 'Photos', 'got' => $photos, 'max' => 30,
          'how' => 'Has a photo 15 · all photos on the server 10 · 3 or more photos 5'],
         ['key' => 'bio', 'label' => 'Biography', 'got' => $bio, 'max' => 25,
          'how' => 'Has a bio 10 · 150+ characters 7 · 500+ characters 8'],
-        ['key' => 'banner', 'label' => 'Banners', 'got' => $banners, 'max' => 20,
-         'how' => 'Desktop banner on the server 10 · mobile banner on the server 10'],
+        $hero
+            ? ['key' => 'banner', 'label' => 'Hero image', 'got' => $banners, 'max' => 20, 'how' => 'One hero image set in the starindia admin 20']
+            : ['key' => 'banner', 'label' => 'Banners', 'got' => $banners, 'max' => 20, 'how' => 'Desktop banner on the server 10 · mobile banner on the server 10'],
         ['key' => 'seo', 'label' => 'SEO', 'got' => $seo, 'max' => 25,
-         'how' => 'Profile link 5 · meta title up to 70 characters 7 · meta description up to 170 characters 8 · keywords 5'],
+         'how' => "Profile link 5 · meta title up to $tMax characters 7 · meta description up to $dMax characters 8 · keywords 5"],
     ];
     $score = $photos + $bio + $banners + $seo;
     $band = 'poor';
@@ -163,7 +167,18 @@ function sc_profile_rows(array $f): array
     return site_db_rows($sql, $params);
 }
 
-function sc_profile_report(array $r): array
+/*
+ * Profiles edited in the starindia admin (starindia_action = 'edited') live on
+ * starindia.fsia.in and show the starindia admin's data, so their bio, hero image
+ * and SEO are checked from that data ($si), with that admin's limits (title 60,
+ * description 160). Photos are still checked from the database and server, which
+ * is where that page takes them from. Without starindia data nothing but photos is
+ * judged, and the profile has no score ("not checked") rather than a wrong one.
+ */
+const SI_TITLE_MAX = 60;
+const SI_DESC_MAX = 160;
+
+function sc_profile_report(array $r, ?array $si = null): array
 {
     $g = fn ($k) => (string) ($r[$k] ?? '');
     $problems = [];
@@ -209,12 +224,49 @@ function sc_profile_report(array $r): array
     if (mb_strlen($g('meta_desc')) > 170) $seo[] = 'Meta description too long (' . mb_strlen($g('meta_desc')) . ')';
     if ($seo) $problems['seo'] = $seo;
 
-    $score = sc_quality_score([
-        'photos' => count($photos), 'missing' => count($missing), 'bio_len' => $hasBio ? max($bioLen, 1) : 0,
-        'desktop_banner' => $bannerOk['desktop'], 'mobile_banner' => $bannerOk['mobile'],
-        'url' => trim($g('url')) !== '', 'title_len' => mb_strlen(trim($g('meta_title'))),
-        'desc_len' => mb_strlen(trim($g('meta_desc'))), 'keywords' => trim($g('meta_keyword')) !== '',
-    ]);
+    $source = 'www';
+    $unchecked = null;
+    if ($g('starindia_action') === 'edited') {
+        $source = 'starindia';
+        unset($problems['bio'], $problems['banner'], $problems['seo']);
+        if (!($si['ok'] ?? false)) {
+            $unchecked = (string) ($si['why'] ?? 'starindia data not loaded.');
+        } else {
+            $f = $si['facts'];
+            if ($f['bio_len'] === 0) $problems['bio'][] = 'No biography';
+            $heroParts = array_values(array_filter(array_map('trim', explode(',', $f['hero'])), fn ($x) => $x !== ''));
+            if (!$heroParts) $problems['banner'][] = 'No hero image';
+            elseif (count($heroParts) > 1) $problems['banner'][] = 'Hero image field holds ' . count($heroParts) . ' images (shows as broken)';
+            $logoParts = array_filter(array_map('trim', explode(',', $f['logo'])), fn ($x) => $x !== '');
+            if (count($logoParts) > 1) $problems['image'][] = 'Profile logo field holds ' . count($logoParts) . ' images (shows as broken)';
+            $seo = [];
+            $tl = mb_strlen($f['seo_title']);
+            $dl = mb_strlen($f['seo_desc']);
+            if ($tl === 0) $seo[] = 'No meta title (auto)';
+            elseif ($tl > SI_TITLE_MAX) $seo[] = "Meta title too long ($tl/" . SI_TITLE_MAX . ')';
+            if ($dl === 0) $seo[] = 'No meta description (auto)';
+            elseif ($dl > SI_DESC_MAX) $seo[] = "Meta description too long ($dl/" . SI_DESC_MAX . ')';
+            if ($f['seo_keys'] === '') $seo[] = 'No meta keywords';
+            if ($f['seo_h1'] === '') $seo[] = 'No H1 heading (auto)';
+            if ($f['noindex']) $seo[] = 'Hidden from search engines (noindex)';
+            if ($f['slug'] === '') $seo[] = 'No profile link (slug)';
+            if ($seo) $problems['seo'] = $seo;
+            $score = sc_quality_score([
+                'photos' => count($photos), 'missing' => count($missing), 'bio_len' => $f['bio_len'],
+                'hero_ok' => count($heroParts) === 1, 'url' => $f['slug'] !== '',
+                'title_len' => $tl, 'desc_len' => $dl, 'keywords' => $f['seo_keys'] !== '',
+                'title_max' => SI_TITLE_MAX, 'desc_max' => SI_DESC_MAX,
+            ]);
+        }
+    } else {
+        $score = sc_quality_score([
+            'photos' => count($photos), 'missing' => count($missing), 'bio_len' => $hasBio ? max($bioLen, 1) : 0,
+            'desktop_banner' => $bannerOk['desktop'], 'mobile_banner' => $bannerOk['mobile'],
+            'url' => trim($g('url')) !== '', 'title_len' => mb_strlen(trim($g('meta_title'))),
+            'desc_len' => mb_strlen(trim($g('meta_desc'))), 'keywords' => trim($g('meta_keyword')) !== '',
+        ]);
+    }
+    $score ??= ['score' => null, 'band' => 'unchecked', 'parts' => []];
 
     $native = '';
     foreach (SC_UPDATED_COLUMNS as $k) {
@@ -243,6 +295,8 @@ function sc_profile_report(array $r): array
         'photos'   => count($photos),
         'missing_photos' => array_slice($missing, 0, 10),
         'problems' => $problems,
+        'source'   => $source,
+        'unchecked' => $unchecked,
         'score'    => $score['score'],
         'band'     => $score['band'],
         'score_parts' => $score['parts'],

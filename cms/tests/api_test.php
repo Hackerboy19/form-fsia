@@ -40,9 +40,23 @@ foreach (['api', 'lib'] as $dir) {
     }
 }
 copy("$backend/db.php", "$tmp/backend/db.php");
+// A stand-in for the starindia admin API (synthetic profiles only); it logs every method it receives.
+$stubPort = 19000 + random_int(0, 999);
+@mkdir("$tmp/stub/profiles", 0700, true);
+file_put_contents("$tmp/stub/router.php", '<?php
+file_put_contents(__DIR__ . "/methods.log", $_SERVER["REQUEST_METHOD"] . "\n", FILE_APPEND);
+header("Content-Type: application/json");
+if (preg_match("#^/api/profiles/(\\d+)$#", parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH), $m) && is_file(__DIR__ . "/profiles/$m[1].json")) {
+    readfile(__DIR__ . "/profiles/$m[1].json");
+} else {
+    http_response_code(404);
+    echo "{\"error\":\"Profile not found\"}";
+}');
+$stub = proc_open(['php', '-S', "127.0.0.1:$stubPort", "$tmp/stub/router.php"], [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $stubPipes);
+
 function write_config(bool $roles): void
 {
-    global $tmp, $host, $port, $dbName, $dbUser, $dbPass, $token;
+    global $tmp, $host, $port, $dbName, $dbUser, $dbPass, $token, $stubPort;
     file_put_contents("$tmp/backend/config.php", '<?php return ' . var_export([
     'db' => ['host' => $host, 'port' => $port, 'name' => $dbName, 'user' => $dbUser, 'password' => $dbPass],
     'admin_token' => $token,
@@ -51,6 +65,7 @@ function write_config(bool $roles): void
     'uploads' => ['dir' => "$tmp/uploads", 'base_url' => '/uploads', 'max_bytes' => 1048576, 'max_pixels' => 2000],
     'debug' => true,
     'site_root' => "$tmp/site",
+    'starindia_api' => "http://127.0.0.1:$stubPort/api",
     'roles_enabled' => $roles,
 ], true) . ';');
 }
@@ -87,8 +102,9 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $httpPort); $i++) {
     usleep(100000);
 }
 
-register_shutdown_function(function () use ($server, $pdo, $dbName, $tmp) {
+register_shutdown_function(function () use ($server, $stub, $pdo, $dbName, $tmp) {
     proc_terminate($server);
+    proc_terminate($stub);
     $pdo->exec("DROP DATABASE IF EXISTS `$dbName`");
     exec('rm -rf ' . escapeshellarg($tmp));
 });
@@ -222,7 +238,6 @@ $matrix = [
     ['Write news', 'POST', 'news.php', [], ['owner', 'admin', 'editor']],
     ['Upload image', 'POST', 'upload.php', [], ['owner', 'admin', 'editor']],
     ['Profiles & Score / Site Check: view', 'GET', 'sitecheck.php?action=profiles', null, ['owner', 'admin', 'editor', 'viewer']],
-    ['Profiles: fix SEO / bio / banners', 'PUT', 'profiles.php?id=999999', ['fields' => ['meta_title' => 'x']], ['owner', 'admin', 'editor']],
     ['Site Check: save baseline', 'POST', 'sitecheck.php?action=baseline', ['pages' => []], ['owner', 'admin']],
     ['Profile Changes: view', 'GET', 'changelog.php?action=status', null, ['owner', 'admin', 'editor', 'viewer']],
     ['Profile Changes: turn on/off', 'POST', 'changelog.php?action=uninstall', [], ['owner', 'admin']],
@@ -307,7 +322,7 @@ check('a bare profile scores 20 (poor)', ($byId[2]['score'] ?? null) === 20 && $
 check('a half-done profile scores 68 (good)', ($byId[3]['score'] ?? null) === 68 && $byId[3]['band'] === 'good', json_encode($byId[3]['score_parts'] ?? null));
 check('parts add up to the score', array_sum(array_column($byId[3]['score_parts'] ?? [], 'got')) === 68 && array_sum(array_column($byId[3]['score_parts'] ?? [], 'max')) === 100);
 check('lowest score first', array_column($d['rows'], 'id') === [2, 3, 1], json_encode(array_column($d['rows'], 'id')));
-check('band counts and average', $d['bands'] === ['excellent' => 1, 'good' => 1, 'fair' => 0, 'poor' => 1] && $d['avg_score'] === 63, json_encode([$d['bands'], $d['avg_score']]));
+check('band counts and average', $d['bands'] === ['excellent' => 1, 'good' => 1, 'fair' => 0, 'poor' => 1, 'unchecked' => 0] && $d['avg_score'] === 63, json_encode([$d['bands'], $d['avg_score']]));
 [$s, $d] = call('GET', 'sitecheck.php?action=profiles&band=poor,fair', $editor);
 check('filter by band', array_column($d['rows'], 'id') === [2], json_encode(array_column($d['rows'], 'id')));
 [$s, $d] = call('GET', 'sitecheck.php?action=profiles&band=excellent&problem=bio', $editor);
@@ -364,6 +379,45 @@ check('verified date is shown when the database has it', ($asha['verified_on'] ?
 check('verification combines with category', $q('status=all&verification=pending&category=mrs-india')['total'] === 41 && $q('status=all&verification=pending&category=miss-india')['total'] === 0);
 check('an unknown verification value is ignored', $q('status=all&verification=bogus')['total'] === 233);
 
+echo "starindia profiles are checked from the starindia admin's data\n";
+$pdo->exec("ALTER TABLE registration ADD starindia_action VARCHAR(20) NULL");
+$si = function (int $id, string $slug, string $title, string $desc, string $keys, string $h1, string $hero, string $logo, int $bioLen) use ($tmp) {
+    file_put_contents("$tmp/stub/profiles/$id.json", json_encode(['id' => $id, 'slug' => $slug, 'name' => "SI $id", 'bio' => '<b>' . str_repeat('x', $bioLen) . '</b>&nbsp;',
+        'logo' => $logo, 'published' => 1, 'updated_at' => '2026-10-14T06:49:31.000Z',
+        'data' => ['hero' => ['image' => $hero], 'seo' => ['title' => $title, 'description' => $desc, 'keywords' => $keys, 'h1' => $h1, 'noindex' => false],
+                   'services' => [], 'achievements' => [], 'gallery' => [], 'detailsBody' => '', 'contact' => ['phone' => '9000000000', 'phonePublic' => false]]]));
+};
+$si(3001, 'si-a', str_repeat('T', 68), str_repeat('D', 151), 'k1, k2', 'H1 text', 'a.webp,b.webp', 'a.webp,b.webp', 300);
+$si(3003, 'si-c', str_repeat('T', 50), str_repeat('D', 140), 'k1', 'H1 text', 'hero.webp', '', 600);
+$ins3 = $pdo->prepare("INSERT INTO registration (id, first_name, last_name, regtype, status, date_of_reg, url, setdefault, image, nimage1, nimage2, fullbio, meta_title, meta_desc, meta_keyword, starindia_action)
+    VALUES (?, 'SI', ?, 9, 1, '2026-10-14', ?, 'missindia_profile/a1.webp', '', '', '', '', '', '', '', 'edited')");
+foreach ([[3001, 'A', 'si-a'], [3002, 'B', 'si-b'], [3003, 'C', 'si-c']] as $r) $ins3->execute($r);
+exec('rm -rf ' . escapeshellarg(sys_get_temp_dir() . '/fsia-starindia'));
+[$s, $d] = call('GET', 'sitecheck.php?action=profiles&status=all&category=super-women&fresh=1&all=1', $editor);
+$by = array_column($d['rows'] ?? [], null, 'id');
+$a = $by[3001] ?? [];
+check('starindia profile: SEO comes from the starindia admin, not the empty database columns',
+    ($a['source'] ?? '') === 'starindia' && in_array('Meta title too long (68/60)', $a['problems']['seo'] ?? [], true) && !preg_grep('/No meta (title|description)/', $a['problems']['seo'] ?? []), json_encode($a['problems'] ?? $d));
+check('...hero image holding 2 images is reported, desktop/mobile banners are not',
+    ($a['problems']['banner'] ?? []) === ['Hero image field holds 2 images (shows as broken)'], json_encode($a['problems']['banner'] ?? null));
+check('...profile logo holding 2 images is reported', in_array('Profile logo field holds 2 images (shows as broken)', $a['problems']['image'] ?? [], true));
+check('...score from that data: 25 + 17 + 0 + 21 = 63', ($a['score'] ?? null) === 63 && array_column($a['score_parts'], 'got', 'key') === ['photos' => 25, 'bio' => 17, 'banner' => 0, 'seo' => 21], json_encode($a['score_parts'] ?? null));
+$b = $by[3002] ?? [];
+check('starindia profile the API does not know: no score, no SEO/bio/hero issues, says why', array_key_exists('score', $b) && $b['score'] === null && ($b['band'] ?? '') === 'unchecked'
+    && !isset($b['problems']['seo']) && !isset($b['problems']['bio']) && !isset($b['problems']['banner']) && str_contains((string) ($b['unchecked'] ?? ''), 'Not found'), json_encode($b));
+check('a complete starindia profile scores 95 (1 photo)', ($by[3003]['score'] ?? null) === 95 && empty($by[3003]['problems']['seo']) && empty($by[3003]['problems']['banner']), json_encode($by[3003] ?? null));
+check('an unchecked profile is not counted as "nothing missing"', $d['counts']['ok'] === count(array_filter($d['rows'], fn ($r) => !$r['problems'] && $r['unchecked'] === null)));
+check('unchecked profiles are left out of the average and counted apart', $d['bands']['unchecked'] === 1 && $d['avg_score'] === (int) round((63 + 95) / 2), json_encode([$d['bands'], $d['avg_score']]));
+check('the list says how many starindia profiles were checked', ($d['starindia'] ?? null) == ['profiles' => 3, 'checked' => 2, 'admin' => 'https://starindia.fsia.in/admin/']);
+$methods = array_unique(array_filter(explode("\n", (string) @file_get_contents("$tmp/stub/methods.log"))));
+check('only GET requests are sent to the starindia admin', $methods === ['GET'], json_encode($methods));
+$cached = (string) @file_get_contents(sys_get_temp_dir() . '/fsia-starindia/3001.json');
+check('the cache keeps no contact details', $cached !== '' && !str_contains($cached, '9000000000') && !str_contains($cached, 'phone'));
+@unlink("$tmp/stub/methods.log");
+call('GET', 'sitecheck.php?action=profiles&status=all&category=super-women', $editor);
+check('a second load uses the cache (only the not-found profile is asked again)', count(array_filter(explode("\n", (string) @file_get_contents("$tmp/stub/methods.log")))) === 1);
+$pdo->exec('DELETE FROM registration WHERE id IN (3001, 3002, 3003)');
+
 echo "Profile Changes (change log)\n";
 $pdo->exec('ALTER TABLE registration ADD mobile VARCHAR(20) NULL');
 [$s, $d, $raw] = call('POST', 'changelog.php?action=install', $admin, []);
@@ -376,72 +430,6 @@ check('mobile change is noted without its value', in_array('mobile', $c['fields'
 [$s, $d] = call('POST', 'changelog.php?action=uninstall', $admin, []);
 $left = (int) $pdo->query("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '$dbName'")->fetchColumn();
 check('turns off and leaves no triggers', $s === 200 && $left === 0, "triggers left: $left");
-
-echo "Profile editing (fix from Profiles & Score)\n";
-$pdo->exec('ALTER TABLE registration ADD shortbio TEXT NULL, ADD fullbio_2 TEXT NULL, ADD fullbio_3 TEXT NULL, ADD status2 INT NULL');
-$snapshot = fn () => $pdo->query('SELECT id, MD5(CONCAT_WS("|", first_name, last_name, regtype, status, url, setdefault, image, nimage1, nimage2, fullbio, meta_title, meta_desc, meta_keyword, mobile)) h FROM registration WHERE id <> 2 ORDER BY id')->fetchAll(PDO::FETCH_KEY_PAIR);
-$others = $snapshot();
-[$s, $d] = call('GET', 'profiles.php?id=2', $viewer);
-check('anyone who can see profiles can open the editor', $s === 200 && in_array('meta_title', array_column($d['fields'], 'key'), true) && ($d['banners']['desktop']['column'] ?? '') === 'nimage2', json_encode($d['banners'] ?? $d));
-$scoreBefore = $d['report']['score'];
-[$s] = call('PUT', 'profiles.php?id=2', $viewer, ['fields' => ['meta_title' => 'x']]);
-check('a viewer cannot save', $s === 403, "got $s");
-[$s, $d, $raw] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => 'Bina Bare | Mrs India 2026', 'meta_desc' => 'Bina Bare is a Mrs India 2026 participant.', 'meta_keyword' => 'bina bare, mrs india']]);
-$seoBatch = $d['batch'] ?? '';
-$db2 = $pdo->query('SELECT meta_title, meta_desc, meta_keyword, mobile, status FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
-check('saves SEO fields to the profile', $s === 200 && $d['saved'] === ['meta_title', 'meta_desc', 'meta_keyword'] && $db2['meta_title'] === 'Bina Bare | Mrs India 2026', "got $s $raw");
-check('the score goes up after the fix', $d['report']['score'] > $scoreBefore && !isset($d['report']['problems']['seo']), $scoreBefore . ' -> ' . ($d['report']['score'] ?? '?'));
-check('the save is listed with its old values', ($d['history'][0]['batch'] ?? '') === $seoBatch && count($d['history'][0]['fields']) === 3);
-[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['mobile' => '1111111111', 'status' => '0']]);
-check('fields outside the list are refused (mobile, status)', $s === 422 && $pdo->query('SELECT mobile FROM registration WHERE id = 2')->fetchColumn() === $db2['mobile'], "got $s");
-[$s] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => str_repeat('x', 300)]]);
-check('a value longer than the column is refused', $s === 422, "got $s");
-[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['fullbio' => '<p>Bina loves theatre.</p><script>alert(1)</script><img src=x onerror=alert(1)>']]);
-$bio = (string) $pdo->query('SELECT fullbio FROM registration WHERE id = 2')->fetchColumn();
-check('bio HTML is cleaned (no script, no event handlers)', $s === 200 && str_contains($bio, 'Bina loves theatre.') && !preg_match('/script|onerror/i', $bio), $bio);
-[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['shortbio' => "x', status = 0 -- <b>Bold</b>"]]);
-$row2 = $pdo->query('SELECT shortbio, status FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
-check('quotes are stored as text, not SQL; tags removed from plain fields', $row2['shortbio'] === "x', status = 0 -- Bold" && (int) $row2['status'] === 1, json_encode($row2));
-[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => 'Bina Bare | Mrs India 2026']]);
-check('an unchanged value is not saved again', $s === 200 && $d['saved'] === [] && $d['batch'] === null);
-[$s] = call('PUT', 'profiles.php?id=987654', $editor, ['fields' => ['meta_title' => 'x']]);
-check('unknown profile is 404', $s === 404, "got $s");
-function upload_banner(string $tok, int $id, string $which, string $file): array
-{
-    global $httpPort;
-    $ch = curl_init("http://127.0.0.1:$httpPort/api/profiles.php?id=$id&action=banner");
-    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ["X-Admin-Token: $tok"],
-        CURLOPT_POSTFIELDS => ['which' => $which, 'image' => new CURLFile($file, '', basename($file))]]);
-    $raw = (string) curl_exec($ch);
-    return [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode($raw, true), $raw];
-}
-$ban = imagecreatetruecolor(120, 40);
-imagejpeg($ban, "$tmp/banner.jpg");
-[$s, $d, $raw] = upload_banner($editor, 2, 'desktop', "$tmp/banner.jpg");
-$nim = (string) $pdo->query('SELECT nimage2 FROM registration WHERE id = 2')->fetchColumn();
-check('desktop banner is saved in images/ and set on the profile', $s === 200 && preg_match('/^fsia-banner-2-desktop-[0-9a-f]{12}\.jpg$/', $nim) && is_file("$tmp/site/images/$nim") && $d['banners']['desktop']['on_server'] === true, "got $s $raw");
-check('...and the desktop banner problem is gone', !in_array('No desktop banner', $d['report']['problems']['banner'] ?? [], true));
-file_put_contents("$tmp/fake-banner.jpg", '<?php echo "hi"; ?>');
-[$s] = upload_banner($editor, 2, 'desktop', "$tmp/fake-banner.jpg");
-check('a fake image is refused and nothing changes', $s === 415 && $pdo->query('SELECT nimage2 FROM registration WHERE id = 2')->fetchColumn() === $nim, "got $s");
-[$s] = upload_banner($viewer, 2, 'mobile', "$tmp/banner.jpg");
-check('a viewer cannot upload a banner', $s === 403, "got $s");
-check('no other profile changed', $snapshot() === $others);
-[$s, $d] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $seoBatch]);
-$db3 = $pdo->query('SELECT meta_title, meta_desc, meta_keyword FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
-check('undo puts the old SEO values back', $s === 200 && $db3 === ['meta_title' => '', 'meta_desc' => '', 'meta_keyword' => ''], "got $s " . json_encode($db3));
-[$s] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $seoBatch]);
-check('the same save cannot be undone twice', $s === 409, "got $s");
-[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_keyword' => 'first']]);
-$kwBatch = $d['batch'];
-$pdo->exec("UPDATE registration SET meta_keyword = 'changed in the old admin' WHERE id = 2");
-[$s] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $kwBatch]);
-check('undo is refused when the field was changed again since', $s === 409 && $pdo->query('SELECT meta_keyword FROM registration WHERE id = 2')->fetchColumn() === 'changed in the old admin', "got $s");
-[$s] = call('POST', 'changelog.php?action=install', $admin, []);
-call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_keyword' => 'logged']]);
-[$s, $d] = call('GET', 'changelog.php?action=list&q=2', $admin);
-check('Profile Changes names the CMS as the source of the edit', str_contains((string) ($d['rows'][0]['who'] ?? ''), 'CMS admin') && str_contains((string) ($d['rows'][0]['who'] ?? ''), 'editor1'), json_encode($d['rows'][0] ?? null));
-call('POST', 'changelog.php?action=uninstall', $admin, []);
 
 echo "News: script cannot be stored\n";
 [$s, $d, $raw] = call('POST', 'news.php', $editor, ['title' => 'XSS test', 'content_html' => '<p>Hi</p><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">x</a><iframe src="//evil"></iframe>']);

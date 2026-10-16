@@ -1,6 +1,6 @@
 # Deployment and Rollback Checklist
 
-The deployment is the CMS admin tools zip: Profiles & Score with **Fix profile** (SEO, bio, banners, undo), Activity Log, Site Check, Profile Changes and Server Cleanup, plus the audit fixes.
+The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / Pending / Guest filter; starindia-edited profiles checked from the starindia admin's data; "Fix in starindia admin" on every profile), Activity Log, Site Check, Profile Changes and Server Cleanup, plus the audit fixes.
 
 **Login:** the upload does not touch `config.php` or `admin_users.php`, so the current admin username and password keep working. There is one admin with full access. Roles stay switched off: the Users & Roles screen is hidden and cannot be turned on from the admin. To use them later, add `'roles_enabled' => true` to `cms/backend/config.php`.
 
@@ -14,8 +14,8 @@ The deployment is the CMS admin tools zip: Profiles & Score with **Fix profile**
 **Database:** the upload makes no changes to existing tables.
 - `cms_audit_log` is created on the first logged change.
 - `cms_user_roles` is created only when an owner turns roles on.
-- `cms_profile_edits` (CMS database) is created on the first profile fix. It keeps the old value of every field changed from the admin, which is what Undo uses.
-- **Fix profile writes to the live `registration` table**, but only these columns, and only on the profile being edited: `meta_title`, `meta_desc`, `meta_keyword`, `shortbio`, `fullbio`, `fullbio_2`, `fullbio_3`, `nimage2` (desktop banner), `nimage1` (mobile banner). New banner files go to `httpdocs/images/` as `fsia-banner-<id>-<desktop|mobile>-<random>.<ext>`.
+- The CMS writes nothing to profiles. Fixes are made in the starindia admin (starindia.fsia.in/admin).
+- For profiles with `starindia_action = 'edited'` the CMS server reads `GET https://admin.fsia.in/api/profiles/<id>` (read-only; set `'starindia_api'` in config.php to change it). It keeps only text lengths, hero/logo values and SEO fields for 5 minutes in the server temp folder, never contact details. If that API cannot be read, those profiles show "Not checked" instead of guessed issues.
 - Profile Changes triggers are installed only when someone clicks "Turn on".
 
 ## Before upload
@@ -29,8 +29,8 @@ The deployment is the CMS admin tools zip: Profiles & Score with **Fix profile**
 ## Upload
 
 4. Upload `fsia-admin-tools-upload.zip` to `httpdocs` → Extract → "Replace existing files". It contains:
-   - `cms/backend/api/`: `audit.php`, `changelog.php`, `cleanup.php`, `profiles.php`, `sitecheck.php`, `users.php`
-   - `cms/backend/lib/`: `bootstrap.php`, `image_store.php`, `profile_report.php`, `rbac.php`, `site_db.php`
+   - `cms/backend/api/`: `audit.php`, `changelog.php`, `cleanup.php`, `sitecheck.php`, `users.php`
+   - `cms/backend/lib/`: `bootstrap.php`, `profile_report.php`, `rbac.php`, `site_db.php`, `starindia.php`
    - `cms-admin-test/` (the new admin; the current `/cms-admin/` is not touched)
    - It does **not** contain `teams.php`, `config.php` or any public page.
 
@@ -60,7 +60,6 @@ The deployment is the CMS admin tools zip: Profiles & Score with **Fix profile**
 | New admin screens misbehave | Keep using `/cms-admin/`; delete `/cms-admin-test/` |
 | Roles locked someone out (only possible after `roles_enabled` was set) | Remove `'roles_enabled' => true` from config.php: everyone is back to full access |
 | Change log triggers cause trouble | Profile Changes → Turn off (drops the triggers), or `DROP TRIGGER fsia_log_profile_update; DROP TRIGGER fsia_log_profile_create; DROP TRIGGER fsia_log_profile_delete;` |
-| A profile fix was wrong | Profiles & Score → Fix → "Recent fixes" → Undo (refused if the field was changed again since) |
 | Activity log grows too big | `DELETE FROM cms_audit_log WHERE created_at < NOW() - INTERVAL 180 DAY;` |
 
 No step deletes or changes profile data.

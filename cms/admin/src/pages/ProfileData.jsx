@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import ProfileFix from './ProfileFix';
 
 const PROBLEMS = [
   ['bio', 'Bio missing', 'bg-orange-100 text-orange-800'],
-  ['banner', 'Banner missing', 'bg-sky-100 text-sky-800'],
+  ['banner', 'Banner / hero missing', 'bg-sky-100 text-sky-800'],
   ['image', 'Image missing', 'bg-red-100 text-red-700'],
   ['seo', 'SEO issue', 'bg-violet-100 text-violet-700'],
 ];
@@ -15,10 +14,26 @@ const BANDS = [
   ['poor', 'Poor', 'bg-red-100 text-red-700', 'bg-red-500'],
 ];
 const bandOf = (k) => BANDS.find((b) => b[0] === k) || BANDS[3];
+const STARINDIA_ADMIN = 'https://starindia.fsia.in/admin/';
+
+/** Opens the starindia admin with the profile ID on the clipboard (that admin has no per-profile links). */
+function FixLink({ r }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <a href={STARINDIA_ADMIN} target="_blank" rel="noreferrer" title={`Opens the starindia admin. Search #${r.id} there.`}
+      onClick={() => { navigator.clipboard?.writeText(String(r.id)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 4000); }).catch(() => {}); }}
+      className="mt-1.5 inline-block rounded-lg bg-navy px-2.5 py-1 text-[11px] font-bold text-white hover:bg-navy/80">
+      {copied ? `ID ${r.id} copied, search it there ↗` : 'Fix in starindia admin ↗'}
+    </a>
+  );
+}
 
 /** Score chip; opens a breakdown of where the points came from. */
 function ScoreCell({ r }) {
   const [, label, cls, bar] = bandOf(r.band);
+  if (r.score === null) {
+    return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500" title={r.unchecked || ''}>Not checked</span>;
+  }
   if (r.score === undefined) return <span className="text-slate-400">—</span>;
   return (
     <details className="group">
@@ -58,9 +73,6 @@ export default function ProfileData({ onCheckLive, disabled }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [fixing, setFixing] = useState(null);
-  // After a fix, show the profile's new score and problems in the list straight away.
-  const updateRow = (rep) => setData((d) => (d ? { ...d, rows: d.rows.map((x) => (x.id === rep.id ? { ...x, ...rep } : x)) } : d));
 
   const params = { ...f, problem: problems.join(','), match, band: bands.join(',') };
   const key = JSON.stringify(params);
@@ -171,6 +183,12 @@ export default function ProfileData({ onCheckLive, disabled }) {
                 </button>
               );
             })}
+            {data.bands.unchecked > 0 && (
+              <button type="button" onClick={() => toggleBand('unchecked')} aria-pressed={bands.includes('unchecked')}
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${bands.includes('unchecked') ? 'border-transparent bg-slate-200 text-slate-700 ring-2 ring-gold' : 'border-slate-200 bg-white text-slate-600 hover:border-gold'}`}>
+                {bands.includes('unchecked') ? '✓ ' : ''}Not checked ({data.bands.unchecked.toLocaleString()})
+              </button>
+            )}
             {bands.length > 0 && <button type="button" className="text-xs font-semibold text-gold-dark underline" onClick={() => setBands([])}>Clear</button>}
           </div>
           {data.scanned > 0 && (
@@ -178,7 +196,11 @@ export default function ProfileData({ onCheckLive, disabled }) {
               {BANDS.map(([k, , , bar]) => <div key={k} className={bar} style={{ width: `${(data.bands[k] / data.scanned) * 100}%` }} />)}
             </div>
           )}
-          <p className="mt-2 text-[11px] text-slate-500">Photos 30 · Biography 25 · Banners 20 · SEO 25. Counted only from what is in the database and on the server.</p>
+          <p className="mt-2 text-[11px] text-slate-500">
+            Photos 30 · Biography 25 · Banners (or hero image) 20 · SEO 25. Profiles on www.fsia.in are checked from the database and server files;
+            profiles edited in the starindia admin are checked from that admin&apos;s own data, with its limits (title 60, description 160).
+            {data.starindia?.profiles > 0 && ` ${data.starindia.checked.toLocaleString()} of ${data.starindia.profiles.toLocaleString()} starindia profiles in this list could be read.`}
+          </p>
         </div>
       )}
 
@@ -250,7 +272,8 @@ export default function ProfileData({ onCheckLive, disabled }) {
                       </span>
                     )}
                     {r.suspended && <span className="ml-1 mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Suspended</span>}
-                    <button type="button" className="mt-1.5 rounded-lg bg-navy px-2.5 py-1 text-[11px] font-bold text-white hover:bg-navy/80" onClick={() => setFixing(r)}>✎ Fix</button>
+                    <span className="mt-1 block text-[10px] text-slate-400">Checked from: {r.source === 'starindia' ? 'starindia admin data' : 'www database'}</span>
+                    <FixLink r={r} />
                   </td>
                   <td className="p-3"><ScoreCell r={r} /></td>
                   <td className="p-3 text-slate-600">{r.category}</td>
@@ -264,7 +287,8 @@ export default function ProfileData({ onCheckLive, disabled }) {
                     ) : <span className="text-slate-400">—</span>}
                   </td>
                   <td className="p-3">
-                    {Object.keys(r.problems).length === 0 ? (
+                    {r.unchecked && <p className="mb-1 rounded bg-slate-100 px-2 py-1 text-[11px] text-slate-600">Bio, hero and SEO not checked: {r.unchecked}</p>}
+                    {Object.keys(r.problems).length === 0 && !r.unchecked ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">✓ Complete</span>
                     ) : (
                       <ul className="space-y-1">
@@ -286,8 +310,6 @@ export default function ProfileData({ onCheckLive, disabled }) {
           </table>
         </div>
       )}
-
-      {fixing && <ProfileFix profile={fixing} onClose={() => setFixing(null)} onSaved={updateRow} />}
 
       {pages > 1 && (
         <div className="mt-3 flex items-center justify-center gap-3 text-sm">

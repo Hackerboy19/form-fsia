@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
 require_once __DIR__ . '/../lib/site_db.php';
 require_once __DIR__ . '/../lib/profile_report.php';
+require_once __DIR__ . '/../lib/starindia.php';
 
 /*
  * Site Check (admin only): opens pages of the live site the way a visitor does
@@ -398,9 +399,12 @@ respond(function () {
         ];
         $want = array_values(array_intersect(explode(',', (string) query_param('problem')), ['bio', 'banner', 'image', 'seo']));
         $match = query_param('match') === 'all' ? 'all' : 'any';
-        $bandWant = array_values(array_intersect(explode(',', (string) query_param('band')), array_keys(SC_SCORE_BANDS)));
+        $bandWant = array_values(array_intersect(explode(',', (string) query_param('band')), [...array_keys(SC_SCORE_BANDS), 'unchecked']));
 
         $rows = sc_profile_rows($f);
+        // Profiles edited in the starindia admin are checked from that admin's data.
+        $siIds = array_map(fn ($r) => (int) $r['id'], array_filter($rows, fn ($r) => ($r['starindia_action'] ?? '') === 'edited'));
+        $si = $siIds ? starindia_profiles($siIds, query_param('fresh') === '1') : [];
         // Latest change of each profile from the change log (Tools -> Profile Changes), when it is on.
         $latest = [];
         if (site_db_has_table('fsia_profile_changes')) {
@@ -412,22 +416,24 @@ respond(function () {
         $changedDays = (int) query_param('changed_days');
         $since = $changedDays > 0 ? date('Y-m-d H:i:s', time() - $changedDays * 86400) : null;
         $counts = ['bio' => 0, 'banner' => 0, 'image' => 0, 'seo' => 0, 'ok' => 0];
-        $bands = array_fill_keys(array_keys(SC_SCORE_BANDS), 0);
+        $bands = array_fill_keys([...array_keys(SC_SCORE_BANDS), 'unchecked'], 0);
         $scoreSum = 0;
         $scored = 0;
         $out = [];
         foreach ($rows as $r) {
-            $rep = sc_profile_report($r);
+            $rep = sc_profile_report($r, $si[(int) $r['id']] ?? null);
             if (isset($latest[$rep['id']]) && (string) $latest[$rep['id']]['changed_at'] >= (string) $rep['last_changed']) {
                 $rep['last_changed'] = (string) $latest[$rep['id']]['changed_at'];
                 $rep['changed_by'] = site_change_who($latest[$rep['id']]['actor'], $latest[$rep['id']]['db_user']);
             }
             if ($since !== null && ($rep['last_changed'] === null || $rep['last_changed'] < $since)) continue;
             foreach (array_keys($rep['problems']) as $k) $counts[$k]++;
-            if (!$rep['problems']) $counts['ok']++;
+            if (!$rep['problems'] && $rep['unchecked'] === null) $counts['ok']++;
             $bands[$rep['band']]++;
-            $scoreSum += $rep['score'];
-            $scored++;
+            if ($rep['score'] !== null) {
+                $scoreSum += $rep['score'];
+                $scored++;
+            }
             if ($bandWant && !in_array($rep['band'], $bandWant, true)) continue;
             if ($want) {
                 $hit = array_intersect($want, array_keys($rep['problems']));
@@ -439,9 +445,9 @@ respond(function () {
         if ($sort === 'changed') {
             usort($out, fn ($a, $b) => strcmp((string) $b['last_changed'], (string) $a['last_changed']));
         } elseif ($sort === 'score') {
-            usort($out, fn ($a, $b) => $a['score'] <=> $b['score'] ?: $b['id'] <=> $a['id']);
+            usort($out, fn ($a, $b) => ($a['score'] ?? 101) <=> ($b['score'] ?? 101) ?: $b['id'] <=> $a['id']);
         } elseif ($sort === 'score_desc') {
-            usort($out, fn ($a, $b) => $b['score'] <=> $a['score'] ?: $b['id'] <=> $a['id']);
+            usort($out, fn ($a, $b) => ($b['score'] ?? -1) <=> ($a['score'] ?? -1) ?: $b['id'] <=> $a['id']);
         }
         $page = max(1, (int) query_param('page'));
         $years = array_map('intval', array_column(site_db_rows('SELECT DISTINCT YEAR(date_of_reg) AS y FROM registration WHERE date_of_reg IS NOT NULL ORDER BY y DESC'), 'y'));
@@ -452,6 +458,7 @@ respond(function () {
             'counts'     => $counts,
             'bands'      => $bands,
             'verification_counts' => sc_verification_counts($f),
+            'starindia'  => ['profiles' => count($siIds), 'checked' => count(array_filter($si, fn ($x) => $x['ok'])), 'admin' => 'https://starindia.fsia.in/admin/'],
             'band_min'   => SC_SCORE_BANDS,
             'avg_score'  => $scored ? (int) round($scoreSum / $scored) : null,
             'total'      => count($out),
