@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api, assetUrl } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { api, assetUrl, SITE } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { PageHeader } from '../components/Layout';
@@ -31,21 +31,166 @@ const BLANK = {
   promo_start: '', promo_end: '', targets: ['all'], excludes: [],
 };
 
-/** The bar visitors see (same look as /cms/promo.js). */
-function PromoPreview({ e }) {
+/** The bar visitors see (same look as /cms/promo.js). `mobile` = phone layout, `flat` = full-width as on the page. */
+function PromoPreview({ e, mobile = false, flat = false }) {
   const when = range(e.starts_at, e.ends_at);
-  const line = [when, [e.venue, e.city].filter(Boolean).join(', '), e.summary].filter(Boolean).join(' · ');
-  const img = e.banner_desktop || e.banner_mobile;
+  const line = [when, [e.venue, e.city].filter(Boolean).join(', '), mobile ? '' : e.summary].filter(Boolean).join(' · ');
+  const img = mobile ? (e.banner_mobile || e.banner_desktop) : (e.banner_desktop || e.banner_mobile);
   return (
-    <div className="relative flex items-center gap-3 rounded-xl bg-navy px-3 py-2.5 pr-10 text-[#F6F2E8] shadow-lg">
-      {img && <img src={assetUrl(img)} alt="" className="h-12 w-auto max-w-[140px] rounded-lg object-cover" />}
+    <div className={`relative flex items-center gap-3 bg-navy px-3 py-2.5 pr-11 text-[#F6F2E8] shadow-lg ${flat ? '' : 'rounded-xl'}`}>
+      {img && <img src={assetUrl(img)} alt="" className={`${mobile ? 'h-11 max-w-[70px]' : 'h-12 max-w-[160px]'} w-auto shrink-0 rounded-lg object-cover`} />}
       <div className="min-w-0 flex-1">
         <p className="truncate font-bold text-gold">{e.title || 'Event title'}</p>
         {line && <p className="truncate text-xs text-slate-300">{line}</p>}
       </div>
-      <span className="shrink-0 rounded-full bg-gold px-3.5 py-2 text-xs font-bold text-navy">{e.cta_label || 'Register now'}</span>
+      <span className="shrink-0 whitespace-nowrap rounded-full bg-gold px-3.5 py-2 text-xs font-bold text-navy">{e.cta_label || 'Register now'}</span>
       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-lg text-slate-400">×</span>
     </div>
+  );
+}
+
+/* Same page rules as backend/lib/events.php (events_norm_path, events_rule_matches). */
+const MAIN_PATHS = ['/about', '/about.php', '/contact', '/contact.php', '/our-teams.php', '/quickapply', '/news-coverage',
+  '/special-news-coverage', '/faq.php', '/fashion-designer.php', '/makeup-artist.php', '/channel-partner.php', '/socialmediaprofile.php'];
+function normPath(p) {
+  let x = String(p || '').trim();
+  try { if (/^https?:\/\//i.test(x)) x = new URL(x).pathname; } catch { /* keep as typed */ }
+  x = '/' + x.split(/[?#]/)[0].toLowerCase().replace(/^\/+|\/+$/g, '');
+  return ['/', '/index.php', '/index.html'].includes(x) ? '/' : x;
+}
+function ruleMatches(rule, path) {
+  if (rule === 'all') return true;
+  if (rule === 'home') return path === '/';
+  if (rule === 'pageants') return /^\/(miss|mrs)-[a-z0-9-]+\.php$/.test(path);
+  if (rule === 'profiles') return path !== '/' && !path.slice(1).includes('/') && !path.endsWith('.php') && !MAIN_PATHS.includes(path);
+  if (!rule.startsWith('/')) return false;
+  const star = rule.endsWith('*');
+  const base = normPath(rule.replace(/\*+$/, ''));
+  const re = new RegExp('^' + (base + (star ? '*' : '')).replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+  return re.test(path);
+}
+/** Example pages for what is picked in "Show on" / "But never on". */
+function samplePages(targets, excludes) {
+  const out = [];
+  const add = (path, label, kind) => { if (!out.some((o) => o.path === path)) out.push({ path, label, kind }); };
+  const fromRules = (rules, kind) => rules.forEach((r) => {
+    if (r === 'all') { add('/', 'Homepage', kind); add('/miss-assam.php', 'State page', kind); add('/about', 'About', kind); }
+    else if (r === 'home') add('/', 'Homepage', kind);
+    else if (r === 'pageants') add('/miss-assam.php', 'State page (Miss Assam)', kind);
+    else if (r === 'profiles') add('', 'Profile page (paste a link)', kind);
+    else if (r.startsWith('/')) { const p = r.replace(/\*+$/, '') || '/'; add(p, r, kind); }
+  });
+  fromRules(targets, 'show');
+  fromRules(excludes, 'hide');
+  return out;
+}
+
+const VIEW = { desktop: { w: 1280, h: 760 }, mobile: { w: 390, h: 760 } };
+
+/** The real website page with this event's bar on it, before anything is published. */
+function PagePreview({ e }) {
+  const samples = samplePages(e.targets || [], e.excludes || []);
+  const [path, setPath] = useState(samples[0]?.path ?? '/');
+  const [typed, setTyped] = useState(samples[0]?.path ?? '/');
+  const [device, setDevice] = useState('desktop');
+  const [box, setBox] = useState(0);
+  const [nonce, setNonce] = useState(0);
+  const [now, setNow] = useState(null);
+  const holder = useRef(null);
+
+  useEffect(() => {
+    const ro = new ResizeObserver(([x]) => setBox(x.contentRect.width));
+    if (holder.current) ro.observe(holder.current);
+    return () => ro.disconnect();
+  }, []);
+  // What the website shows on this page right now (published events only).
+  useEffect(() => {
+    if (!path) { setNow(null); return undefined; }
+    let live = true;
+    const t = setTimeout(() => api.matchPromotion(path).then((m) => live && setNow(m)).catch(() => live && setNow(null)), 300);
+    return () => { live = false; clearTimeout(t); };
+  }, [path]);
+
+  const go = (p) => { setTyped(p); setPath(p.trim() ? normPath(p) : ''); };
+  const np = path ? normPath(path) : '';
+  const shown = np !== '' && (e.targets || []).some((r) => ruleMatches(r, np));
+  const hidden = np !== '' && (e.excludes || []).some((r) => ruleMatches(r, np));
+  const willShow = shown && !hidden;
+  const other = now?.promotion && now.promotion.id !== e.id ? now.promotion : null;
+
+  const { w, h } = VIEW[device];
+  const scale = box ? Math.min(1, box / w) : 1;
+  const left = box > w ? (box - w) / 2 : 0;
+  const onLoad = (ev) => {
+    try {
+      const d = ev.target.contentDocument;
+      if (!d) return;
+      // Hide the bar the live page may already show, and keep clicks inside the preview.
+      const st = d.createElement('style');
+      st.textContent = '#fsia-promo{display:none!important}';
+      d.head.appendChild(st);
+      d.addEventListener('click', (x) => { if (x.target.closest('a')) x.preventDefault(); }, true);
+    } catch { /* other address: show the page as it is */ }
+  };
+
+  return (
+    <section className="card overflow-hidden">
+      <div className="space-y-3 border-b border-gold-light/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-bold">Page preview</p>
+            <p className="text-[11px] text-slate-500">The real website page with this bar on it. Nothing is published until you press Publish.</p>
+          </div>
+          <div className="flex items-center gap-1">
+            {Object.keys(VIEW).map((d) => (
+              <button key={d} type="button" onClick={() => setDevice(d)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${device === d ? 'bg-navy text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {d === 'desktop' ? '🖥 Desktop' : '📱 Mobile'}
+              </button>
+            ))}
+            <button type="button" className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600" onClick={() => setNonce((n) => n + 1)} title="Reload the page">↻</button>
+          </div>
+        </div>
+        {samples.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {samples.map((s) => (
+              <button key={s.kind + s.path + s.label} type="button" onClick={() => go(s.path)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${s.path === path && s.path !== '' ? 'border-navy bg-navy text-white' : s.kind === 'hide' ? 'border-red-200 text-red-700' : 'border-slate-200 text-slate-600'}`}>
+                {s.kind === 'hide' ? '⊘ ' : ''}{s.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <form className="flex gap-2" onSubmit={(x) => { x.preventDefault(); go(typed); }}>
+          <input className="input font-mono text-xs" aria-label="Page to preview" placeholder="/miss-assam.php or a full www.fsia.in link"
+            value={typed} onChange={(x) => setTyped(x.target.value)} />
+          <button type="submit" className="btn-ghost !py-1 text-xs">Show</button>
+        </form>
+        {np !== '' && (
+          <div className="space-y-1 text-xs">
+            {willShow && <p className="font-semibold text-emerald-700">✓ The bar shows on {np} (while the event is promoted).</p>}
+            {hidden && <p className="font-semibold text-red-700">⊘ Not on {np}: it is in "But never on".</p>}
+            {!shown && !hidden && <p className="font-semibold text-amber-700">Not on {np}: this page is not picked in "Show on".</p>}
+            {willShow && other && <p className="text-amber-700">Right now this page shows "{other.title}". If both are live, the one with the higher priority shows.</p>}
+          </div>
+        )}
+      </div>
+      <div ref={holder} className="relative overflow-hidden bg-slate-100" style={{ height: np === '' ? 120 : h * scale }}>
+        {np === '' ? (
+          <p className="p-6 text-center text-sm text-slate-500">Paste a page link above, e.g. a profile page, to see it here.</p>
+        ) : (
+          <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: 'top left', marginLeft: left, position: 'relative' }}>
+            <iframe key={`${np}-${device}-${nonce}`} src={SITE + np} title="Website page preview" onLoad={onLoad}
+              style={{ width: w, height: h, border: 0, background: '#fff' }} />
+            {willShow && (
+              <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+                <PromoPreview e={e} mobile={device === 'mobile'} flat />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -135,6 +280,8 @@ function EventForm({ initial, groups, onClose, onSaved }) {
               hint="Pages listed here never show it, even if picked above." />
           </div>
         </section>
+
+        <PagePreview e={f} />
 
         <section>
           <div className="mb-2 flex items-center justify-between">

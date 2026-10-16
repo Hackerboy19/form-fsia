@@ -128,5 +128,5 @@ export const api = {
 
 // Image paths stored as "/static/media/x.jpg" are relative to the public site,
 // not to wherever this admin is hosted. Resolve them for previews.
-const SITE = (import.meta.env.VITE_SITE_URL || 'https://www.fsia.in').replace(/\/$/, '');
+export const SITE = (import.meta.env.VITE_SITE_URL || 'https://www.fsia.in').replace(/\/$/, '');
 export const assetUrl = (u) => (u && u.startsWith('/') && !u.startsWith('//') ? SITE + u : u || '');
