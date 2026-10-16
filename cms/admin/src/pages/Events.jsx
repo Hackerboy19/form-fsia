@@ -211,14 +211,14 @@ export default function Events() {
                     {ev.banner_desktop || ev.banner_mobile
                       ? <img src={assetUrl(ev.banner_desktop || ev.banner_mobile)} alt="" className="h-12 w-20 rounded-lg object-cover" />
                       : <div className="grid h-12 w-20 place-items-center rounded-lg bg-cream text-xs text-slate-400">no banner</div>}
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-[12rem] flex-1">
                       <p className="font-semibold">{ev.title}</p>
                       <p className="text-xs text-slate-500">{range(ev.starts_at, ev.ends_at)}{ev.city ? ` · ${ev.city}` : ''} · priority {ev.priority}</p>
                       <p className="text-[11px] text-slate-400">Shows on: {ev.targets.map((t) => data.groups[t] || t).join(', ') || '—'}{ev.excludes.length ? ` · not on ${ev.excludes.map((t) => data.groups[t] || t).join(', ')}` : ''}</p>
                     </div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${cls}`}>{label}</span>
                     {editable && (
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
                         <button type="button" className="btn-ghost !px-2.5 !py-1 text-xs" onClick={() => setEditing(ev)}>Edit</button>
                         <button type="button" className="btn-ghost !px-2.5 !py-1 text-xs" onClick={() => duplicate(ev)}>Duplicate</button>
                         {ev.status === 'published' && ev.phase !== 'completed' && <button type="button" className="btn-ghost !px-2.5 !py-1 text-xs text-red-600" onClick={() => cancel(ev)}>Cancel</button>}
