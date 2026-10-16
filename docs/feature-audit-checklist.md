@@ -1,78 +1,92 @@
 # Feature Audit Checklist
 
-Audit date: 2026-10-15. Scope: repository `Hackerboy19/form-fsia` (branch `claude/gallant-mayer-hgabky`) plus read-only checks of www.fsia.in.
+Audit date: 2026-10-16 (second run; supersedes the 2026-10-15 run).
+Scope:
+- Repository `Hackerboy19/form-fsia`, branch `claude/gallant-mayer-hgabky` (HEAD `2f45910` + this audit).
+- Read-only requests to www.fsia.in and starindia.fsia.in.
 
 **Where things were tested**
-- **Local**: the API runs on PHP 8.3 against a throwaway MariaDB with synthetic profiles (`cms/tests/api_test.php`). The admin UI runs in Chromium against the demo backend (`cms/tests/ui_smoke.mjs`).
-- **Live (read-only)**: GET requests to www.fsia.in only. Nothing was written to the production database or files.
-- The new CMS files **have not been uploaded to production yet**. Every PASS below means "verified locally". Each one needs a short live re-check after upload (see `deployment-and-rollback-checklist.md`).
+- **Local:** PHP 8.3 API against a throwaway MariaDB with synthetic profiles (`cms/tests/api_test.php`, 107 checks). A stand-in starindia API serves synthetic profiles.
+- **Upload simulation:** the zip extracted over a copy of the old live version (commit 3315ddd), with an existing admin login (`cms/tests/upgrade_check.php`, 29 checks, plus a browser run of every screen).
+- **Browser:** every admin screen at 1280 / 390 px (`cms/tests/ui_smoke.mjs`). The starindia deep link ran on a local copy of the real starindia admin build with a stand-in API (`starindia-admin/test-deeplink.mjs`).
+- **Live:** GET only. Nothing was written to production.
+
+**What is live right now (checked 2026-10-16)**
+- `/cms-admin/` is the single-admin build uploaded earlier (`index-ZG4XlubJ.js`): Profiles & Score v1, Activity Log, Site Check, Profile Changes, Server Cleanup.
+- **Not yet uploaded:**
+  - The latest zip: Verification filter, starindia-data checks, "Fix in starindia admin" links. `/cms-admin-test/` returns 404.
+  - The starindia `admin-enhancements.js` with the deep link (live file has no `fsia-open`).
+- **Done live:** robots.txt Sitemap fix.
 
 **Statuses**
 - PASS: verified by an executed test.
 - PARTIAL: some of the requirement works.
 - FAIL: broken.
-- NOT IMPLEMENTED: no code exists.
-- BLOCKED: cannot be verified without access or credentials.
+- NOT IMPLEMENTED: no code.
+- BLOCKED: needs access or credentials we don't have.
 - N/A: does not apply.
 
-Code inspection alone never gave a PASS.
+Code reading alone never gave a PASS.
 
-## A. Existing CMS features
+## A. CMS admin (this repository)
 
-| # | Feature | Frontend | Backend | DB tables | Permission | Tests (actual result) | Status | Fix / next step |
-|---|---|---|---|---|---|---|---|---|
-| A1 | Admin sign-in, sessions, sign-in rate limit | `components/Login.jsx`, `lib/auth.jsx` | `api/auth.php`, `lib/bootstrap.php` (`issue_session`, `session_user`, `login_throttle`) | file `admin_users.php` | — | Sign-in ok and wrong password refused. A tampered token and a token carrying another user's name are both refused (401). Changing a password signs old sessions out. The 9th failed try in a row is blocked with 429. | PASS | — |
-| A2 | Global SEO manager | `pages/SeoManager.jsx` | `api/seo.php` | `pages_seo` | `content.edit` to save | Save as editor (200); viewer refused (403); public read 200. UI loads at 1280 and 390 px. | PASS | — |
-| A3 | Page text editor + live preview (About, Our Team) | `pages/PageEditor.jsx`, `components/LivePreview.jsx` | `api/sections.php` | `page_sections` | `content.edit` | Save as editor ok; viewer refused. UI loads without errors. **Phone layout overflowed (1298 px on a 390 px screen); fixed and re-tested.** | PASS (after fix) | BUG-12 fixed |
-| A4 | Homepage editor | `pages/HomepageEditor.jsx` | `api/sections.php` | `page_sections` | `content.edit` | Screen loads at both widths. Saving uses the same endpoint as A3 (tested). Homepage-specific field round-trips are not automated. | PARTIAL | Add a save/reload test for homepage sections |
-| A5 | Team directory (multi-category) | `pages/TeamDirectory.jsx` | `api/teams.php` | `team_members` | `content.edit` | Create/delete reach the API for editors (validation answers 422/404); viewer refused. Full create→edit→delete round trip not automated. **The live `teams.php` was hand-edited on the server and is not in the repo.** | PARTIAL | Bring the live `teams.php` into the repo; add a CRUD test; run migration `2026-10-15-team-multi-category.sql` |
-| A6 | News manager | `pages/NewsManager.jsx` | `api/news.php`, `lib/sanitize_html.php` | `news_coverage` | `content.edit` | Article created (201). `<script>`, `onerror`, `javascript:` links and `<iframe>` removed. A `javascript:` featured image is refused (422). | PASS | — |
-| A7 | Image upload | `components/ImageUpload.jsx` | `api/upload.php` | — (files) | `content.edit` | PHP renamed to `.jpg` refused (415). SVG refused (415). A real PNG is stored under a random 32-hex name (201). Viewer refused (403). | PASS | — |
-| A8 | Site Check (live page check, baseline) | `pages/SiteCheck.jsx` | `api/sitecheck.php` (`sc_check`, `sc_fetch_page`, `sc_check_images`) | `site_check_baseline` | view `tools.view`, baseline `tools.manage` | Permissions verified. Fetching is limited to fsia.in, and now to http/https only. The live fetch was exercised earlier in this project but **not re-run in this audit**. | PARTIAL | Re-run against live after upload |
-| A9 | Profile search and smart filters | `pages/Profiles.jsx`, `pages/ProfileData.jsx` | `api/sitecheck.php?action=profiles` (`sc_profile_rows`, `sc_profile_report`) | `registration` (read only) | `tools.view` | **Passed:** search by name and by ID; category; year and month (counts match direct SQL); 230 rows over 3 pages with none missing or repeated; "all" vs "any" problem logic; SQL-injection and script text in search return 200 with 0 rows. **Bug found:** an invalid year returned 0 rows; now ignored (BUG-09). **Not implemented:** filters by image count, premium, Instagram, event, saved filters, bulk actions. | PARTIAL | Missing filters depend on modules C1–C4 |
-| A9b | Profile issues match the admin that edits them | `ProfileData.jsx` (`FixLink`, Verification filter) | `sitecheck.php`, `lib/profile_report.php`, `lib/starindia.php` | `registration` (read), starindia admin API (GET) | `tools.view` | Stub-API tests: starindia SEO used instead of empty DB columns (Azra case), hero/logo holding several images reported, score 63/95 as computed, unreadable profile shows "Not checked" with no guessed issues and is left out of averages, GET only, cache keeps no contact details. Verified/Pending totals match the database. | PASS (local + simulated upload) | Live check after upload |
-| A10 | Profile quality score | `ProfileData.jsx` (`ScoreCell`, band chips) | `sitecheck.php` (`sc_quality_score`, `SC_SCORE_BANDS`) | none (computed) | `tools.view` | Exact scores 100 / 68 / 20 for sample profiles. Parts add to the total. Same input gives the same score. Changing only the bio changes only the bio part (68→76). Band filter, sort and counts verified. | PARTIAL | Weights are in code, not admin-configurable. Optimization workflow is not implemented (B1). |
-| A11 | Profile Changes (change log via DB triggers) | `pages/ProfileChanges.jsx` | `api/changelog.php` | `fsia_profile_changes` + 3 triggers | view `tools.view`, on/off `tools.manage` | Turned on (self-test, then triggers). A profile update is recorded before→after. The mobile change is listed without its value. Turning off leaves 0 triggers. | PASS | Not yet turned on in production |
-| A12 | Server Cleanup (Trash, restore, purge, preview) | `pages/ServerCleanup.jsx` | `api/cleanup.php` (`cl_check_path`, `cl_preview`, `cl_redact_secrets`) | — (files) | `cleanup.manage` | `../config.php`, `config.php`, `cms/…`, `/etc/passwd` and `x/../config.php` are all refused (422). Move to Trash → restore works. Purging before 7 days is refused. **Preview showed passwords from old config copies; fixed** (BUG-08). | PASS (after fix) | — |
-| A13 | Roles and permissions | `pages/UsersRoles.jsx`, `Layout.jsx` (`visibleNav`) | `lib/rbac.php` (`rbac_enforce`), `api/users.php` | `cms_user_roles` | `users.manage` | 16 actions × 5 identities checked server-side (see `role-permission-matrix.md`). Last owner cannot be demoted. Editor cannot promote itself. A user added later is a viewer. | PASS for the 4 built roles; PARTIAL against the 7 proposed roles | Add Event / Registration / Finance roles with those modules |
-| A14 | Activity log | `pages/ActivityLog.jsx` | `lib/rbac.php` (`audit_record`), `api/audit.php` | `cms_audit_log` | `audit.view` | Records changes, refusals, sign-ins and failed sign-ins. Passwords and tokens never stored. Search input is not SQL. A change still saves when the log cannot be written. | PASS | — |
+| # | Feature | Frontend | Backend / data | Permission | Tests run → result | Status |
+|---|---|---|---|---|---|---|
+| A1 | Sign-in, sessions, rate limit, single admin | `Login.jsx`, `lib/auth.jsx` | `api/auth.php`, `lib/bootstrap.php`, `lib/rbac.php` (`rbac_roles_enabled`) | — | The existing login works after the upload (sim). A tampered token or a token with another user's name is refused. A changed password ends sessions. The 9th failed try → 429. With roles off, one admin has full access and roles cannot be turned on from the UI (409). | PASS |
+| A2 | Global SEO | `SeoManager.jsx` | `api/seo.php`, `pages_seo` | content.edit | Save/refuse matrix; save in the sim. **But the 5 SEO rows are not used by the live pages** (titles differ, see A15). | PARTIAL |
+| A3 | Page text + live preview (About, Our Team) | `PageEditor.jsx`, `LivePreview.jsx` | `api/sections.php`, `page_sections` | content.edit | Saved through the UI in the sim and kept after reload. Phone layout OK (BUG-12 fixed). **Our Team CTA is not read by the live page** (A15). | PARTIAL |
+| A4 | Homepage editor | `HomepageEditor.jsx` | `api/sections.php` | content.edit | Screens load. All 10 saved homepage sections match the live homepage text. Homepage-specific save round trip not automated. | PASS (data) / save via A3 path |
+| A5 | Team directory | `TeamDirectory.jsx` | `api/teams.php` (live copy hand-edited, not in zip) | content.edit | Sim: list (27), add, edit, delete OK. Live: 24/24 active names on Our Team page. | PASS (sim) |
+| A6 | News | `NewsManager.jsx` | `api/news.php`, `sanitize_html.php` | content.edit | Add/edit/delete; script, event handlers, `javascript:` and iframe removed. **Live: 0 articles in the CMS; the News pages are not CMS-driven** (A15). | PARTIAL |
+| A7 | Image upload | `ImageUpload.jsx` | `api/upload.php` | content.edit | PHP-as-JPEG and SVG refused; real image stored under a random name; viewer refused. | PASS |
+| A8 | Site Check (live page check, baseline) | `SiteCheck.jsx` | `api/sitecheck.php` | tools.view / tools.manage | Sim: live check of www.fsia.in/quickapply → 200; baseline saved; fetches limited to fsia.in over http(s). | PASS |
+| A9 | Profile search and filters | `Profiles.jsx`, `ProfileData.jsx` | `sitecheck.php?action=profiles`, `lib/profile_report.php` | tools.view | **Passed:** name, ID, category, year/month (= SQL counts); 230 rows / 3 pages, none missing or repeated; problem any/all; invalid values ignored; SQL and script text in search are harmless. **Verification:** Verified Member / Pending-Guest totals = database; badge; date. **Missing:** filters by image count, premium, Instagram, event; saved filters; bulk actions. Max 5,000 rows per query. | PARTIAL |
+| A10 | Quality score | `ProfileData.jsx` (`ScoreCell`) | `sc_quality_score` | tools.view | Exact scores (100/76/68/63/20/95), parts add up, same input → same score, one field changes one part. starindia profiles use that admin's limits (60/160). An unreadable profile gets no score, is shown as "Not checked" and is left out of the average and of "nothing missing". **Missing:** configurable weights; workflow (B1). | PARTIAL |
+| A11 | Issues match the admin that edits the profile | `ProfileData.jsx` | `lib/starindia.php` (GET `admin.fsia.in/api/profiles/<id>`) | tools.view | Stand-in API: SEO from starindia data, not the empty DB columns (the Azra case); hero/logo holding several images reported; GET only; cache holds no contact details; second load uses the cache. **Live API not exercised from the test environment** (personal data; runs on the server after upload). | PASS (local) / live BLOCKED until upload |
+| A12 | "Fix in starindia admin" deep link | `ProfileData.jsx` (`starindiaUrl`, `FixLink`, per-issue Fix ↗) | `starindia-admin/admin-enhancements.js` (`fsia-open` block) | starindia admin login | Real starindia admin build + stand-in API: right profile when two match; slug → name fallback; unknown id message; signed out → sign in → opens; CMS demo link → same profile, SEO section; 0 write requests. | PASS (local) / not uploaded |
+| A13 | Profile Changes (DB triggers) | `ProfileChanges.jsx` | `api/changelog.php`, `fsia_profile_changes` | tools.view / tools.manage | On (self-test, triggers) → edit recorded before→after, mobile value hidden → off leaves 0 triggers. Not yet turned on in production. | PASS |
+| A14 | Server Cleanup | `ServerCleanup.jsx` | `api/cleanup.php` | cleanup.manage | 5 traversal paths refused; protected files refused; Trash → restore; no purge before 7 days; secrets masked in preview (BUG-08). Sim: junk found, config.php/.htaccess never listed. | PASS |
+| A15 | CMS content actually reaches the site | — | live pages `our-teams.php`, `index.php`, `about.php`, `news-coverage*` (not in repo) | — | Live comparison: Team, About, Homepage sections match. **Global SEO titles (5/5), Our Team CTA and News are not read by the live pages.** | PARTIAL |
+| A16 | Roles and permissions | `UsersRoles.jsx` (hidden while roles off) | `lib/rbac.php`, `api/users.php` | users.manage | 16 actions × 5 identities via real requests (matrix doc); escalation refused; last owner kept. Currently off by choice (single admin). | PASS (4 roles) / PARTIAL vs 7 requested |
+| A17 | Activity log | `ActivityLog.jsx` | `rbac.php` (`audit_record`), `api/audit.php` | audit.view | Changes, refusals, sign-ins, failed sign-ins; no passwords/tokens; a save still works when logging fails. Sim: UI save logged under the existing admin. | PASS |
 
-## B. Requested modules (FSIA Next-Generation spec)
+## B. Requested modules (Next-Generation spec)
 
-| # | Feature | Evidence | Status | Dependency |
+| # | Feature | Evidence | Status | Needs |
 |---|---|---|---|---|
-| B1 | Optimization workflow: assignment, notes, approval, before/after, AI drafts | No code, tables or screens. | NOT IMPLEMENTED | Business rules; approval to use any AI provider with personal data |
-| B2 | Premium plans and entitlements | No `plans` / `subscriptions` tables, no entitlement checks (repo-wide search). | NOT IMPLEMENTED | Plan names, prices, features (business decision) |
-| B3 | Instagram integration (official Meta API) | Only a free-text `instagram` column and static links. No OAuth, token storage or callback. | NOT IMPLEMENTED; live tests BLOCKED | Meta developer app, business verification, App Review |
-| B4 | New profile template and migration | Live profile pages (`verified_user_details_*.php`, `feach-data-detail-page*.php`) are **not in the repo**. | NOT IMPLEMENTED; current templates BLOCKED for audit | Copy of live httpdocs |
-| B5 | Central events and website-wide promotions | Event content is hard-coded per page; no `events` table or promotion component. | NOT IMPLEMENTED | Event list and placement rules |
-| B6 | Dynamic registration form builder | ~75 hard-coded forms; no form definitions or versioning. | NOT IMPLEMENTED | B5 |
-| B7 | Existing public registration (OTP + insert) | Repo copies of state pages and `miss-universe-registration.php`. Defects confirmed **in the repo code**: no OTP send limit, unlimited OTP guesses, TLS checks off, hard-coded webhook, DB error shown to visitors. Live forms not exercised (each run sends a real WhatsApp message and writes a real registration). | PARTIAL (defects in code); live functional test BLOCKED | A test phone number and a staging copy |
-| B8 | Payments and registration status | Columns `payment_status/trans_id/pdate` exist; gateway code not in the repo. | NOT IMPLEMENTED in repo; live flow BLOCKED | Gateway name, sandbox keys, live code |
-| B9 | Analytics | None. | NOT IMPLEMENTED | — |
-| B10 | Profile index for fast filtering of 100k profiles | Planned in `implementation-plan.md` (Phase 2 step 3). Filters read `registration` directly, capped at 5,000 rows. | NOT IMPLEMENTED | Schema dump; cron access |
+| B1 | Optimization workflow: assignment, notes, approval, before/after, AI drafts | None in the CMS. The starindia admin has "Save as draft" for profile edits (seen in its UI, code not in repo). | NOT IMPLEMENTED (CMS) | Business rules; approval for any AI provider |
+| B2 | Premium plans and entitlements | No plans/subscriptions/entitlements anywhere in the repo. The starindia admin has a "Featured" toggle only. | NOT IMPLEMENTED | Plan names, prices, features |
+| B3 | Instagram (official Meta API) | Only text fields (`instagram` column; starindia `contact.instagram`). No OAuth, tokens or callback. | NOT IMPLEMENTED; live tests BLOCKED | Meta app, business verification, App Review |
+| B4 | Profile templates and migration | www templates (`verified_user_details_*`) and starindia's React profile pages exist **outside the repo**. Starindia pages render from that admin's JSON; www pages render from `registration`. | BLOCKED (code not in repo) | Live code / starindia source |
+| B5 | Central events + website-wide promotions | Event content hard-coded per page; no events table or promotion component. | NOT IMPLEMENTED | Event list and placement rules |
+| B6 | Dynamic form builder | ~75 hard-coded forms; no definitions or versions. | NOT IMPLEMENTED | B5 |
+| B7 | Existing public registration (OTP + insert) | Repo copies of `miss-*/mrs-*` and `miss-universe-registration.php`. No OTP send limit, unlimited OTP guesses, TLS checks off, hard-coded webhook ID, DB error shown to visitors (all confirmed in repo code). Live forms not exercised (each run sends a real WhatsApp and writes a real registration). | PARTIAL; live BLOCKED | Live copies + a test number |
+| B8 | Payments | `payment_status/trans_id/pdate` columns exist; no gateway code in the repo. | NOT IMPLEMENTED (repo); live flow BLOCKED | Gateway, sandbox keys, live code |
+| B9 | Analytics | None in the CMS. The starindia admin dashboard shows inquiry counts (`admin-enhancements.js`), but there is no traffic or conversion analytics. | NOT IMPLEMENTED | — |
+| B10 | Profile index for 100k profiles | Planned (implementation plan Phase 2). | NOT IMPLEMENTED | Schema dump, cron |
 
-## C. Website (live, read-only)
+## C. Website (live, read-only, 2026-10-16)
 
 | # | Check | Result | Status |
 |---|---|---|---|
-| C1 | HTTPS / www redirects | `fsia.in` and `http://` → 301 to `https://www.fsia.in/` | PASS |
+| C1 | https / www redirects | 301 to `https://www.fsia.in/` | PASS |
 | C2 | `quickapply.php` → `/quickapply` | 301 | PASS |
-| C3 | 404 page | Real 404 with `noindex,follow` | PASS |
-| C4 | robots.txt sitemap | **Points to `influencer.fsia.in/sitemap.xml` (6 URLs) instead of `www.fsia.in/sitemap.xml` (4,332 URLs)** | FAIL (BUG-01) |
-| C5 | Sitemap health | 20-URL sample: 19 return 200 (after one retry for transient failures), 1 returns 404. 9 duplicate entries; 164 `.php` URLs. | PARTIAL (BUG-14) |
-| C6 | Canonicals | Present on most pages, but `/about` and `/about.php` both return 200 with no canonical | PARTIAL (BUG-13) |
-| C7 | Titles and H1 | Homepage has no H1. Profile pages have 2 H1s. Several titles are over 70 characters. | PARTIAL (BUG-15/16) |
-| C8 | Availability | Several requests timed out and then worked on retry. | PARTIAL (BUG-17) |
+| C3 | 404 page | real 404, `noindex,follow` | PASS |
+| C4 | robots.txt sitemap | **Now `https://www.fsia.in/sitemap.xml`** (was influencer subdomain) | PASS (fixed live) |
+| C5 | Sitemap health | 4,332 URLs, 9 duplicates, contains a 404 profile URL | PARTIAL (BUG-14) |
+| C6 | Canonicals | `/about` and `/about.php` both 200, no canonical | PARTIAL (BUG-13) |
+| C7 | Titles / H1 | Homepage 0 H1; profile pages 2 H1; titles 77–93 chars | PARTIAL (BUG-15/16) |
+| C8 | Availability | time-outs on first try, fine on retry | PARTIAL (BUG-17) |
+| C9 | starindia profile pages | `starindia.fsia.in/azra`: 3 image tags whose src is a comma list of 12 files (broken). The same person also has `www…/azra-chennai-title-holder-lawyer-2025`; both self-canonical and indexable. | FAIL (BUG-19, BUG-20) |
 
-## Status counts
+## Status counts (36 features)
 
 | Status | Count | Items |
 |---|---|---|
-| PASS | 11 | A1, A2, A3, A6, A7, A11, A12, A14, C1, C2, C3 |
-| PARTIAL | 11 | A4, A5, A8, A9, A10, A13, B7, C5, C6, C7, C8 |
-| FAIL | 1 | C4 |
-| NOT IMPLEMENTED | 9 | B1, B2, B3, B4, B5, B6, B8, B9, B10 |
-| BLOCKED (sub-tests) | 4 | B3 live Instagram, B4 current live templates, B7 live registration, B8 live payment flow |
+| PASS | 15 | A1, A4, A5, A7, A8, A11, A12, A13, A14, A17, C1, C2, C3, C4, A16 (built roles) |
+| PARTIAL | 11 | A2, A3, A6, A9, A10, A15, B7, C5, C6, C7, C8 |
+| FAIL | 1 | C9 |
+| NOT IMPLEMENTED | 8 | B1, B2, B3, B5, B6, B8, B9, B10 |
+| BLOCKED | 1 | B4 (plus BLOCKED sub-tests: A11 live API, B3 live, B7 live, B8 live) |
 
-32 features in total (11 + 11 + 1 + 9). BLOCKED sub-tests belong to features already counted above. A13 is counted as PARTIAL: PASS for the 4 built roles, but short of the 7 requested.
+A11 and A12 are PASS on the local and simulated runs, but are not live until the two files are uploaded.

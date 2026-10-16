@@ -6,7 +6,7 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 
 **Simulated upload (2026-10-16):**
 - Method: the zip was extracted over a copy of the old live version (commit 3315ddd), with an existing admin login.
-- Only the 8 listed backend files and `cms-admin-test/` changed. `config.php`, `admin_users.php`, `.htaccess`, `auth.php`, `teams.php`, `sections.php`, `seo.php`, `news.php` and `upload.php` stayed byte-for-byte the same.
+- Only the 10 listed backend files and `cms-admin-test/` changed. `config.php`, `admin_users.php`, `.htaccess`, `auth.php`, `teams.php`, `sections.php`, `seo.php`, `news.php` and `upload.php` stayed byte-for-byte the same.
 - `cms/tests/upgrade_check.php`: 29/29 passed with the existing login.
 - All 12 admin screens worked at 1280 and 390 px, with no errors and no sign-outs.
 - A save through the UI persisted after a reload.
@@ -34,6 +34,8 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
    - `cms-admin-test/` (the new admin; the current `/cms-admin/` is not touched)
    - It does **not** contain `teams.php`, `config.php` or any public page.
 
+4b. **starindia admin (separate server):** replace `starindia.fsia.in/admin/admin-enhancements.js` with `starindia-admin/admin-enhancements.js` from this repo. First download the current file. If it differs from `starindia-admin/admin-enhancements.live-2026-10-16.js`, someone changed it since: send it over so the edits can be merged, and don't overwrite it.
+
 ## Verify on live (report results back)
 
 5. Open `https://www.fsia.in/cms/backend/api/users.php?action=me` without signing in. Expect a JSON 401, not a 404 or 500.
@@ -60,6 +62,7 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 | New admin screens misbehave | Keep using `/cms-admin/`; delete `/cms-admin-test/` |
 | Roles locked someone out (only possible after `roles_enabled` was set) | Remove `'roles_enabled' => true` from config.php: everyone is back to full access |
 | Change log triggers cause trouble | Profile Changes → Turn off (drops the triggers), or `DROP TRIGGER fsia_log_profile_update; DROP TRIGGER fsia_log_profile_create; DROP TRIGGER fsia_log_profile_delete;` |
+| "Fix in starindia admin" misbehaves | Upload `starindia-admin/admin-enhancements.live-2026-10-16.js` as `/admin/admin-enhancements.js` on starindia |
 | Activity log grows too big | `DELETE FROM cms_audit_log WHERE created_at < NOW() - INTERVAL 180 DAY;` |
 
 No step deletes or changes profile data.
