@@ -348,6 +348,22 @@ $pdo->exec("UPDATE registration SET fullbio = REPEAT('b', 600) WHERE id = 3");
 $after = $q('q=Chitra')['rows'][0];
 check('a longer bio changes only the bio part (68 -> 76)', $after['score'] === 76 && array_column($after['score_parts'], 'got', 'key') === ['photos' => 25, 'bio' => 25, 'banner' => 10, 'seo' => 16], json_encode($after['score_parts']));
 
+echo "Verified Member / Pending / Guest\n";
+$pdo->exec('ALTER TABLE registration ADD verification INT NULL DEFAULT 1, ADD suspended INT NOT NULL DEFAULT 0, ADD verification_date DATE NULL');
+$pdo->exec('UPDATE registration SET verification = 0 WHERE id BETWEEN 1000 AND 1039');
+$pdo->exec('UPDATE registration SET verification = NULL WHERE id = 1040');
+$pdo->exec("UPDATE registration SET verification_date = '2026-10-15' WHERE id = 1");
+$vCount = fn (string $w) => (int) $pdo->query("SELECT COUNT(*) FROM registration WHERE $w")->fetchColumn();
+$all = $q('status=all&all=1');
+check('verification totals match the database', $all['verification_counts'] === ['verified' => $vCount('verification = 1'), 'pending' => $vCount('verification IS NULL OR verification <> 1')], json_encode($all['verification_counts']));
+check('Pending / Guest filter: 41 profiles (40 with 0, 1 empty)', $q('status=all&verification=pending')['total'] === 41);
+check('Verified Member filter: all the others', $q('status=all&verification=verified')['total'] === $vCount('verification = 1'));
+check('each profile says which group it is in', count(array_filter($all['rows'], fn ($r) => $r['verified'] === false)) === 41);
+$asha = array_values(array_filter($all['rows'], fn ($r) => $r['id'] === 1))[0] ?? [];
+check('verified date is shown when the database has it', ($asha['verified_on'] ?? '') === '2026-10-15', json_encode($asha['verified_on'] ?? null));
+check('verification combines with category', $q('status=all&verification=pending&category=mrs-india')['total'] === 41 && $q('status=all&verification=pending&category=miss-india')['total'] === 0);
+check('an unknown verification value is ignored', $q('status=all&verification=bogus')['total'] === 233);
+
 echo "Profile Changes (change log)\n";
 $pdo->exec('ALTER TABLE registration ADD mobile VARCHAR(20) NULL');
 [$s, $d, $raw] = call('POST', 'changelog.php?action=install', $admin, []);

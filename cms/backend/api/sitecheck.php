@@ -393,6 +393,7 @@ respond(function () {
             'year'     => $year >= 1990 && $year <= 2100 ? (string) $year : '',
             'month'    => $month >= 1 && $month <= 12 ? (string) $month : '',
             'status'   => query_param('status') === 'all' ? 'all' : 'approved',
+            'verification' => in_array(query_param('verification'), ['verified', 'pending'], true) ? query_param('verification') : '',
             'q'        => mb_substr(trim((string) query_param('q')), 0, 80),
         ];
         $want = array_values(array_intersect(explode(',', (string) query_param('problem')), ['bio', 'banner', 'image', 'seo']));
@@ -450,6 +451,7 @@ respond(function () {
             'capped'     => count($rows) >= SC_PROFILE_LIMIT,
             'counts'     => $counts,
             'bands'      => $bands,
+            'verification_counts' => sc_verification_counts($f),
             'band_min'   => SC_SCORE_BANDS,
             'avg_score'  => $scored ? (int) round($scoreSum / $scored) : null,
             'total'      => count($out),

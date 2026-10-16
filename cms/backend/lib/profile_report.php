@@ -26,6 +26,9 @@ const SC_PROFILE_LIMIT = 5000;
 /* Columns some setups use for "last edited"; the first one present is shown as Last changed. */
 const SC_UPDATED_COLUMNS = ['updated_at', 'updated_on', 'modified_at', 'modified_on', 'last_updated', 'last_update', 'update_date', 'edit_date', 'modify_date'];
 const SC_PAGE_SIZE = 100;
+/* Verified Member = verification 1 (what the live profile pages use); everything else is Pending / Guest.
+   The first of these columns that exists is shown as the verification date. */
+const SC_VERIFIED_DATE_COLUMNS = ['verification_date', 'verified_date', 'verified_on', 'verified_at', 'verify_date', 'verifydate', 'vdate'];
 
 function sc_category_of(int $regtype): string
 {
@@ -96,21 +99,20 @@ function sc_quality_score(array $x): array
     return ['score' => $score, 'band' => $band, 'parts' => $parts];
 }
 
-function sc_profile_rows(array $f): array
+/** WHERE parts for the profile filters. $withVerification false = for counting both groups. */
+function sc_profile_where(array $f, array $have, bool $withVerification): array
 {
-    $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
-        'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
-        'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1',
-        ...SC_UPDATED_COLUMNS];
-    $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
-    $cols = array_values(array_intersect($want, $have));
-
     $where = ['1=1'];
     $params = [];
+    $hasVer = in_array('verification', $have, true);
     if (($f['status'] ?? 'approved') === 'approved') {
         $where[] = '(status = 1 OR status = 3)';
-        if (in_array('verification', $have, true)) $where[] = 'verification = 1';
+        if ($hasVer && $withVerification) $where[] = 'verification = 1';
         if (in_array('suspended', $have, true)) $where[] = 'suspended = 0';
+    }
+    if ($withVerification && $hasVer) {
+        if (($f['verification'] ?? '') === 'verified') $where[] = 'verification = 1';
+        if (($f['verification'] ?? '') === 'pending') $where[] = '(verification IS NULL OR verification <> 1)';
     }
     if (!empty($f['category'])) {
         if ($f['category'] === 'other') {
@@ -133,6 +135,29 @@ function sc_profile_rows(array $f): array
         $like = '%' . $f['q'] . '%';
         array_push($params, $like, $like, (int) $f['q']);
     }
+    return [$where, $params];
+}
+
+/** Verified Member / Pending / Guest totals for the other filters (all matching profiles, not only the first 5,000). */
+function sc_verification_counts(array $f): ?array
+{
+    $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
+    if (!in_array('verification', $have, true)) return null;
+    [$where, $params] = sc_profile_where($f, $have, false);
+    $r = site_db_rows('SELECT SUM(verification = 1) AS v, SUM(verification IS NULL OR verification <> 1) AS p FROM registration WHERE ' . implode(' AND ', $where), $params)[0] ?? [];
+    return ['verified' => (int) ($r['v'] ?? 0), 'pending' => (int) ($r['p'] ?? 0)];
+}
+
+function sc_profile_rows(array $f): array
+{
+    $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
+        'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
+        'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1',
+        ...SC_UPDATED_COLUMNS, ...SC_VERIFIED_DATE_COLUMNS];
+    $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
+    $cols = array_values(array_intersect($want, $have));
+
+    [$where, $params] = sc_profile_where($f, $have, true);
     $sql = 'SELECT ' . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ' FROM registration WHERE ' . implode(' AND ', $where)
         . ' ORDER BY date_of_reg DESC, id DESC LIMIT ' . SC_PROFILE_LIMIT;
     return site_db_rows($sql, $params);
@@ -205,6 +230,14 @@ function sc_profile_report(array $r): array
         'category' => $cat === 'other' ? 'Other (' . (int) $g('regtype') . ')' : SC_CATEGORIES[$cat][0],
         'date'     => substr($g('date_of_reg'), 0, 10),
         'status'   => (int) $g('status'),
+        'verified' => array_key_exists('verification', $r) ? (int) $g('verification') === 1 : null,
+        'verified_on' => (function () use ($r) {
+            foreach (SC_VERIFIED_DATE_COLUMNS as $k) {
+                if (!empty($r[$k]) && !str_starts_with((string) $r[$k], '0000')) return substr((string) $r[$k], 0, 10);
+            }
+            return null;
+        })(),
+        'suspended' => (int) ($r['suspended'] ?? 0) === 1,
         'path'     => $slug !== '' && !$edited ? '/' . $slug : '',
         'link'     => $slug !== '' ? ($edited ? 'https://starindia.fsia.in/' : 'https://www.fsia.in/') . $slug : '',
         'photos'   => count($photos),

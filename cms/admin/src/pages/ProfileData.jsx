@@ -50,7 +50,7 @@ const LIVE_LIMIT = 200;
  * pages can then be opened live by the Site Check.
  */
 export default function ProfileData({ onCheckLive, disabled }) {
-  const [f, setF] = useState({ category: '', year: '', month: '', status: 'approved', q: '', sort: '', changed_days: '' });
+  const [f, setF] = useState({ category: '', year: '', month: '', status: 'all', verification: '', q: '', sort: '', changed_days: '' });
   const [problems, setProblems] = useState([]);
   const [bands, setBands] = useState([]);
   const [match, setMatch] = useState('any');
@@ -88,9 +88,9 @@ export default function ProfileData({ onCheckLive, disabled }) {
     try {
       const all = await api.siteCheckProfiles({ ...params, all: 1 });
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lines = [['ID', 'Name', 'Category', 'Date', 'Score', 'Band', 'Last changed', 'Changed by', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
+      const lines = [['ID', 'Name', 'Category', 'Date', 'Verification', 'Score', 'Band', 'Last changed', 'Changed by', 'Link', 'Photos', 'Bio', 'Banner', 'Image', 'SEO'].map(esc).join(',')];
       all.rows.forEach((r) => lines.push([
-        r.id, r.name, r.category, r.date, r.score, r.band, r.last_changed, r.changed_by, r.link, r.photos,
+        r.id, r.name, r.category, r.date, r.verified ? 'Verified Member' : 'Pending / Guest', r.score, r.band, r.last_changed, r.changed_by, r.link, r.photos,
         ...PROBLEMS.map(([k]) => (r.problems[k] || []).join('; ')),
       ].map(esc).join(',')));
       const a = document.createElement('a');
@@ -126,10 +126,11 @@ export default function ProfileData({ onCheckLive, disabled }) {
           </select>
         </label>
         <label>
-          <span className="label">Profiles</span>
-          <select className="input" value={f.status} onChange={set('status')}>
-            <option value="approved">Live (approved)</option>
-            <option value="all">All, incl. pending</option>
+          <span className="label">Verification</span>
+          <select className="input" value={f.verification} onChange={set('verification')}>
+            <option value="">All Members{data?.verification_counts ? ` (${(data.verification_counts.verified + data.verification_counts.pending).toLocaleString()})` : ''}</option>
+            <option value="verified">Verified Member{data?.verification_counts ? ` (${data.verification_counts.verified.toLocaleString()})` : ''}</option>
+            <option value="pending">Pending / Guest{data?.verification_counts ? ` (${data.verification_counts.pending.toLocaleString()})` : ''}</option>
           </select>
         </label>
         <label>
@@ -243,6 +244,12 @@ export default function ProfileData({ onCheckLive, disabled }) {
                   <td className="p-3">
                     {r.link ? <a href={r.link} target="_blank" rel="noreferrer" className="font-semibold underline decoration-gold/50 hover:text-gold-dark">{r.name}</a> : <span className="font-semibold">{r.name}</span>}
                     <span className="block text-[11px] text-slate-400">#{r.id} · {r.photos} photo{r.photos === 1 ? '' : 's'}{r.status === 3 ? ' · title holder' : ''}</span>
+                    {r.verified !== null && r.verified !== undefined && (
+                      <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${r.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {r.verified ? `✓ Verified Member${r.verified_on ? ` · ${r.verified_on}` : ''}` : 'Pending / Guest'}
+                      </span>
+                    )}
+                    {r.suspended && <span className="ml-1 mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Suspended</span>}
                     <button type="button" className="mt-1.5 rounded-lg bg-navy px-2.5 py-1 text-[11px] font-bold text-white hover:bg-navy/80" onClick={() => setFixing(r)}>✎ Fix</button>
                   </td>
                   <td className="p-3"><ScoreCell r={r} /></td>
