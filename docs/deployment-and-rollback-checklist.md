@@ -40,6 +40,8 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 
 4b. **starindia admin (separate server):** replace `starindia.fsia.in/admin/admin-enhancements.js` with `starindia-admin/admin-enhancements.js` from this repo. First download the current file. If it differs from `starindia-admin/admin-enhancements.live-2026-10-16.js`, someone changed it since: send it over so the edits can be merged, and don't overwrite it.
 
+4c. **Events update (page preview + celebrity chief guest), after `/cms-admin/` runs the new admin:** upload `fsia-events-update.zip` to `httpdocs` → Extract → "Replace existing files". It contains only `cms/backend/api/events.php`, `cms/backend/lib/events.php`, `cms/promo.js` and `cms-admin/`. No database change: guests are stored in the existing `guests` column, with a new `featured` flag ("Show on website bar", at most 2). The public bar answer now also carries those guests' name, role and photo, nothing else.
+
 ## Verify on live (report results back)
 
 5. Open `https://www.fsia.in/cms/backend/api/users.php?action=me` without signing in. Expect a JSON 401, not a 404 or 500.

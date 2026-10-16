@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 const EVENT_TZ = 'Asia/Kolkata';
 const EVENT_STATUSES = ['draft', 'published', 'cancelled'];
+/* Guests marked "Show on website bar" (e.g. the celebrity chief guest); at most this many. */
+const EVENT_BAR_GUESTS = 2;
 const EVENT_TABLE_SQL = "CREATE TABLE IF NOT EXISTS cms_events (
     id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     title          VARCHAR(150) NOT NULL,
@@ -148,5 +150,18 @@ function events_promotion_for(string $path, ?DateTimeImmutable $now = null): ?ar
         'starts_at' => $e['starts_at'], 'ends_at' => $e['ends_at'], 'venue' => $e['venue'], 'city' => $e['city'],
         'banner_desktop' => $e['banner_desktop'], 'banner_mobile' => $e['banner_mobile'],
         'cta_label' => $e['cta_label'], 'cta_url' => $e['cta_url'], 'version' => $e['updated_at'],
+        'guests' => events_bar_guests($e['guests']),
     ];
+}
+
+/** The guests shown on the bar: name, role and photo only. */
+function events_bar_guests(array $guests): array
+{
+    $out = [];
+    foreach ($guests as $g) {
+        if (is_array($g) && !empty($g['featured']) && (string) ($g['name'] ?? '') !== '') {
+            $out[] = ['name' => (string) $g['name'], 'role' => (string) ($g['role'] ?? ''), 'photo' => (string) ($g['photo'] ?? '')];
+        }
+    }
+    return array_slice($out, 0, EVENT_BAR_GUESTS);
 }

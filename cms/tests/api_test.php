@@ -439,14 +439,21 @@ check('validation: page rules must be a group or a /path', $s === 422 && isset($
 [$s] = call('POST', 'events.php', $viewer, $ev([]));
 check('a viewer cannot create events', $s === 403, "got $s");
 [$s, $d, $raw] = call('POST', 'events.php', $editor, $ev(['title' => 'All pages event', 'description' => '<p>Hi</p><script>alert(1)</script>', 'excludes' => ['/quickapply', '/news*'],
-    'guests' => [['name' => 'Guest One', 'role' => 'Jury', 'photo' => 'https://example.com/g.jpg'], ['name' => '', 'role' => 'skipped']]]));
+    'guests' => [['name' => 'Guest One', 'role' => 'Jury', 'photo' => 'https://example.com/g.jpg'], ['name' => '', 'role' => 'skipped'],
+        ['name' => 'Star Guest', 'role' => 'Celebrity Chief Guest', 'photo' => '/uploads/cms/star.webp', 'featured' => true]]]));
 $allId = $d['id'] ?? 0;
-check('a valid event is saved and is live now', $s === 201 && ($d['phase'] ?? '') === 'live' && count($d['guests']) === 1 && !str_contains((string) $d['description'], 'script'), "got $s $raw");
+check('a valid event is saved and is live now', $s === 201 && ($d['phase'] ?? '') === 'live' && count($d['guests']) === 2 && !str_contains((string) $d['description'], 'script'), "got $s $raw");
 $promo = fn (string $path) => call('GET', 'promotions.php?path=' . urlencode($path))[1]['promotion'] ?? null;
 check('public: shows on a targeted page, without signing in', ($promo('/miss-assam.php')['id'] ?? 0) === $allId);
 check('public: not on an excluded page', $promo('/quickapply') === null && $promo('/news-coverage') === null && $promo('/news-coverage/x') === null);
 $pub = $promo('/') ?? [];
-check('public: answer holds only display fields (no guests, page rules, description or status)', $pub !== [] && !array_intersect(array_keys($pub), ['guests', 'targets', 'excludes', 'description', 'status', 'priority']), json_encode(array_keys($pub)));
+check('public: answer holds only display fields (no page rules, description or status)', $pub !== [] && !array_intersect(array_keys($pub), ['targets', 'excludes', 'description', 'status', 'priority']), json_encode(array_keys($pub)));
+check('public: only the guest marked "Show on website bar" (name, role, photo)', ($pub['guests'] ?? null) === [['name' => 'Star Guest', 'role' => 'Celebrity Chief Guest', 'photo' => '/uploads/cms/star.webp']], json_encode($pub['guests'] ?? null));
+$star = fn (string $n) => ['name' => $n, 'role' => 'Chief Guest', 'photo' => '', 'featured' => true];
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['guests' => [$star('A'), $star('B'), $star('C')]]));
+check('validation: at most 2 guests on the website bar', $s === 422 && isset($d['fields']['guests']), json_encode($d));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['guests' => [array_merge($star('A'), ['photo' => 'javascript:alert(1)'])]]));
+check('validation: guest photo must be a link or /path', $s === 422 && isset($d['fields']['guests.0']), json_encode($d));
 [$s, $d] = call('POST', 'events.php', $editor, $ev(['title' => 'Homepage only, higher priority', 'targets' => ['home'], 'priority' => 50]));
 $homeId = $d['id'] ?? 0;
 check('overlap: the higher priority event wins on its page, only one banner', ($promo('/')['id'] ?? 0) === $homeId && ($promo('/about')['id'] ?? 0) === $allId);

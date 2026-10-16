@@ -77,11 +77,13 @@ function event_validate(array $in): array
     foreach ((array) ($in['guests'] ?? []) as $i => $g) {
         if (!is_array($g)) continue;
         $gv = new Validator($g);
-        $item = ['name' => $gv->string('name', 100), 'role' => $gv->string('role', 120), 'photo' => $gv->url('photo')];
+        $item = ['name' => $gv->string('name', 100), 'role' => $gv->string('role', 120), 'photo' => $gv->url('photo'),
+            'featured' => filter_var($g['featured'] ?? false, FILTER_VALIDATE_BOOLEAN)];
         try { $gv->check(); } catch (ApiError $e) { $v->addError("guests.$i", 'Name up to 100, role up to 120 characters, photo must be a link'); continue; }
         if ($item['name'] !== '') $guests[] = $item;
     }
     if (count($guests) > 30) $v->addError('guests', 'At most 30 guests');
+    if (count(array_filter($guests, fn ($g) => $g['featured'])) > EVENT_BAR_GUESTS) $v->addError('guests', 'Show at most ' . EVENT_BAR_GUESTS . ' guests on the website bar');
     $row['guests'] = json_encode($guests, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     $targets = event_rules($v, $in['targets'] ?? [], 'targets');
     $excludes = event_rules($v, $in['excludes'] ?? [], 'excludes');

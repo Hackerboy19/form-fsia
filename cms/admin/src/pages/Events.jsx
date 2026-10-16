@@ -31,18 +31,36 @@ const BLANK = {
   promo_start: '', promo_end: '', targets: ['all'], excludes: [],
 };
 
+const BAR_GUESTS = 2; // same as EVENT_BAR_GUESTS in backend/lib/events.php
+const barGuests = (guests) => (guests || []).filter((g) => g.featured && String(g.name || '').trim()).slice(0, BAR_GUESTS);
+const GUEST_ROLES = ['Celebrity Chief Guest', 'Chief Guest', 'Guest of Honour', 'Special Guest', 'Jury', 'Host'];
+
 /** The bar visitors see (same look as /cms/promo.js). `mobile` = phone layout, `flat` = full-width as on the page. */
 function PromoPreview({ e, mobile = false, flat = false }) {
   const when = range(e.starts_at, e.ends_at);
   const line = [when, [e.venue, e.city].filter(Boolean).join(', '), mobile ? '' : e.summary].filter(Boolean).join(' · ');
   const img = mobile ? (e.banner_mobile || e.banner_desktop) : (e.banner_desktop || e.banner_mobile);
+  const stars = barGuests(e.guests);
   return (
     <div className={`relative flex items-center gap-3 bg-navy px-3 py-2.5 pr-11 text-[#F6F2E8] shadow-lg ${flat ? '' : 'rounded-xl'}`}>
       {img && <img src={assetUrl(img)} alt="" className={`${mobile ? 'h-11 max-w-[70px]' : 'h-12 max-w-[160px]'} w-auto shrink-0 rounded-lg object-cover`} />}
+      {mobile && !img && stars[0]?.photo && <img src={assetUrl(stars[0].photo)} alt="" className="h-10 w-10 shrink-0 rounded-full border-2 border-gold object-cover" />}
       <div className="min-w-0 flex-1">
         <p className="truncate font-bold text-gold">{e.title || 'Event title'}</p>
         {line && <p className="truncate text-xs text-slate-300">{line}</p>}
+        {mobile && stars[0] && <p className="truncate text-[11px] text-[#F3D98B]">★ {stars[0].role ? `${stars[0].role}: ` : ''}{stars[0].name}</p>}
       </div>
+      {!mobile && stars.map((g) => (
+        <div key={g.name} className="flex max-w-[220px] shrink-0 items-center gap-2 border-l border-white/15 pl-3">
+          {g.photo
+            ? <img src={assetUrl(g.photo)} alt="" className="h-11 w-11 shrink-0 rounded-full border-2 border-gold object-cover" />
+            : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-gold text-gold">★</span>}
+          <div className="min-w-0">
+            {g.role && <p className="truncate text-[10px] font-bold uppercase tracking-wider text-gold">{g.role}</p>}
+            <p className="truncate text-sm font-semibold">{g.name}</p>
+          </div>
+        </div>
+      ))}
       <span className="shrink-0 whitespace-nowrap rounded-full bg-gold px-3.5 py-2 text-xs font-bold text-navy">{e.cta_label || 'Register now'}</span>
       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-lg text-slate-400">×</span>
     </div>
@@ -284,20 +302,36 @@ function EventForm({ initial, groups, onClose, onSaved }) {
         <PagePreview e={f} />
 
         <section>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Guests & jury</p>
-            <button type="button" className="btn-ghost !py-1 text-xs" onClick={() => set('guests')([...guests, { name: '', role: '', photo: '' }])}>+ Add guest</button>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Celebrity chief guest, guests & jury</p>
+              <p className="text-[11px] text-slate-500">Tick "Show on website bar" for up to {BAR_GUESTS} guests: their photo, role and name appear on the bar.</p>
+            </div>
+            <button type="button" className="btn-ghost shrink-0 !py-1 text-xs"
+              onClick={() => set('guests')([...guests, guests.length === 0
+                ? { name: '', role: 'Celebrity Chief Guest', photo: '', featured: true }
+                : { name: '', role: '', photo: '', featured: false }])}>+ Add guest</button>
           </div>
-          {guests.length === 0 && <p className="text-sm text-slate-500">No guests added.</p>}
-          <div className="space-y-2">
-            {guests.map((g, i) => (
-              <div key={i} className="grid gap-2 rounded-xl border border-slate-100 p-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
-                <input className="input" placeholder="Name" value={g.name} maxLength={100} onChange={(e) => setGuest(i, 'name', e.target.value)} />
-                <input className="input" placeholder="Role, e.g. Jury" value={g.role} maxLength={120} onChange={(e) => setGuest(i, 'role', e.target.value)} />
-                <input className="input" placeholder="Photo link (optional)" value={g.photo} onChange={(e) => setGuest(i, 'photo', e.target.value)} />
-                <button type="button" className="btn-ghost !px-3 text-red-600" onClick={() => set('guests')(guests.filter((_, j) => j !== i))} aria-label="Remove guest">×</button>
-              </div>
-            ))}
+          {guests.length === 0 && <p className="text-sm text-slate-500">No guests added. The first guest you add is set up as the celebrity chief guest.</p>}
+          <datalist id="guest-roles">{GUEST_ROLES.map((r) => <option key={r} value={r} />)}</datalist>
+          <div className="grid gap-3 md:grid-cols-2">
+            {guests.map((g, i) => {
+              const full = !g.featured && barGuests(guests).length >= BAR_GUESTS;
+              return (
+                <div key={i} className={`relative space-y-2 rounded-xl border p-3 ${g.featured ? 'border-gold bg-gold/5' : 'border-slate-100'}`}>
+                  <button type="button" className="absolute right-2 top-2 rounded-lg px-2 text-lg text-red-600 hover:bg-red-50" onClick={() => set('guests')(guests.filter((_, j) => j !== i))} aria-label={`Remove guest ${i + 1}`}>×</button>
+                  <div className="grid gap-2 pr-8 sm:grid-cols-2">
+                    <input className="input" aria-label={`Guest ${i + 1} name`} placeholder="Name, e.g. the celebrity's name" value={g.name} maxLength={100} onChange={(e) => setGuest(i, 'name', e.target.value)} />
+                    <input className="input" aria-label={`Guest ${i + 1} role`} list="guest-roles" placeholder="Role, e.g. Celebrity Chief Guest" value={g.role} maxLength={120} onChange={(e) => setGuest(i, 'role', e.target.value)} />
+                  </div>
+                  <ImageUpload label="Photo" aspect="aspect-square w-32" value={g.photo} onChange={(v) => setGuest(i, 'photo', v)} hint="Square photo, face in the middle: it shows in a round frame." />
+                  <label className={`flex items-center gap-2 text-sm font-semibold ${full ? 'text-slate-400' : 'text-navy'}`}>
+                    <input type="checkbox" checked={!!g.featured} disabled={full} onChange={(e) => setGuest(i, 'featured', e.target.checked)} />
+                    Show on website bar{full ? ` (only ${BAR_GUESTS})` : ''}
+                  </label>
+                </div>
+              );
+            })}
           </div>
           {Object.keys(errors).filter((k) => k.startsWith('guests')).map((k) => <p key={k} className="mt-1 text-xs text-red-600">{errors[k]}</p>)}
         </section>
