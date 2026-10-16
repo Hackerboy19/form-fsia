@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import ProfileFix from './ProfileFix';
 
 const PROBLEMS = [
   ['bio', 'Bio missing', 'bg-orange-100 text-orange-800'],
@@ -57,6 +58,9 @@ export default function ProfileData({ onCheckLive, disabled }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fixing, setFixing] = useState(null);
+  // After a fix, show the profile's new score and problems in the list straight away.
+  const updateRow = (rep) => setData((d) => (d ? { ...d, rows: d.rows.map((x) => (x.id === rep.id ? { ...x, ...rep } : x)) } : d));
 
   const params = { ...f, problem: problems.join(','), match, band: bands.join(',') };
   const key = JSON.stringify(params);
@@ -239,6 +243,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
                   <td className="p-3">
                     {r.link ? <a href={r.link} target="_blank" rel="noreferrer" className="font-semibold underline decoration-gold/50 hover:text-gold-dark">{r.name}</a> : <span className="font-semibold">{r.name}</span>}
                     <span className="block text-[11px] text-slate-400">#{r.id} · {r.photos} photo{r.photos === 1 ? '' : 's'}{r.status === 3 ? ' · title holder' : ''}</span>
+                    <button type="button" className="mt-1.5 rounded-lg bg-navy px-2.5 py-1 text-[11px] font-bold text-white hover:bg-navy/80" onClick={() => setFixing(r)}>✎ Fix</button>
                   </td>
                   <td className="p-3"><ScoreCell r={r} /></td>
                   <td className="p-3 text-slate-600">{r.category}</td>
@@ -274,6 +279,8 @@ export default function ProfileData({ onCheckLive, disabled }) {
           </table>
         </div>
       )}
+
+      {fixing && <ProfileFix profile={fixing} onClose={() => setFixing(null)} onSaved={updateRow} />}
 
       {pages > 1 && (
         <div className="mt-3 flex items-center justify-center gap-3 text-sm">

@@ -4,7 +4,7 @@ import { api, setUnauthorizedHandler, tokenStore } from './api';
 const AuthContext = createContext(null);
 const FULL_ACCESS = {
   user: '', role: 'owner', role_label: 'Owner', roles_on: false, roles_available: false, legacy: true,
-  permissions: ['content.edit', 'tools.view', 'tools.manage', 'cleanup.manage', 'audit.view', 'users.manage', 'other.write'],
+  permissions: ['content.edit', 'tools.view', 'profiles.edit', 'tools.manage', 'cleanup.manage', 'audit.view', 'users.manage', 'other.write'],
 };
 
 export function AuthProvider({ children }) {

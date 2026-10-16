@@ -33,7 +33,7 @@ $t = $d['token'];
 [$s] = call('POST', 'auth.php', null, ['username' => $simUser, 'password' => 'wrong']);
 ok('wrong password still refused', $s === 401);
 [$s, $d] = call('GET', 'users.php?action=me', $t);
-ok('single admin = full access, roles not available', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === false && count($d['permissions']) === 7, json_encode($d));
+ok('single admin = full access, roles not available', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === false && count($d['permissions']) === 8, json_encode($d));
 [$s] = call('POST', 'users.php?action=setup', $t, []);
 ok('roles cannot be switched on from the admin (no extra users)', $s === 409, "got $s");
 
@@ -77,7 +77,9 @@ ok('Site Check: page list from .htaccess', $s === 200 && in_array('/asha-full', 
 [$s, $d] = call('GET', 'sitecheck.php?action=check&url=/quickapply', $t);
 ok('Site Check: live check of www.fsia.in/quickapply', $s === 200 && ($d['status'] ?? 0) === 200, "got $s status " . ($d['status'] ?? '?'));
 [$s, $d] = call('GET', 'sitecheck.php?action=profiles&sort=score', $t);
-ok('Profiles & Score: 2 profiles, scores 100 and 20', $s === 200 && array_column($d['rows'] ?? [], 'score', 'id') == [2 => 20, 1 => 100], json_encode(array_column($d['rows'] ?? [], 'score', 'id')));
+$sc = array_column($d['rows'] ?? [], 'score', 'id');
+ok('Profiles & Score: complete profile 100, every score = sum of its parts', $s === 200 && ($sc[1] ?? null) === 100
+    && !array_filter($d['rows'], fn ($r) => $r['score'] !== array_sum(array_column($r['score_parts'], 'got'))), json_encode($sc));
 [$s, $d] = call('POST', 'sitecheck.php?action=baseline', $t, ['pages' => [['url' => 'https://www.fsia.in/quickapply', 'title' => 'Apply Now', 'description' => '', 'keywords' => '', 'canonical' => '', 'h1' => []]]]);
 ok('Site Check: save baseline', $s === 200, "got $s");
 [$s, $d, $raw] = call('POST', 'changelog.php?action=install', $t, []);

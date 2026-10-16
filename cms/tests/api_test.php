@@ -222,6 +222,7 @@ $matrix = [
     ['Write news', 'POST', 'news.php', [], ['owner', 'admin', 'editor']],
     ['Upload image', 'POST', 'upload.php', [], ['owner', 'admin', 'editor']],
     ['Profiles & Score / Site Check: view', 'GET', 'sitecheck.php?action=profiles', null, ['owner', 'admin', 'editor', 'viewer']],
+    ['Profiles: fix SEO / bio / banners', 'PUT', 'profiles.php?id=999999', ['fields' => ['meta_title' => 'x']], ['owner', 'admin', 'editor']],
     ['Site Check: save baseline', 'POST', 'sitecheck.php?action=baseline', ['pages' => []], ['owner', 'admin']],
     ['Profile Changes: view', 'GET', 'changelog.php?action=status', null, ['owner', 'admin', 'editor', 'viewer']],
     ['Profile Changes: turn on/off', 'POST', 'changelog.php?action=uninstall', [], ['owner', 'admin']],
@@ -359,6 +360,72 @@ check('mobile change is noted without its value', in_array('mobile', $c['fields'
 [$s, $d] = call('POST', 'changelog.php?action=uninstall', $admin, []);
 $left = (int) $pdo->query("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '$dbName'")->fetchColumn();
 check('turns off and leaves no triggers', $s === 200 && $left === 0, "triggers left: $left");
+
+echo "Profile editing (fix from Profiles & Score)\n";
+$pdo->exec('ALTER TABLE registration ADD shortbio TEXT NULL, ADD fullbio_2 TEXT NULL, ADD fullbio_3 TEXT NULL, ADD status2 INT NULL');
+$snapshot = fn () => $pdo->query('SELECT id, MD5(CONCAT_WS("|", first_name, last_name, regtype, status, url, setdefault, image, nimage1, nimage2, fullbio, meta_title, meta_desc, meta_keyword, mobile)) h FROM registration WHERE id <> 2 ORDER BY id')->fetchAll(PDO::FETCH_KEY_PAIR);
+$others = $snapshot();
+[$s, $d] = call('GET', 'profiles.php?id=2', $viewer);
+check('anyone who can see profiles can open the editor', $s === 200 && in_array('meta_title', array_column($d['fields'], 'key'), true) && ($d['banners']['desktop']['column'] ?? '') === 'nimage2', json_encode($d['banners'] ?? $d));
+$scoreBefore = $d['report']['score'];
+[$s] = call('PUT', 'profiles.php?id=2', $viewer, ['fields' => ['meta_title' => 'x']]);
+check('a viewer cannot save', $s === 403, "got $s");
+[$s, $d, $raw] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => 'Bina Bare | Mrs India 2026', 'meta_desc' => 'Bina Bare is a Mrs India 2026 participant.', 'meta_keyword' => 'bina bare, mrs india']]);
+$seoBatch = $d['batch'] ?? '';
+$db2 = $pdo->query('SELECT meta_title, meta_desc, meta_keyword, mobile, status FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
+check('saves SEO fields to the profile', $s === 200 && $d['saved'] === ['meta_title', 'meta_desc', 'meta_keyword'] && $db2['meta_title'] === 'Bina Bare | Mrs India 2026', "got $s $raw");
+check('the score goes up after the fix', $d['report']['score'] > $scoreBefore && !isset($d['report']['problems']['seo']), $scoreBefore . ' -> ' . ($d['report']['score'] ?? '?'));
+check('the save is listed with its old values', ($d['history'][0]['batch'] ?? '') === $seoBatch && count($d['history'][0]['fields']) === 3);
+[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['mobile' => '1111111111', 'status' => '0']]);
+check('fields outside the list are refused (mobile, status)', $s === 422 && $pdo->query('SELECT mobile FROM registration WHERE id = 2')->fetchColumn() === $db2['mobile'], "got $s");
+[$s] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => str_repeat('x', 300)]]);
+check('a value longer than the column is refused', $s === 422, "got $s");
+[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['fullbio' => '<p>Bina loves theatre.</p><script>alert(1)</script><img src=x onerror=alert(1)>']]);
+$bio = (string) $pdo->query('SELECT fullbio FROM registration WHERE id = 2')->fetchColumn();
+check('bio HTML is cleaned (no script, no event handlers)', $s === 200 && str_contains($bio, 'Bina loves theatre.') && !preg_match('/script|onerror/i', $bio), $bio);
+[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['shortbio' => "x', status = 0 -- <b>Bold</b>"]]);
+$row2 = $pdo->query('SELECT shortbio, status FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
+check('quotes are stored as text, not SQL; tags removed from plain fields', $row2['shortbio'] === "x', status = 0 -- Bold" && (int) $row2['status'] === 1, json_encode($row2));
+[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_title' => 'Bina Bare | Mrs India 2026']]);
+check('an unchanged value is not saved again', $s === 200 && $d['saved'] === [] && $d['batch'] === null);
+[$s] = call('PUT', 'profiles.php?id=987654', $editor, ['fields' => ['meta_title' => 'x']]);
+check('unknown profile is 404', $s === 404, "got $s");
+function upload_banner(string $tok, int $id, string $which, string $file): array
+{
+    global $httpPort;
+    $ch = curl_init("http://127.0.0.1:$httpPort/api/profiles.php?id=$id&action=banner");
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ["X-Admin-Token: $tok"],
+        CURLOPT_POSTFIELDS => ['which' => $which, 'image' => new CURLFile($file, '', basename($file))]]);
+    $raw = (string) curl_exec($ch);
+    return [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode($raw, true), $raw];
+}
+$ban = imagecreatetruecolor(120, 40);
+imagejpeg($ban, "$tmp/banner.jpg");
+[$s, $d, $raw] = upload_banner($editor, 2, 'desktop', "$tmp/banner.jpg");
+$nim = (string) $pdo->query('SELECT nimage2 FROM registration WHERE id = 2')->fetchColumn();
+check('desktop banner is saved in images/ and set on the profile', $s === 200 && preg_match('/^fsia-banner-2-desktop-[0-9a-f]{12}\.jpg$/', $nim) && is_file("$tmp/site/images/$nim") && $d['banners']['desktop']['on_server'] === true, "got $s $raw");
+check('...and the desktop banner problem is gone', !in_array('No desktop banner', $d['report']['problems']['banner'] ?? [], true));
+file_put_contents("$tmp/fake-banner.jpg", '<?php echo "hi"; ?>');
+[$s] = upload_banner($editor, 2, 'desktop', "$tmp/fake-banner.jpg");
+check('a fake image is refused and nothing changes', $s === 415 && $pdo->query('SELECT nimage2 FROM registration WHERE id = 2')->fetchColumn() === $nim, "got $s");
+[$s] = upload_banner($viewer, 2, 'mobile', "$tmp/banner.jpg");
+check('a viewer cannot upload a banner', $s === 403, "got $s");
+check('no other profile changed', $snapshot() === $others);
+[$s, $d] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $seoBatch]);
+$db3 = $pdo->query('SELECT meta_title, meta_desc, meta_keyword FROM registration WHERE id = 2')->fetch(PDO::FETCH_ASSOC);
+check('undo puts the old SEO values back', $s === 200 && $db3 === ['meta_title' => '', 'meta_desc' => '', 'meta_keyword' => ''], "got $s " . json_encode($db3));
+[$s] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $seoBatch]);
+check('the same save cannot be undone twice', $s === 409, "got $s");
+[$s, $d] = call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_keyword' => 'first']]);
+$kwBatch = $d['batch'];
+$pdo->exec("UPDATE registration SET meta_keyword = 'changed in the old admin' WHERE id = 2");
+[$s] = call('POST', 'profiles.php?action=undo', $editor, ['batch' => $kwBatch]);
+check('undo is refused when the field was changed again since', $s === 409 && $pdo->query('SELECT meta_keyword FROM registration WHERE id = 2')->fetchColumn() === 'changed in the old admin', "got $s");
+[$s] = call('POST', 'changelog.php?action=install', $admin, []);
+call('PUT', 'profiles.php?id=2', $editor, ['fields' => ['meta_keyword' => 'logged']]);
+[$s, $d] = call('GET', 'changelog.php?action=list&q=2', $admin);
+check('Profile Changes names the CMS as the source of the edit', str_contains((string) ($d['rows'][0]['who'] ?? ''), 'CMS admin') && str_contains((string) ($d['rows'][0]['who'] ?? ''), 'editor1'), json_encode($d['rows'][0] ?? null));
+call('POST', 'changelog.php?action=uninstall', $admin, []);
 
 echo "News: script cannot be stored\n";
 [$s, $d, $raw] = call('POST', 'news.php', $editor, ['title' => 'XSS test', 'content_html' => '<p>Hi</p><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">x</a><iframe src="//evil"></iframe>']);

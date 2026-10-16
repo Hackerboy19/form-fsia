@@ -14,7 +14,8 @@ export default function Modal({ open, title, onClose, children, footer, width = 
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      // Only this dialog's own close: a nested dialog closing must not close its parent.
+      onClose={(e) => e.target === ref.current && onClose()}
       onClick={(e) => e.target === ref.current && onClose()}
       className={`w-[calc(100%-2rem)] ${width} rounded-2xl p-0 shadow-2xl backdrop:bg-navy/70 backdrop:backdrop-blur-sm`}
     >
