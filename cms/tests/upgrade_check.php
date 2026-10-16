@@ -33,7 +33,7 @@ $t = $d['token'];
 [$s] = call('POST', 'auth.php', null, ['username' => $simUser, 'password' => 'wrong']);
 ok('wrong password still refused', $s === 401);
 [$s, $d] = call('GET', 'users.php?action=me', $t);
-ok('single admin = full access, roles not available', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === false && count($d['permissions']) === 7, json_encode($d));
+ok('single admin = full access, roles not available', $s === 200 && $d['role'] === 'owner' && $d['roles_available'] === false && count($d['permissions']) === 8, json_encode($d));
 [$s] = call('POST', 'users.php?action=setup', $t, []);
 ok('roles cannot be switched on from the admin (no extra users)', $s === 409, "got $s");
 

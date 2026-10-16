@@ -86,6 +86,13 @@ export const api = {
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
+  listEvents: () => request('events.php'),
+  createEvent: (body) => request('events.php', { method: 'POST', body }),
+  updateEvent: (id, body) => request('events.php', { method: 'PUT', query: { id }, body }),
+  duplicateEvent: (id) => request('events.php', { method: 'POST', query: { action: 'duplicate', id }, body: {} }),
+  deleteEvent: (id) => request('events.php', { method: 'DELETE', query: { id } }),
+  matchPromotion: (path) => request('events.php', { query: { action: 'match', path } }),
+
   changelogStatus: () => request('changelog.php', { query: { action: 'status' } }),
   changelogInstall: () => request('changelog.php', { method: 'POST', query: { action: 'install' }, body: {} }),
   changelogUninstall: () => request('changelog.php', { method: 'POST', query: { action: 'uninstall' }, body: {} }),

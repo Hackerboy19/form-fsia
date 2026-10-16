@@ -14,6 +14,7 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 **Database:** the upload makes no changes to existing tables.
 - `cms_audit_log` is created on the first logged change.
 - `cms_user_roles` is created only when an owner turns roles on.
+- `cms_events` is created when Events & Promotions is first opened (reference: `migrations/2026-10-16-events.sql`).
 - The CMS writes nothing to profiles. Fixes are made in the starindia admin (starindia.fsia.in/admin).
 - For profiles with `starindia_action = 'edited'` the CMS server reads `GET https://admin.fsia.in/api/profiles/<id>` (read-only; set `'starindia_api'` in config.php to change it). It keeps only text lengths, hero/logo values and SEO fields for 5 minutes in the server temp folder, never contact details. If that API cannot be read, those profiles show "Not checked" instead of guessed issues.
 - Profile Changes triggers are installed only when someone clicks "Turn on".
@@ -29,10 +30,13 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 ## Upload
 
 4. Upload `fsia-admin-tools-upload.zip` to `httpdocs` → Extract → "Replace existing files". It contains:
-   - `cms/backend/api/`: `audit.php`, `changelog.php`, `cleanup.php`, `sitecheck.php`, `users.php`
-   - `cms/backend/lib/`: `bootstrap.php`, `profile_report.php`, `rbac.php`, `site_db.php`, `starindia.php`
+   - `cms/backend/api/`: `audit.php`, `changelog.php`, `cleanup.php`, `events.php`, `promotions.php`, `sitecheck.php`, `users.php`
+   - `cms/backend/lib/`: `bootstrap.php`, `events.php`, `profile_report.php`, `rbac.php`, `site_db.php`, `starindia.php`
+   - `cms/promo.js` (the website promotion bar)
    - `cms-admin-test/` (the new admin; the current `/cms-admin/` is not touched)
    - It does **not** contain `teams.php`, `config.php` or any public page.
+
+4a. **Events promotion bar (when the first event is ready):** add one line to the shared footer of www.fsia.in (e.g. `footer1806.php`), just before `</body>`: `<script src="/cms/promo.js" defer></script>`. Until an event is published it shows nothing. To remove the bar, delete that line (or cancel the event in the admin).
 
 4b. **starindia admin (separate server):** replace `starindia.fsia.in/admin/admin-enhancements.js` with `starindia-admin/admin-enhancements.js` from this repo. First download the current file. If it differs from `starindia-admin/admin-enhancements.live-2026-10-16.js`, someone changed it since: send it over so the edits can be merged, and don't overwrite it.
 
@@ -63,6 +67,7 @@ The deployment is the CMS admin tools zip: Profiles & Score (Verified Member / P
 | Roles locked someone out (only possible after `roles_enabled` was set) | Remove `'roles_enabled' => true` from config.php: everyone is back to full access |
 | Change log triggers cause trouble | Profile Changes → Turn off (drops the triggers), or `DROP TRIGGER fsia_log_profile_update; DROP TRIGGER fsia_log_profile_create; DROP TRIGGER fsia_log_profile_delete;` |
 | "Fix in starindia admin" misbehaves | Upload `starindia-admin/admin-enhancements.live-2026-10-16.js` as `/admin/admin-enhancements.js` on starindia |
+| Promotion bar misbehaves on the site | Cancel the event in Events & Promotions (gone at once), or remove the `promo.js` line from the footer |
 | Activity log grows too big | `DELETE FROM cms_audit_log WHERE created_at < NOW() - INTERVAL 180 DAY;` |
 
 No step deletes or changes profile data.

@@ -6,7 +6,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || 'playwright');
 const BASE = process.env.BASE || 'http://localhost:5173/';
-const routes = ['/', '/seo', '/homepage', '/pages/about', '/pages/our-teams', '/team', '/news', '/profiles',
+const routes = ['/', '/events', '/seo', '/homepage', '/pages/about', '/pages/our-teams', '/team', '/news', '/profiles',
   '/site-check', '/changes', '/cleanup', '/users', '/activity'];
 
 const browser = await chromium.launch();

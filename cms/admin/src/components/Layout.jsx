@@ -12,6 +12,8 @@ const NAV = [
   { group: 'Content' },
   { to: '/team', label: 'Team Directory', icon: '♛' },
   { to: '/news', label: 'News Manager', icon: '✎' },
+  { group: 'Events' },
+  { to: '/events', label: 'Events & Promotions', icon: '✷', perm: 'tools.view' },
   { group: 'Profiles' },
   { to: '/profiles', label: 'Profiles & Score', icon: '★', perm: 'tools.view' },
   { group: 'Tools' },

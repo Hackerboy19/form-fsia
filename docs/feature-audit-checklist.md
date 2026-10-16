@@ -58,7 +58,7 @@ Code reading alone never gave a PASS.
 | B2 | Premium plans and entitlements | No plans/subscriptions/entitlements anywhere in the repo. The starindia admin has a "Featured" toggle only. | NOT IMPLEMENTED | Plan names, prices, features |
 | B3 | Instagram (official Meta API) | Only text fields (`instagram` column; starindia `contact.instagram`). No OAuth, tokens or callback. | NOT IMPLEMENTED; live tests BLOCKED | Meta app, business verification, App Review |
 | B4 | Profile templates and migration | www templates (`verified_user_details_*`) and starindia's React profile pages exist **outside the repo**. Starindia pages render from that admin's JSON; www pages render from `registration`. | BLOCKED (code not in repo) | Live code / starindia source |
-| B5 | Central events + website-wide promotions | Event content hard-coded per page; no events table or promotion component. | NOT IMPLEMENTED | Event list and placement rules |
+| B5 | Central events + website-wide promotions | **Built 2026-10-16** (pending upload): `pages/Events.jsx`, `api/events.php`, `api/promotions.php` (public), `lib/events.php`, `cms/promo.js`, table `cms_events`. 22 API checks: validation, draft/scheduled/live/completed/cancelled, target/exclude/wildcards, one bar per page by priority, public answer has display fields only, viewer refused, activity log. Browser: created and published in the admin → bar on `/miss-assam.php`, not on excluded `/quickapply`, close stays closed, mobile OK, Cancel removes it at once. | PASS (local + simulated upload) | Owner adds `<script src="/cms/promo.js" defer></script>` to the shared footer; then live check. Guest list is shown in the admin only (no public event page yet). |
 | B6 | Dynamic form builder | ~75 hard-coded forms; no definitions or versions. | NOT IMPLEMENTED | B5 |
 | B7 | Existing public registration (OTP + insert) | Repo copies of `miss-*/mrs-*` and `miss-universe-registration.php`. No OTP send limit, unlimited OTP guesses, TLS checks off, hard-coded webhook ID, DB error shown to visitors (all confirmed in repo code). Live forms not exercised (each run sends a real WhatsApp and writes a real registration). | PARTIAL; live BLOCKED | Live copies + a test number |
 | B8 | Payments | `payment_status/trans_id/pdate` columns exist; no gateway code in the repo. | NOT IMPLEMENTED (repo); live flow BLOCKED | Gateway, sandbox keys, live code |
@@ -83,10 +83,10 @@ Code reading alone never gave a PASS.
 
 | Status | Count | Items |
 |---|---|---|
-| PASS | 15 | A1, A4, A5, A7, A8, A11, A12, A13, A14, A17, C1, C2, C3, C4, A16 (built roles) |
+| PASS | 16 | A1, A4, A5, A7, A8, A11, A12, A13, A14, A17, C1, C2, C3, C4, A16 (built roles), B5 (events, local) |
 | PARTIAL | 11 | A2, A3, A6, A9, A10, A15, B7, C5, C6, C7, C8 |
 | FAIL | 1 | C9 |
-| NOT IMPLEMENTED | 8 | B1, B2, B3, B5, B6, B8, B9, B10 |
+| NOT IMPLEMENTED | 7 | B1, B2, B3, B6, B8, B9, B10 |
 | BLOCKED | 1 | B4 (plus BLOCKED sub-tests: A11 live API, B3 live, B7 live, B8 live) |
 
 A11 and A12 are PASS on the local and simulated runs, but are not live until the two files are uploaded.

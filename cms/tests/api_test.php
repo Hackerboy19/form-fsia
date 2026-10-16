@@ -238,6 +238,8 @@ $matrix = [
     ['Write news', 'POST', 'news.php', [], ['owner', 'admin', 'editor']],
     ['Upload image', 'POST', 'upload.php', [], ['owner', 'admin', 'editor']],
     ['Profiles & Score / Site Check: view', 'GET', 'sitecheck.php?action=profiles', null, ['owner', 'admin', 'editor', 'viewer']],
+    ['Events: create / publish / cancel', 'POST', 'events.php', [], ['owner', 'admin', 'editor']],
+    ['Events: view list', 'GET', 'events.php', null, ['owner', 'admin', 'editor', 'viewer']],
     ['Site Check: save baseline', 'POST', 'sitecheck.php?action=baseline', ['pages' => []], ['owner', 'admin']],
     ['Profile Changes: view', 'GET', 'changelog.php?action=status', null, ['owner', 'admin', 'editor', 'viewer']],
     ['Profile Changes: turn on/off', 'POST', 'changelog.php?action=uninstall', [], ['owner', 'admin']],
@@ -417,6 +419,61 @@ check('the cache keeps no contact details', $cached !== '' && !str_contains($cac
 call('GET', 'sitecheck.php?action=profiles&status=all&category=super-women', $editor);
 check('a second load uses the cache (only the not-found profile is asked again)', count(array_filter(explode("\n", (string) @file_get_contents("$tmp/stub/methods.log")))) === 1);
 $pdo->exec('DELETE FROM registration WHERE id IN (3001, 3002, 3003)');
+
+echo "Events & Promotions\n";
+$nowIst = new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata'));
+$at = fn (string $mod) => $nowIst->modify($mod)->format('Y-m-d\TH:i');
+$ev = fn (array $o) => array_merge(['title' => 'Test Pageant 2027', 'status' => 'published', 'starts_at' => $at('+10 days'), 'ends_at' => $at('+12 days'),
+    'promo_start' => $at('-1 day'), 'promo_end' => $at('+12 days'), 'venue' => 'Test Hall', 'city' => 'Jaipur', 'cta_url' => '/quickapply',
+    'targets' => ['all'], 'excludes' => [], 'priority' => 10], $o);
+[$s, $d] = call('POST', 'events.php', $editor, ['title' => '', 'starts_at' => 'x']);
+check('validation: title and real dates are required', $s === 422 && isset($d['fields']['title'], $d['fields']['starts_at'], $d['fields']['ends_at']), json_encode($d));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['ends_at' => $at('+5 days')]));
+check('validation: an event cannot end before it starts', $s === 422 && isset($d['fields']['ends_at']));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['targets' => []]));
+check('validation: publishing needs at least one page', $s === 422 && isset($d['fields']['targets']));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['cta_url' => 'javascript:alert(1)']));
+check('validation: registration link must be http(s) or /path', $s === 422 && isset($d['fields']['cta_url']));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['targets' => ['<script>']]));
+check('validation: page rules must be a group or a /path', $s === 422 && isset($d['fields']['targets']));
+[$s] = call('POST', 'events.php', $viewer, $ev([]));
+check('a viewer cannot create events', $s === 403, "got $s");
+[$s, $d, $raw] = call('POST', 'events.php', $editor, $ev(['title' => 'All pages event', 'description' => '<p>Hi</p><script>alert(1)</script>', 'excludes' => ['/quickapply', '/news*'],
+    'guests' => [['name' => 'Guest One', 'role' => 'Jury', 'photo' => 'https://example.com/g.jpg'], ['name' => '', 'role' => 'skipped']]]));
+$allId = $d['id'] ?? 0;
+check('a valid event is saved and is live now', $s === 201 && ($d['phase'] ?? '') === 'live' && count($d['guests']) === 1 && !str_contains((string) $d['description'], 'script'), "got $s $raw");
+$promo = fn (string $path) => call('GET', 'promotions.php?path=' . urlencode($path))[1]['promotion'] ?? null;
+check('public: shows on a targeted page, without signing in', ($promo('/miss-assam.php')['id'] ?? 0) === $allId);
+check('public: not on an excluded page', $promo('/quickapply') === null && $promo('/news-coverage') === null && $promo('/news-coverage/x') === null);
+$pub = $promo('/') ?? [];
+check('public: answer holds only display fields (no guests, page rules, description or status)', $pub !== [] && !array_intersect(array_keys($pub), ['guests', 'targets', 'excludes', 'description', 'status', 'priority']), json_encode(array_keys($pub)));
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['title' => 'Homepage only, higher priority', 'targets' => ['home'], 'priority' => 50]));
+$homeId = $d['id'] ?? 0;
+check('overlap: the higher priority event wins on its page, only one banner', ($promo('/')['id'] ?? 0) === $homeId && ($promo('/about')['id'] ?? 0) === $allId);
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['title' => 'Later promo', 'targets' => ['pageants'], 'priority' => 90, 'promo_start' => $at('+3 days')]));
+check('scheduled: not shown before its promotion starts', ($d['phase'] ?? '') === 'scheduled' && ($promo('/miss-assam.php')['id'] ?? 0) === $allId);
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['title' => 'Finished', 'targets' => ['pageants'], 'priority' => 95, 'starts_at' => $at('-5 days'), 'ends_at' => $at('-2 days'), 'promo_start' => $at('-9 days'), 'promo_end' => $at('-2 days')]));
+check('completed: hidden after the event ended', ($d['phase'] ?? '') === 'completed' && ($promo('/mrs-kerala.php')['id'] ?? 0) === $allId);
+[$s, $d] = call('POST', 'events.php', $editor, $ev(['title' => 'Draft one', 'status' => 'draft', 'targets' => ['profiles'], 'priority' => 99]));
+$draftId = $d['id'] ?? 0;
+check('draft: never shown', ($d['phase'] ?? '') === 'draft' && ($promo('/some-profile-slug')['id'] ?? 0) === $allId);
+[$s, $d] = call('GET', "events.php?id=$homeId", $editor);
+$upd = array_merge($d, ['status' => 'cancelled', 'starts_at' => substr($d['starts_at'], 0, 16), 'ends_at' => substr($d['ends_at'], 0, 16), 'promo_start' => substr($d['promo_start'], 0, 16), 'promo_end' => substr($d['promo_end'], 0, 16)]);
+[$s, $d] = call('PUT', "events.php?id=$homeId", $editor, $upd);
+check('cancelled: taken off the homepage at once', $s === 200 && $d['phase'] === 'cancelled' && ($promo('/')['id'] ?? 0) === $allId, "got $s");
+check('rule: profile pages = one-part paths that are not main pages', ($promo('/azra')['id'] ?? 0) === $allId);
+[$s, $d] = call('GET', 'events.php?action=match&path=' . urlencode('/Miss-Assam.php?x=1'), $viewer);
+check('admin "which promotion shows here" tool (path normalised)', $s === 200 && $d['path'] === '/miss-assam.php' && ($d['promotion']['id'] ?? 0) === $allId);
+[$s, $d] = call('POST', "events.php?action=duplicate&id=$allId", $editor, []);
+check('duplicate makes a draft copy', $s === 201 && $d['status'] === 'draft' && str_starts_with($d['title'], 'Copy of') && $d['targets'] === ['all']);
+[$s] = call('DELETE', "events.php?id=$draftId", $viewer);
+check('a viewer cannot delete events', $s === 403, "got $s");
+[$s] = call('DELETE', "events.php?id=$draftId", $editor);
+check('delete works', $s === 200 && call('GET', "events.php?id=$draftId", $editor)[0] === 404);
+[$s] = call('POST', 'promotions.php', $editor, []);
+check('public endpoint is read-only', $s === 405, "got $s");
+[$s, $d] = call('GET', 'audit.php?action=list&endpoint=events.php', $owner);
+check('event changes are in the activity log', ($d['total'] ?? 0) >= 6, json_encode($d['total'] ?? null));
 
 echo "Profile Changes (change log)\n";
 $pdo->exec('ALTER TABLE registration ADD mobile VARCHAR(20) NULL');
