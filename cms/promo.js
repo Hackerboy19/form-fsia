@@ -4,8 +4,9 @@
  *   <script src="/cms/promo.js" defer></script>
  * It asks the CMS which promotion belongs on this page (Events & Promotions in the
  * CMS admin decides: pages, dates, priority) and shows it at the bottom of the
- * screen: a full-width bar on computers, a floating card on phones. A visitor can
- * close it; it stays closed for that event until the event is changed.
+ * screen: a full-width bar on computers, a floating card on phones, with a live
+ * countdown to the start. Closing it shrinks it to a small pill in the corner (which
+ * opens it again); the pill's own x hides it until the event is changed.
  * Text is set as text, never as HTML.
  *
  * The CMS admin runs this same file for its previews (window.__fsiaPromoPreview
@@ -17,7 +18,7 @@
   var DAY = 86400000;
 
   var CSS = [
-    '.fsia-promo,.fsia-promo *{box-sizing:border-box;margin:0;padding:0;border:0;line-height:1.3;letter-spacing:normal;text-transform:none;text-align:left;font-style:normal}',
+    '.fsia-promo,.fsia-promo *,.fsia-promo-pill,.fsia-promo-pill *{box-sizing:border-box;margin:0;padding:0;border:0;line-height:1.3;letter-spacing:normal;text-transform:none;text-align:left;font-style:normal}',
     '.fsia-promo{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;color:#F6F2E8;font:500 14px/1.3 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;' +
       'background:linear-gradient(100deg,#0A0F1C 0%,#111A2E 55%,#1C1A12 100%);border-top:1px solid rgba(212,175,55,.55);box-shadow:0 -12px 32px rgba(0,0,0,.28);' +
       'animation:fsia-promo-in .5s cubic-bezier(.2,.8,.2,1) both}',
@@ -41,11 +42,36 @@
     '.fsia-promo-name{margin-top:2px;font-size:15px;font-weight:700;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.fsia-promo-cta{flex:none;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:800;color:#0C1322 !important;text-decoration:none !important;white-space:nowrap;' +
       'background:linear-gradient(135deg,#F6DC8C 0%,#D4AF37 55%,#B98F1E 100%);box-shadow:0 6px 18px rgba(212,175,55,.35);transition:transform .15s,box-shadow .15s}',
+    '.fsia-promo-cta{position:relative;overflow:hidden}',
+    '.fsia-promo-cta::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-20deg);animation:fsia-promo-shine 5s ease-in-out 2s infinite}',
     '.fsia-promo-cta:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(212,175,55,.45)}',
     '.fsia-promo-cta svg{width:16px;height:16px}',
     '.fsia-promo-x{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);color:#F6F2E8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}',
     '.fsia-promo-x:hover{background:rgba(255,255,255,.18)}',
     '.fsia-promo-x svg{width:14px;height:14px}',
+    /* Countdown: tiles on wide screens, one line in the label elsewhere */
+    '.fsia-promo-cd{flex:none;display:flex;gap:6px}',
+    '.fsia-promo-cd div{min-width:48px;padding:7px 4px 6px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(212,175,55,.28)}',
+    '.fsia-promo-cd b{display:block;font:800 19px/1 "Plus Jakarta Sans",system-ui,sans-serif;color:#FFFFFF;text-align:center;font-variant-numeric:tabular-nums}',
+    '.fsia-promo-cd i{display:block;margin-top:4px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C9A548;text-align:center}',
+    '.fsia-promo-cdi{display:none;font-variant-numeric:tabular-nums}',
+    '.fsia-has-cd .fsia-promo-sum{display:none}',
+    '@media (max-width:1300px){.fsia-promo:not(.fsia-pv) .fsia-promo-cd{display:none}.fsia-promo:not(.fsia-pv) .fsia-promo-cdi{display:inline}.fsia-promo:not(.fsia-pv) .fsia-promo-cd-on .fsia-promo-lbl{display:none}}',
+    '.fsia-narrow .fsia-promo-cd,.fsia-m .fsia-promo-cd{display:none}',
+    '.fsia-narrow .fsia-promo-cdi,.fsia-m .fsia-promo-cdi{display:inline}',
+    '.fsia-narrow .fsia-promo-cd-on .fsia-promo-lbl,.fsia-m .fsia-promo-cd-on .fsia-promo-lbl{display:none}',
+    /* Minimised: a small pill in the corner */
+    '.fsia-promo-pill{position:fixed;right:16px;bottom:16px;z-index:2147483000;display:flex;align-items:center;gap:10px;max-width:min(360px,calc(100vw - 24px));padding:6px 8px 6px 6px;border-radius:999px;cursor:pointer;' +
+      'background:linear-gradient(100deg,#0A0F1C,#151D31);border:1px solid rgba(212,175,55,.6);box-shadow:0 12px 32px rgba(0,0,0,.35);color:#F6F2E8;font:600 13px/1.25 "Plus Jakarta Sans",system-ui,sans-serif;animation:fsia-promo-pop .35s cubic-bezier(.2,.8,.2,1) both}',
+    '.fsia-promo-pill img,.fsia-promo-pill .fsia-promo-pill-star{flex:none;width:36px;height:36px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #D4AF37}',
+    '.fsia-promo-pill-star{display:flex;align-items:center;justify-content:center;color:#0C1322;background:linear-gradient(135deg,#F6DC8C,#D4AF37)}',
+    '.fsia-promo-pill-t{min-width:0;flex:1}',
+    '.fsia-promo-pill-t b{display:block;font-weight:700;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.fsia-promo-pill-t span{display:block;font-size:11px;color:#E2C46B;white-space:nowrap;font-variant-numeric:tabular-nums}',
+    '.fsia-promo-pill-go{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#0C1322;background:linear-gradient(135deg,#F6DC8C,#D4AF37 60%,#B98F1E)}',
+    '.fsia-promo-pill-go svg{width:15px;height:15px}',
+    '.fsia-promo-pill-x{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:#C9CFDD;cursor:pointer}',
+    '.fsia-promo-pill-x svg{width:11px;height:11px}',
     /* Phones: a floating card */
     '.fsia-promo.fsia-m{left:10px;right:10px;bottom:10px;border:1px solid rgba(212,175,55,.45);border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.4)}',
     '.fsia-promo.fsia-m::before{left:24px;right:24px}',
@@ -68,10 +94,12 @@
     '.fsia-promo.fsia-pv{position:relative;z-index:auto;animation:none}',
     '.fsia-promo.fsia-pv.fsia-m{left:auto;right:auto;bottom:auto;margin:0 10px 10px}',
     '@keyframes fsia-promo-in{from{transform:translateY(110%);opacity:0}to{transform:none;opacity:1}}',
+    '@keyframes fsia-promo-shine{0%{left:-60%}25%,100%{left:130%}}',
+    '@keyframes fsia-promo-pop{from{transform:translateY(20px) scale(.9);opacity:0}to{transform:none;opacity:1}}',
     '@keyframes fsia-promo-pulse{70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}',
     '@media (max-width:1180px){.fsia-promo:not(.fsia-pv) .fsia-promo-sum{display:none}}',
     '.fsia-promo.fsia-narrow .fsia-promo-sum{display:none}',
-    '@media (prefers-reduced-motion:reduce){.fsia-promo,.fsia-promo-dot{animation:none}}',
+    '@media (prefers-reduced-motion:reduce){.fsia-promo,.fsia-promo-dot,.fsia-promo-pill,.fsia-promo-cta::after{animation:none}}',
   ].join('\n');
 
   var ICON = {
@@ -106,6 +134,16 @@
     return { text: soon ? 'Upcoming event \u00b7 ' + soon : 'Upcoming event' };
   }
 
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  /** Time until ms: {d, h, m, s} or null once it has passed. */
+  function left(ms, now) {
+    var t = Math.floor((ms - now) / 1000);
+    if (t <= 0) return null;
+    return { d: Math.floor(t / 86400), h: Math.floor(t / 3600) % 24, m: Math.floor(t / 60) % 60, s: t % 60 };
+  }
+  /** "17 days \u00b7 03:30:29" */
+  function short(l) { return (l.d ? l.d + (l.d === 1 ? ' day' : ' days') + ' \u00b7 ' : '') + pad2(l.h) + ':' + pad2(l.m) + ':' + pad2(l.s); }
+
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
   function icon(name) { var s = el('span'); s.innerHTML = ICON[name]; return s.firstChild; }
   function addCss(doc) {
@@ -118,7 +156,7 @@
 
   /**
    * The promotion element. opts: mobile (phone layout), preview (in the page flow,
-   * close does nothing), narrow (no summary; previews under 1180px wide), asset (turns stored image paths into URLs), now (ms), onClose.
+   * close does nothing), narrow (no summary or countdown tiles; previews under 1300px wide), asset (turns stored image paths into URLs), now (ms), onClose.
    */
   function build(p, opts) {
     opts = opts || {};
@@ -138,10 +176,15 @@
 
     // Text block
     var txt = el('div', 'fsia-promo-txt');
-    var s = status(p, opts.now || Date.now());
-    var eye = el('div', 'fsia-promo-eye');
+    var now0 = opts.now || Date.now();
+    var s = status(p, now0);
+    var startMs = ist(p.starts_at);
+    var count = !s.live && startMs !== null && left(startMs, now0);
+    var eye = el('div', 'fsia-promo-eye' + (count ? ' fsia-promo-cd-on' : ''));
     if (s.live) eye.appendChild(el('span', 'fsia-promo-dot'));
-    eye.appendChild(el('span', '', s.text));
+    eye.appendChild(el('span', 'fsia-promo-lbl', count ? 'Upcoming event' : s.text));
+    var cdi = count ? el('span', 'fsia-promo-cdi') : null;
+    if (cdi) eye.appendChild(cdi);
     txt.appendChild(eye);
     txt.appendChild(el('div', 'fsia-promo-title', p.title || 'Event title'));
     var meta = el('div', 'fsia-promo-meta');
@@ -184,6 +227,39 @@
       });
     }
 
+    // Countdown to the start, ticking every second while the bar is on the page.
+    var tiles = null;
+    if (count) {
+      bar.className += ' fsia-has-cd';
+      tiles = el('div', 'fsia-promo-cd');
+      tiles.setAttribute('aria-hidden', 'true');
+      var cells = {};
+      [['d', 'Days'], ['h', 'Hrs'], ['m', 'Min'], ['s', 'Sec']].forEach(function (u) {
+        var c = el('div');
+        cells[u[0]] = el('b', '', '00');
+        c.appendChild(cells[u[0]]);
+        c.appendChild(el('i', '', u[1]));
+        tiles.appendChild(c);
+      });
+      var paint = function (l) {
+        cells.d.textContent = String(l.d); cells.h.textContent = pad2(l.h); cells.m.textContent = pad2(l.m); cells.s.textContent = pad2(l.s);
+        cdi.textContent = 'Starts in ' + short(l);
+      };
+      paint(count);
+      var timer = setInterval(function () {
+        if (!bar.isConnected && bar.dataset.started) { clearInterval(timer); return; }
+        if (bar.isConnected) bar.dataset.started = '1';
+        var l = left(startMs, Date.now());
+        if (l) { paint(l); return; }
+        clearInterval(timer);   // the event has started
+        tiles.remove();
+        eye.className = 'fsia-promo-eye';
+        eye.textContent = '';
+        eye.appendChild(el('span', 'fsia-promo-dot'));
+        eye.appendChild(el('span', 'fsia-promo-lbl', 'Happening now'));
+      }, 1000);
+    }
+
     var cta = null;
     if (p.cta_url) {
       cta = el('a', 'fsia-promo-cta' + (mobile && !gbox ? ' fsia-wide' : ''));
@@ -207,6 +283,7 @@
     } else {
       if (banner) inner.appendChild(pic(banner, 'fsia-promo-pic'));
       inner.appendChild(txt);
+      if (tiles) inner.appendChild(tiles);
       if (gbox) inner.appendChild(gbox);
       if (cta) inner.appendChild(cta);
     }
@@ -229,26 +306,82 @@
   var api = (script && script.getAttribute('data-api')) || '/cms/backend/api/promotions.php';
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
+  /** Minimised promotion: a pill in the corner that opens the bar again. */
+  function pill(p, onOpen, onHide) {
+    var guests = (p.guests || []).filter(function (g) { return g && g.name; });
+    var b = el('div', 'fsia-promo-pill');
+    b.id = 'fsia-promo';
+    b.setAttribute('role', 'button');
+    b.setAttribute('tabindex', '0');
+    b.setAttribute('aria-label', 'Show event: ' + (p.title || ''));
+    var face = (guests[0] && guests[0].photo) || p.banner_mobile || p.banner_desktop;
+    if (face) {
+      var img = el('img');
+      img.alt = '';
+      img.src = face;
+      img.onerror = function () { img.replaceWith(el('span', 'fsia-promo-pill-star', '\u2605')); };
+      b.appendChild(img);
+    } else {
+      b.appendChild(el('span', 'fsia-promo-pill-star', '\u2605'));
+    }
+    var t = el('div', 'fsia-promo-pill-t');
+    t.appendChild(el('b', '', p.title || ''));
+    var sub = el('span', '', when(p));
+    t.appendChild(sub);
+    b.appendChild(t);
+    var go = el('span', 'fsia-promo-pill-go');
+    go.appendChild(icon('arrow'));
+    b.appendChild(go);
+    var x = el('button', 'fsia-promo-pill-x');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Hide');
+    x.appendChild(icon('close'));
+    x.onclick = function (e) { e.stopPropagation(); onHide(b); };
+    b.appendChild(x);
+    var st = ist(p.starts_at);
+    var tick = function () {
+      var l = st !== null && left(st, Date.now());
+      sub.textContent = l ? 'Starts in ' + short(l) : when(p);
+    };
+    tick();
+    var timer = setInterval(function () { if (!b.isConnected) { clearInterval(timer); return; } tick(); }, 1000);
+    b.onclick = function () { onOpen(b); };
+    b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(b); } };
+    return b;
+  }
+
   function show(p) {
-    var key = 'fsia-promo-closed-' + p.id;
-    if (store(key) === String(p.version)) return;
+    var v = String(p.version);
+    var hideKey = 'fsia-promo-closed-' + p.id;   // hidden for good (until the event changes)
+    var minKey = 'fsia-promo-min-' + p.id;       // shown as the small pill
+    if (store(hideKey) === v) return;
     var mq = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
     var pad = document.body.style.paddingBottom;
-    var bar = null;
-    function place() {
-      var next = build(p, {
-        mobile: !!(mq && mq.matches),
-        onClose: function (b) { store(key, String(p.version)); b.remove(); bar = null; document.body.style.paddingBottom = pad; },
-      });
-      next.id = 'fsia-promo';
-      if (bar) { next.style.animation = 'none'; bar.replaceWith(next); } else document.body.appendChild(next);
-      bar = next;
-      // Keep the page's own footer reachable above the bar / card.
-      document.body.style.paddingBottom = (bar.offsetHeight + (mq && mq.matches ? 20 : 0)) + 'px';
+    var cur = null;
+    var isBar = false;
+    function put(node) { if (cur) cur.replaceWith(node); else document.body.appendChild(node); cur = node; }
+    function hide(node) { store(hideKey, v); node.remove(); cur = null; isBar = false; document.body.style.paddingBottom = pad; }
+    function small() {
+      store(minKey, v);
+      isBar = false;
+      document.body.style.paddingBottom = pad;
+      put(pill(p, function () { store(minKey, ''); big(true); }, hide));
     }
-    place();
+    function big(again) {
+      var next = build(p, { mobile: !!(mq && mq.matches), onClose: small });
+      next.id = 'fsia-promo';
+      if (isBar) next.style.animation = 'none';
+      put(next);
+      isBar = true;
+      // Keep the page's own footer reachable above the bar / card.
+      document.body.style.paddingBottom = (next.offsetHeight + (mq && mq.matches ? 20 : 0)) + 'px';
+      var cta = again && next.querySelector('.fsia-promo-cta');
+      if (cta) cta.focus({ preventScroll: true });
+    }
+    // Let the page settle before the promotion slides in.
+    setTimeout(function () { if (store(minKey) === v) small(); else big(false); }, 1200);
     if (mq) {
-      var redo = function () { if (bar) place(); };
+      var redo = function () { if (isBar) big(false); };
       if (mq.addEventListener) mq.addEventListener('change', redo); else if (mq.addListener) mq.addListener(redo);
     }
   }

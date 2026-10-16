@@ -47,7 +47,7 @@ function PromoPreview({ e, mobile = false }) {
   };
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
-    const ro = new ResizeObserver(([x]) => setNarrow(x.contentRect.width < 1180));
+    const ro = new ResizeObserver(([x]) => setNarrow(x.contentRect.width < 1300));
     if (holder.current) ro.observe(holder.current);
     return () => ro.disconnect();
   }, []);
