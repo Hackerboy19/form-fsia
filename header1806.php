@@ -575,6 +575,9 @@ if (!defined('FSIA_HERO_AUTOSWAP_ACTIVE')) {
         var open = lnk.classList.toggle('open');
         b.classList.toggle('open', open);
         b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        // The homepage bundle also toggles this button on its own; stop it here so
+        // one tap is not undone by a second toggle.
+        e.stopPropagation();
         return;
       }
       var rb = e.target.closest('.reg-btn');
@@ -582,6 +585,7 @@ if (!defined('FSIA_HERO_AUTOSWAP_ACTIVE')) {
         var regEl = rb.closest('.reg'); if (!regEl) return;
         e.preventDefault();
         regEl.classList.toggle('reg-open');
+        e.stopPropagation();   // same double-toggle as the burger on the homepage
         return;
       }
       var a = e.target.closest('#fsiaLinks a');
