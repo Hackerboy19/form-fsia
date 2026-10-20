@@ -76,6 +76,7 @@ try {
         $rt, $comment, $gender, $i1, $i2);
     mysqli_stmt_execute($st);
     $cid = mysqli_insert_id($connect);
+    $token = md5((string) $cid);   // registration-success.php looks the entry up by md5(id)
 } catch (Throwable $e) {
     error_log('save-bharat-national-awards: ' . $e->getMessage());
     bna_back('Sorry, we could not save your registration. Please try again or call +91-9983286999.');
@@ -88,7 +89,7 @@ $message = "<p align='center'><strong>FOREVER STAR INDIA</strong></p>
 <p>Hello {$safeName}, Welcome to Forever Star India</p>
 <p><strong>Subject:</strong> {$title}</p>
 <p>Your Registration for " . BNA_TITLE . " is complete, you can pay the Application Fee Now, and the Application Fee for " . BNA_TITLE . " is Rs " . BNA_FEE . ".</p>
-<p><a style='display:block;text-decoration:none;text-align:center;width:200px;font-weight:bold;padding:10px 15px;background:#033990;color:#fff;margin:auto;' href='https://www.fsia.in/pay_reg_success.php?success=1&id={$cid}'>Pay via Cards/Net Banking</a>&nbsp;&nbsp;
+<p><a style='display:block;text-decoration:none;text-align:center;width:200px;font-weight:bold;padding:10px 15px;background:#033990;color:#fff;margin:auto;' href='https://www.fsia.in/registration-success.php?token={$token}'>Pay via Cards/Net Banking</a>&nbsp;&nbsp;
 <a style='display:block;text-decoration:none;text-align:center;width:200px;font-weight:bold;padding:10px 15px;background:#0762f7;color:#fff;margin:auto;' href='https://www.fsia.in/offline_payment.php'>Pay via UPI</a></p>
 <p>Please send the Payment Receipt to your Account Manager after making the Payment.</p>
 <p>If you have not been allotted an Account Manager, you can also contact our Customer Support Department: +91-9983286999</p>
@@ -102,5 +103,5 @@ $headers .= "From: {$from}\r\nReply-To: {$from}\r\n";
 $_SESSION['userid']  = $cid;
 $_SESSION['euserid'] = $cid;
 $_SESSION['regtype'] = 8;
-header('Location: pay_reg_success.php?success=1&id=' . $cid);
+header('Location: registration-success.php?token=' . $token);
 exit;
