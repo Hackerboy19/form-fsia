@@ -1,0 +1,10 @@
+# Copy into the upload directory (uploads/cms/). Uploaded images only:
+# nothing in this folder may run as a script.
+#
+# Only uses directives allowed under PHP-FPM hosting (Plesk). php_flag,
+# RemoveHandler and Options are deliberately absent: on PHP-FPM, or where
+# AllowOverride doesn't cover them, they turn every request in the folder
+# into a 500 error. The nginx rule in the README blocks .php here as well.
+<FilesMatch "\.(?i:php\d*|phtml|phar|pl|py|cgi|sh|shtml)$">
+  Require all denied
+</FilesMatch>
