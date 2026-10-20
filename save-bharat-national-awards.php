@@ -51,7 +51,7 @@ $comment = trim(($dob !== '' ? "DOB: $dob" : '') . ($age !== '' ? " | Age: $age"
 $date_of_reg = date('Y-m-d');
 
 try {
-    /* Already registered this year with this mobile -> send to the update page, as before */
+    /* Already registered this year with this mobile -> straight to the success / payment page for that entry */
     $st = mysqli_prepare($connect, "SELECT id FROM registration WHERE mobile = ? AND regtype = ? AND date_of_reg >= '2026-01-01' ORDER BY id DESC LIMIT 1");
     $rt = BNA_REGTYPE;
     mysqli_stmt_bind_param($st, 'ss', $mobile, $rt);
@@ -61,7 +61,7 @@ try {
         $_SESSION['userid']  = $row['id'];
         $_SESSION['euserid'] = $row['id'];
         $_SESSION['regtype'] = 8;
-        header('Location: reg_user_update.php?id=' . $row['id']);
+        header('Location: registration-success.php?token=' . md5((string) $row['id']));
         exit;
     }
 
