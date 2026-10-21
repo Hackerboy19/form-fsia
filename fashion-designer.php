@@ -210,7 +210,7 @@ $fsiaOgImg = $fsiaOgImg !== '' ? 'https://www.fsia.in/uploads/' . rawurlencode($
           <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 font-playfair">Forever Fashion Designers Registration</h2>
         </div>
 
-      <form action="savefashiondesigner.php" method="POST" class="space-y-5" id="registrationForm" data-category="Forever Fashion Designers 2026">
+      <form action="savefashiondesigner.php" method="POST" class="space-y-5" id="registrationForm" data-category="Forever Fashion Designers 2026"><input type="hidden" name="fsia_source" value="fashion-designer">
         <input class="form-control" type="hidden" name="regtype" id="regtype" value="43">
         <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-6 mb-3 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
         <div>

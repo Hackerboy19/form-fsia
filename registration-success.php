@@ -204,9 +204,18 @@ else if($ires['regtype']=="10"){ //Fashion Designer
 	$getmeta="select * from more_pages where page_name='23'";	
 	$gmeta=mysqli_query($connect,$getmeta);
 	$meta_tag=mysqli_fetch_assoc($gmeta);
-	$title="Fashion Designer ".$year . "";
-	$ogtitle="Fashion Designer ".$year . " | Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway";	
-	$ogDescription="Your Application Form is Submitted, Kindly Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway | Fashion Designer ".$year . "";
+	/* savefashiondesigner.php saves several forms under regtype 10 and keeps
+	   which form it was in reg_sub_cat. Old rows have none: Fashion Designer. */
+	$fd_titles = [
+		'fashion-designer'     => 'Fashion Designer',
+		'celebrity-pr'         => 'Celebrity PR Agency',
+		'forever-fashion-week' => 'Forever Fashion Week',
+		'india-fashion-week'   => 'India Fashion Week',
+	];
+	$fd_name = $fd_titles[$ires['reg_sub_cat'] ?? ''] ?? 'Fashion Designer';
+	$title=$fd_name." ".$year . "";
+	$ogtitle=$fd_name." ".$year . " | Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway";	
+	$ogDescription="Your Application Form is Submitted, Kindly Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway | ".$fd_name." ".$year . "";
 }
 else if($ires['regtype']=="11"){ //Makeup Artist
 	$iress=mysqli_fetch_array(mysqli_query($connect,"select * from reg_category_channel_partner where id='$ires[register_as]'"));
@@ -269,6 +278,12 @@ elseif($ires['regtype']=="26"){ // Business Awards
 	$ogtitle="Business Awards ".$year . " | Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway";	
 	$ogDescription="Your Application Form is Submitted, Kindly Pay Verification Fee " . $meta_tag['pay'] . " Rs. via Secured Payment Gateway | Business Awards ".$year . "";
 }
+/* One rule for the pay button and the slot box: pageants say Audition,
+   awards and every other form say Verification. */
+$pageantTypes = ['6','7','13','20','22','23','30','31','52','53'];
+$isPageant = in_array((string)$ires['regtype'], $pageantTypes, true);
+$label = $isPageant ? 'Audition Fee' : 'Verification Fee';
+
 $country = empty($ires['country']) ? 'India' : $ires['country'];
 $gmeta=mysqli_query($connect,$getmeta);
 $meta_tag=mysqli_fetch_assoc($gmeta);
@@ -345,6 +360,7 @@ $wa_url = "https://wa.me/919983286999?text=" . urlencode($wa_msg);
 $fsia_info = [
     6  => ['type' => 'audition',   'name' => 'Forever Miss India',      'low' => '50,000',   'high' => '5,00,000'],
     7  => ['type' => 'audition',   'name' => 'Forever Mrs India',       'low' => '50,000',   'high' => '5,00,000'],
+    20 => ['type' => 'audition',   'name' => 'Forever Miss India',      'low' => '50,000',   'high' => '5,00,000'],
     13 => ['type' => 'audition',   'name' => 'Forever Miss Teen India', 'low' => '50,000',   'high' => '5,00,000'],
     22 => ['type' => 'audition',   'name' => 'Forever Miss World',      'low' => '1,00,000', 'high' => '5,00,000'],
     23 => ['type' => 'audition',   'name' => 'Forever Mrs World',       'low' => '1,00,000', 'high' => '5,00,000'],
@@ -445,7 +461,7 @@ if ($fi['type'] === 'audition') {
 
   <!-- MAIN CONTAINER (page-grid-on enables the background grid) -->
   <main class="page-grid-on flex-grow flex flex-col items-center justify-center py-12 px-4">
-<?php if($ires['regtype']=="6" or $ires['regtype']=="7" or $ires['regtype']=="13" or $ires['regtype']=="22" or $ires['regtype']=="23" or $ires['regtype']=="30" or $ires['regtype']=="31" or $ires['regtype']=="52" or $ires['regtype']=="53"){
+<?php if($isPageant){
      	 include_once 'form_header.php';
 		 }else{
 		 include_once 'form_header1.php';
@@ -534,13 +550,13 @@ if ($fi['type'] === 'audition') {
           <?php if (function_exists('render_emergency_support')) { render_emergency_support(); } ?>
         </div>
 
-        <!-- AUDITION SLOT NOTICE -->
-        <?php if($ires['regtype']=="8" or $ires['regtype']=="9" or $ires['regtype']=="40" or $ires['regtype']=="32" or $ires['regtype']=="26"){ ?>
+        <!-- SLOT NOTICE: Verification for awards and other forms, Audition for pageants -->
+        <?php if(!$isPageant){ ?>
         <div class="mt-8 bg-amber-50 rounded-2xl border border-amber-200/60 p-5 md:p-6">
           <h4 class="inline-block text-lg md:text-xl font-serif font-bold text-slate-900 border-b-2 border-[#A6093D] pb-1 mb-3">
-            Confirm Your Application Verification Slot
+            Confirm Your Verification Slot
           </h4>
- <p class="text-slate-600 leading-relaxed text-sm">Congratulations on taking the first step toward your journey. Your Application Verification Slot is being held exclusively for you for the next 48 hours. Complete your payment before the reservation expires to secure your place. Due to limited availability, unpaid registrations will be automatically released after the deadline.</p>
+ <p class="text-slate-600 leading-relaxed text-sm">Congratulations on taking the first step toward your journey. Your Verification Slot is being held exclusively for you for the next 48 hours. Complete your payment before the reservation expires to secure your place. Due to limited availability, unpaid registrations will be automatically released after the deadline.</p>
         </div>
         <?php } else { ?>
         <div class="mt-8 bg-amber-50 rounded-2xl border border-amber-200/60 p-5 md:p-6">

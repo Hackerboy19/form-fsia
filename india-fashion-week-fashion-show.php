@@ -233,7 +233,7 @@ if (isset($_GET['action'])) {
             </div>
         <?php endif; ?>
 
-        <form action="savefashiondesigner.php" method="POST" id="registrationForm" onSubmit="return validateFormBeforeSubmit(event)" data-category="Fashion Designer <?php print $year; ?>" class="space-y-5">
+        <form action="savefashiondesigner.php" method="POST" id="registrationForm" onSubmit="return validateFormBeforeSubmit(event)" data-category="Fashion Designer <?php print $year; ?><input type="hidden" name="fsia_source" value="india-fashion-week">" class="space-y-5">
             <!-- Column mapping for this flow (checked against the registration table):
                  fname->first_name, email->email, mobile->mobile, age->age,
                  birthday/birthmonth/birthyear->date/month/year, state->state, city->city
