@@ -47,6 +47,8 @@ button{margin-top:12px;width:100%;padding:11px;border:0;border-radius:8px;backgr
     exit;
 }
 
+sm_show_errors();
+
 // ---------- actions ----------
 $flash = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

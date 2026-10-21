@@ -14,6 +14,7 @@ if (!$cli) {
     }
     header('Content-Type: text/plain; charset=utf-8');
 }
+sm_show_errors(true);
 
 try {
     $res = sm_run($cli ? 'cron' : 'url');

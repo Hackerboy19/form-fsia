@@ -2,6 +2,33 @@
 // Site Monitor: har ghante files, profile URLs aur pages check karta hai.
 // cron.php isko chalata hai; index.php (admin page) iska data dikhata hai.
 
+// Error aaye to page par saaf dikhao (sirf login ke baad / cron key ke saath)
+function sm_show_errors($plain = false)
+{
+    $show = function ($msg) use ($plain) {
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: ' . ($plain ? 'text/plain' : 'text/html') . '; charset=utf-8');
+        }
+        if ($plain) {
+            echo "\nSITE MONITOR ERROR: $msg\n";
+        } else {
+            echo '<div style="font-family:system-ui,sans-serif;margin:30px;padding:18px;border:1px solid #fca5a5;background:#fef2f2;color:#7f1d1d;border-radius:10px">'
+                . '<b>Site Monitor error</b> (iska screenshot Claude ko bhejein):<br><code style="white-space:pre-wrap">'
+                . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</code></div>';
+        }
+    };
+    set_exception_handler(function ($e) use ($show) {
+        $show(get_class($e) . ': ' . $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine());
+    });
+    register_shutdown_function(function () use ($show) {
+        $e = error_get_last();
+        if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+            $show($e['message'] . ' in ' . basename($e['file']) . ':' . $e['line']);
+        }
+    });
+}
+
 function sm_config()
 {
     static $cfg = null;
