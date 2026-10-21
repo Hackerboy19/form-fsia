@@ -288,6 +288,8 @@ echo $header_html;
             .fsia-steps-content h4, .fsia-steps-content span, .fsia-steps-content li p{
               font-size:inherit !important; font-weight:inherit !important; margin:0 !important; display:inline !important;
             }
+            /* Text pasted into the admin editor carries its own white background and colour; keep the card's look. */
+            .fsia-steps-content *{ background:transparent !important; background-color:transparent !important; color:inherit !important; font-family:inherit !important; }
             .fsia-steps-content strong, .fsia-steps-content b{ font-weight:700 !important; }
             .fsia-steps-content a{ text-decoration:underline !important; }
             .fsia-steps-content > p::before, .fsia-steps-content li::before{
@@ -301,6 +303,8 @@ echo $header_html;
           <?php
             $fsia_steps = fsia_cms_html($meta_tag['steps_content'] ?? '');
             if ($fsia_steps !== '') {
+                // Drop the spaces the editor leaves at the start of each step.
+                $fsia_steps = preg_replace('~(<(?:p|li|span|strong|b|em|i)\b[^>]*>)(?:\s|&nbsp;|&#160;|\xC2\xA0)+~iu', '$1', $fsia_steps);
                 $fsia_steps = str_replace('{FEE}', fsia_attr($meta_tag['app_fee'] ?? ''), $fsia_steps);
                 echo '<div class="fsia-steps-content text-sm font-medium">' . $fsia_steps . '</div>';
             } else { ?>
