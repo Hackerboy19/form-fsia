@@ -12,6 +12,19 @@ $meta_tag = array_filter($meta_tag) + [
   'og_image'       => 'https://www.fsia.in/logo.gif',
   'h1'             => 'Celebrity PR Agency — Talent Registration',
 ];
+/* Page text from the admin panel (more_pages row 24). Every block below reads its
+   column first and only falls back to the built-in text when that column is blank. */
+if (!function_exists('fsia_attr')) {
+    function fsia_attr($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
+}
+if (!function_exists('fsia_cms_html')) {
+    // Rich-text columns are sometimes saved entity-encoded; decode those so the HTML renders.
+    function fsia_cms_html($v) {
+        $v = trim((string) $v);
+        if ($v !== '' && strpos($v, '&lt;') !== false) { $v = html_entity_decode($v, ENT_QUOTES | ENT_HTML5, 'UTF-8'); }
+        return $v;
+    }
+}
 $_SESSION['rmob']='';
 $year=date("Y");
 
@@ -70,19 +83,19 @@ if (isset($_GET['action'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<title><?php echo $meta_tag['meta_title']?></title>
-    <meta name="description" content="<?php echo $meta_tag['descritpion']?>" />
-    <meta name="keywords" content="<?php echo $meta_tag['meta_keyword']?>" />
+<title><?php echo fsia_attr($meta_tag['meta_title'])?></title>
+    <meta name="description" content="<?php echo fsia_attr($meta_tag['descritpion'])?>" />
+    <meta name="keywords" content="<?php echo fsia_attr($meta_tag['meta_keyword'])?>" />
     <link rel="canonical" href="https://www.fsia.in<?php print strtok($_SERVER['REQUEST_URI'], '?'); ?>" />
-    <meta property="og:title" content="<?php echo $meta_tag['og_title']?>" />
+    <meta property="og:title" content="<?php echo fsia_attr($meta_tag['og_title'])?>" />
     <meta property="og:image" content="<?php echo (strpos($meta_tag['og_image'],'http')===0) ? $meta_tag['og_image'] : 'https://www.fsia.in/uploads/' . $meta_tag['og_image']; ?>" />
-    <meta property="og:description" content="<?php echo $meta_tag['og_description']?>">
+    <meta property="og:description" content="<?php echo fsia_attr($meta_tag['og_description'])?>">
     <meta property="og:url" content="https://www.fsia.in<?php print strtok($_SERVER['REQUEST_URI'], '?'); ?>">
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Forever Star India" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="<?php echo $meta_tag['og_title']?>" />
-    <meta name="twitter:description" content="<?php echo $meta_tag['og_description']?>" />
+    <meta name="twitter:title" content="<?php echo fsia_attr($meta_tag['og_title'])?>" />
+    <meta name="twitter:description" content="<?php echo fsia_attr($meta_tag['og_description'])?>" />
     <meta name="twitter:image" content="<?php echo (strpos($meta_tag['og_image'],'http')===0) ? $meta_tag['og_image'] : 'https://www.fsia.in/uploads/' . $meta_tag['og_image']; ?>" />
     <meta name="robots" content="index, follow" />
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"Organization","name":"Forever Star India","alternateName":"FSIA","url":"https://www.fsia.in/","logo":"https://www.fsia.in/logo.gif","description":"India's biggest platform for beauty pageants and award shows.","sameAs":["https://www.facebook.com/Foreverstarindiaawards/","https://twitter.com/FsiaAward","https://www.instagram.com/fsia_forever/","https://in.pinterest.com/fsiaaward/","https://www.youtube.com/c/foreverstarindiaaward"],"contactPoint":{"@type":"ContactPoint","telephone":"+91-99832-86999","email":"starindiaaward@gmail.com","contactType":"customer service","areaServed":"IN"}},{"@context":"https://schema.org","@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"}]</script>
@@ -93,7 +106,7 @@ if (isset($_GET['action'])) {
   <link rel="stylesheet" href="/assets-new/css/dark-theme.css">
   <link rel="stylesheet" href="/assets-new/css/grid-fx.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Celebrity PR Agency Forever Star India","headline":"Celebrity PR Agency — Talent Registration","description":"Celebrity PR Agency India – Now Book from more than 350 celebrities for Events, Meetings, Openings, Weddings, and Functions with Forever Star India.","url":"https://www.fsia.in/celebrity-pr-agency.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/celebrity-pr-agency.php","name":"Register for Celebrity PR Agency — Talent Registration"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Celebrity PR Agency — Talent Registration","item":"https://www.fsia.in/celebrity-pr-agency.php"}]}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":<?php echo json_encode((string)$meta_tag['meta_title'], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG)?>,"headline":<?php echo json_encode((string)$meta_tag['h1'], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG)?>,"description":<?php echo json_encode((string)$meta_tag['descritpion'], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG)?>,"url":"https://www.fsia.in/celebrity-pr-agency.php","inLanguage":"en-IN","primaryImageOfPage":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"},"isPartOf":{"@type":"WebSite","name":"Forever Star India","url":"https://www.fsia.in/"},"publisher":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in/","logo":{"@type":"ImageObject","url":"https://www.fsia.in/logo.gif"}},"potentialAction":{"@type":"RegisterAction","target":"https://www.fsia.in/celebrity-pr-agency.php","name":"Register for Celebrity PR Agency — Talent Registration"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.fsia.in/"},{"@type":"ListItem","position":2,"name":"Celebrity PR Agency — Talent Registration","item":"https://www.fsia.in/celebrity-pr-agency.php"}]}]</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Who should register through this form?","acceptedAnswer":{"@type":"Answer","text":"Artists, models, anchors, performers and other talent who want to be represented by the Forever Star India PR team for events, openings, weddings and brand functions."}},{"@type":"Question","name":"Is there any registration fee?","acceptedAnswer":{"@type":"Answer","text":"Filling this registration is free. If any charge applies to your profile type, the team tells you before anything is confirmed. For any clarity, call +91-9983286999."}},{"@type":"Question","name":"What should I upload?","acceptedAnswer":{"@type":"Answer","text":"Recent photographs of yourself and one KYC document (any government photo ID) for verification."}},{"@type":"Question","name":"Why does the form ask for a password?","acceptedAnswer":{"@type":"Answer","text":"It creates your login on the Forever Star India portal, where you can track your profile after registering."}},{"@type":"Question","name":"Do I need previous event experience?","acceptedAnswer":{"@type":"Answer","text":"No. Both new and experienced talent can register — mention whatever experience you have in the work-experience field."}},{"@type":"Question","name":"What happens after I register?","acceptedAnswer":{"@type":"Answer","text":"The PR team reviews your profile and contacts you on the mobile number you entered, usually within 24 to 48 working hours."}}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Event","name":"Celebrity PR Agency — Talent Registration","startDate":"2026-01-01T19:00+05:30","endDate":"2026-12-31T23:00+05:30","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"Forever Star India","address":{"@type":"PostalAddress","streetAddress":"Nirman Nagar, Jaipur","addressLocality":"Jaipur","addressRegion":"Rajasthan","postalCode":"302019","addressCountry":"IN"}},"image":["https://www.fsia.in/logo.gif"],"description":"Celebrity PR Agency India – Now Book from more than 350 celebrities for Events, Meetings, Openings, Weddings, and Functions with Forever Star India.","offers":{"@type":"Offer","url":"https://www.fsia.in/celebrity-pr-agency.php"},"organizer":{"@type":"Organization","name":"Forever Star India","url":"https://www.fsia.in"}}</script>
 </head>
@@ -157,6 +170,10 @@ if (isset($_GET['action'])) {
 .fsia-err{display:block;color:#dc2626;font-size:.75rem;font-weight:600;margin-top:5px;}
 .fsia-field-invalid{border-color:#dc2626 !important;}
 
+/* Text pasted into the admin editor carries its own white background and colour; keep the card's look. */
+html body #fsiaStepsPanel p, html body #fsiaStepsPanel p *, html body #fsiaStepsPanel li, html body #fsiaStepsPanel li *,
+html body #fsiaSteps, html body #fsiaSteps *{ background:transparent !important; background-color:transparent !important; background-image:none !important; box-shadow:none !important; color:#020617 !important; font-family:inherit !important; }
+
 /* content pages */
 .fsia-prose p{margin:0 0 12px;}
 .fsia-prose p:last-child{margin:0;}
@@ -192,7 +209,7 @@ echo $header_html;
         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
         <span class="text-[11px] font-bold text-amber-600 uppercase tracking-[0.4em]">Registrations Open</span>
       </div>
-      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;">Celebrity PR Agency — Talent Registration</h1>
+      <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 font-serif" style="font-family:'Playfair Display', serif !important;"><?= fsia_attr($meta_tag['h1']) ?></h1>
       <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.4em] block mb-6">BY FOREVER STAR INDIA</p>
       <div class="w-20 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto rounded-full"></div>
     </div>
@@ -201,13 +218,19 @@ echo $header_html;
       <div class="fsia-s3d__in">
         <div class="fsia-s3d__row">
           <div style="flex:1;">
-            <h2 class="fsia-s3d__title">Join the Forever Star India Talent Roster</h2>
+            <?php $fsia_descs1 = fsia_cms_html($meta_tag['descs1'] ?? ''); ?>
+            <?php if ($fsia_descs1 !== ''): ?>
+              <div class="fsia-s3d__txt fsia-prose"><?= $fsia_descs1 ?></div>
+            <?php else: ?>
+            <h2 class="fsia-s3d__title"><?= !empty($meta_tag['h2']) ? fsia_attr($meta_tag['h2']) : 'Join the Forever Star India Talent Roster' ?></h2>
             <p class="fsia-s3d__txt">Forever Star India books celebrities and talent for events, openings, weddings and brand functions. Register here to be listed with the PR team.</p>
-            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Add your profile, skills and portfolio, and the team contacts you for <span class="fsia-s3d__hl">bookings and collaborations</span>.</p>          </div>
+            <p class="fsia-s3d__txt" style="margin-top:.85rem;">Add your profile, skills and portfolio, and the team contacts you for <span class="fsia-s3d__hl">bookings and collaborations</span>.</p>
+            <?php endif; ?>
+          </div>
           <div class="fsia-s3d__status">
             <div style="font-size:1.8rem;line-height:1;">🎬</div>
-            <div class="fsia-s3d__zone">TALENT</div>
-            <div class="fsia-s3d__open">Registrations Open</div>
+            <div class="fsia-s3d__zone"><?= !empty($meta_tag['status_zone']) ? fsia_attr($meta_tag['status_zone']) : 'TALENT' ?></div>
+            <div class="fsia-s3d__open"><?= !empty($meta_tag['status_open']) ? fsia_attr($meta_tag['status_open']) : 'Registrations Open' ?></div>
           </div>
         </div>
       </div>
@@ -217,20 +240,78 @@ echo $header_html;
         <div class="info-box">
       <div class="info-box-header" style="justify-content:center;">
         <div class="info-icon">i</div>
-        <h3 class="info-title">Important</h3>
+        <?php
+          $fb_fee      = trim((string)($meta_tag['app_fee'] ?? ''));
+          $fb_title    = trim((string)($meta_tag['fee_title'] ?? ''));
+          $fb_heading  = trim((string)($meta_tag['fee_heading'] ?? ''));
+          $fb_subtitle = trim((string)($meta_tag['fee_subtitle'] ?? ''));
+          $fb_note     = fsia_cms_html($meta_tag['journey_note'] ?? '');
+          if ($fb_note !== '' && strip_tags($fb_note) === $fb_note) { $fb_note = '<p>' . nl2br(fsia_attr($fb_note)) . '</p>'; }
+        ?>
+        <h3 class="info-title"><?= fsia_attr($fb_heading !== '' ? $fb_heading : 'Important') ?></h3>
       </div>
       <div class="info-body">
-        <p><span class="info-bold">Filling this registration is free.</span> The PR team contacts shortlisted profiles with booking and collaboration details.</p>        <p>For any assistance, call our support executives on <a href="tel:+919983286999" class="info-bold">+91-9983286999</a>.</p>
+        <?php if ($fb_fee !== ''): ?>
+          <p><span class="info-price"><?= fsia_attr($fb_fee) ?></span><?php if ($fb_title !== ''): ?> <span class="info-bold">— <?= fsia_attr($fb_title) ?></span><?php endif; ?></p>
+        <?php elseif ($fb_title !== ''): ?>
+          <p><span class="info-bold"><?= fsia_attr($fb_title) ?></span></p>
+        <?php endif; ?>
+        <?php if ($fb_subtitle !== ''): ?>
+          <p><?= fsia_attr($fb_subtitle) ?></p>
+        <?php elseif ($fb_fee === '' && $fb_title === ''): ?>
+          <p><span class="info-bold">Filling this registration is free.</span> The PR team contacts shortlisted profiles with booking and collaboration details.</p>
+        <?php endif; ?>
+        <?php if ($fb_note !== ''): ?>
+          <details class="info-details group">
+            <summary>Know More
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="info-dropdown"><?= $fb_note ?></div>
+          </details>
+        <?php endif; ?>
+        <p>For any assistance, call our support executives on <a href="tel:+919983286999" class="info-bold">+91-9983286999</a>.</p>
       </div>
     </div>
     
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 border border-slate-100">
-      <div class="md:col-span-4 bg-gradient-to-b from-amber-500 to-amber-600 p-8 flex flex-col justify-between text-slate-950">
+      <div id="fsiaStepsPanel" class="md:col-span-4 bg-gradient-to-b from-amber-500 to-amber-600 p-8 flex flex-col justify-between text-slate-950">
         <div>
           <div class="flex items-center space-x-2 font-bold mb-6">
             <span class="h-2.5 w-2.5 rounded-full bg-slate-950 animate-ping"></span>
-            <span class="text-xs uppercase tracking-widest font-mono">Step 1 of 4</span>
+            <span class="text-xs uppercase tracking-widest font-mono">Step 1 of <?= (int)(($meta_tag['steps_total'] ?? 0) ?: 4) ?></span>
           </div>
+          <style>
+            .fsia-steps-content{ counter-reset:fsiaStep; color:inherit !important; }
+            .fsia-steps-content ol, .fsia-steps-content ul{ list-style:none !important; padding:0 !important; margin:0 !important; }
+            .fsia-steps-content > p, .fsia-steps-content li{
+              counter-increment:fsiaStep; position:relative !important; list-style:none !important;
+              padding:2px 0 0 36px !important; margin:0 0 20px 0 !important; min-height:24px !important;
+              font-size:14px !important; font-weight:500 !important; line-height:1.6 !important; text-align:left !important;
+            }
+            .fsia-steps-content h1, .fsia-steps-content h2, .fsia-steps-content h3,
+            .fsia-steps-content h4, .fsia-steps-content span, .fsia-steps-content li p{
+              font-size:inherit !important; font-weight:inherit !important; margin:0 !important; display:inline !important;
+            }
+            .fsia-steps-content strong, .fsia-steps-content b{ font-weight:700 !important; }
+            .fsia-steps-content a{ text-decoration:underline !important; }
+            .fsia-steps-content > p::before, .fsia-steps-content li::before{
+              content:counter(fsiaStep); position:absolute; left:0; top:0; width:24px; height:24px; border-radius:50%;
+              background:rgba(2,6,23,.2); color:#020617; font:700 12px/24px ui-monospace,monospace; text-align:center;
+            }
+            .fsia-steps-content > p:first-child::before,
+            .fsia-steps-content > ol:first-child > li:first-child::before,
+            .fsia-steps-content > ul:first-child > li:first-child::before{ background:#020617; color:#fff; }
+          </style>
+          <?php
+            $fsia_steps = fsia_cms_html($meta_tag['steps_content'] ?? '');
+            if ($fsia_steps !== '') {
+                // Drop the inline styles the editor saves (white background, colours) so the gold panel shows through.
+                $fsia_steps = preg_replace('~\sstyle\s*=\s*("[^"]*"|\'[^\']*\')~i', '', $fsia_steps);
+                // Drop the spaces the editor leaves at the start of each step.
+                $fsia_steps = preg_replace('~(<(?:p|li|span|strong|b|em|i|u|mark|font)\b[^>]*>)(?:\s|&nbsp;|&#160;|\xC2\xA0)+~iu', '$1', $fsia_steps);
+                $fsia_steps = str_replace('{FEE}', fsia_attr($meta_tag['app_fee'] ?? ''), $fsia_steps);
+                echo '<div id="fsiaSteps" class="fsia-steps-content text-sm font-medium">' . $fsia_steps . '</div>';
+            } else { ?>
           <div class="space-y-5 text-sm font-medium">
                         <div class="flex items-start space-x-3">
               <span class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-950 text-white flex items-center justify-center text-xs font-bold font-mono">1</span>
@@ -249,8 +330,9 @@ echo $header_html;
               <p class="leading-relaxed">You are contacted for bookings, events and collaborations.</p>
             </div>
                       </div>
+          <?php } ?>
         </div>
-        <div class="mt-8 pt-4 border-t border-slate-950/10 text-xs font-semibold text-slate-950/80">Celebrity PR Agency — Talent Registration</div>
+        <div class="mt-8 pt-4 border-t border-slate-950/10 text-xs font-semibold text-slate-950/80"><?= fsia_attr($meta_tag['h1']) ?></div>
       </div>
 
       <div class="md:col-span-8 p-8 md:p-10 bg-slate-50">
@@ -259,7 +341,7 @@ echo $header_html;
           <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900" style="font-family:'Playfair Display', serif;">Registration Form</h2>
         </div>
 
-        <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)">
+        <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)"><input type="hidden" name="fsia_source" value="celebrity-pr">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3><div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="fname">Full Name *</label><input type="text" name="fname" id="fname" placeholder="Your Name" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"></div><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="dob">Date of Birth *</label><input type="date" name="dob" id="dob" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm"><input type="hidden" name="birthday" id="birthday"><input type="hidden" name="birthmonth" id="birthmonth"><input type="hidden" name="birthyear" id="birthyear"></div><div class=""><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="age">Age</label><select name="age" id="age" data-required="1" readonly style="pointer-events: none;" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 outline-none transition shadow-sm cursor-not-allowed"><option value="">Auto-calculated</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option></select></div><h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">📍 Location & Contact</h3><div><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="state">State *</label><select name="state" id="state" onchange="get_city(this.value)" data-required="1" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:border-amber-500 outline-none transition shadow-sm cursor-pointer">
 <option value="">Select State</option>
@@ -298,6 +380,8 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
   </div>
 </section>
 
+<!-- Participation Criteria Section (same shared block the other registration pages use) -->
+<?php if (function_exists('fsia_criteria_block')) { fsia_criteria_block(); } ?>
 <div class="mt-10"><?php include 'faq-section.php'; ?></div>
 
 <?php include 'footer1806.php'; ?>
@@ -538,6 +622,30 @@ function fsiaValidateForm(event) {
       alert('Please verify your WhatsApp mobile number first.');
     }
   }, true);
+})();
+</script>
+<script>
+/* Safety net for the steps panel: whatever adds the steps text (this page or a shared
+   script after load), strip the editor's inline backgrounds and leading spaces. */
+(function () {
+  var panel = document.getElementById('fsiaStepsPanel');
+  if (!panel) return;
+  function clean() {
+    panel.querySelectorAll('p, li, p *, li *').forEach(function (el) {
+      if (el.style && (el.style.background || el.style.backgroundColor || el.style.color)) {
+        el.style.removeProperty('background'); el.style.removeProperty('background-color'); el.style.removeProperty('color');
+      }
+      var t = el.firstChild;
+      if (t && t.nodeType === 3) { t.nodeValue = t.nodeValue.replace(/^[\s\u00a0]+/, ''); }
+    });
+  }
+  clean();
+  if (window.MutationObserver) {
+    var busy = false;
+    new MutationObserver(function () { if (busy) return; busy = true; clean(); busy = false; })
+      .observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+  }
+  window.addEventListener('load', clean);
 })();
 </script>
 </body>
