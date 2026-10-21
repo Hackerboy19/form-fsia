@@ -280,35 +280,43 @@ function sm_check_files($run_id, $baseline, &$stats)
     $added = $changed = $deleted = 0;
     $limit = 300; // ek run mein ek type ki zyada se zyada entries
     $vals = [];
+    // Browser/URL se chalne par server timeout na ho, isliye time limit
+    $t0 = microtime(true);
+    $budget = PHP_SAPI === 'cli' ? 900 : 20;
+    $isKey = array_flip($cfg['key_files']);
+    $now = array_intersect_key($now, $isKey) + $now; // key files pehle
     foreach ($now as $path => $f) {
         $abs = $root . '/' . $path;
         $o = $old[$path] ?? null;
-        if ($o && (int)$o['size'] === (int)$f['size'] && (int)$o['mtime'] === (int)$f['mtime']) {
+        $key = isset($isKey[$path]);
+        $over = (microtime(true) - $t0) > $budget;
+        $same = $o && (int)$o['size'] === (int)$f['size'] && (int)$o['mtime'] === (int)$f['mtime'];
+        if ($same) {
             $hash = $o['hash'];
+        } elseif (!$o && $baseline && !$key) {
+            $hash = ''; // pehle check mein har file ka hash nahi (tez chalne ke liye)
         } else {
             $hash = @md5_file($abs) ?: '';
         }
         if (!$o) {
             $added++;
-            if (!$baseline) {
-                if ($added <= $limit) {
-                    sm_event($run_id, 'files', 'file_added', 'info', $path,
-                        'Nayi file. Size: ' . number_format($f['size']) . ' bytes. Time: ' . sm_fmt_time($f['mtime']));
-                }
+            if (!$baseline && $added <= $limit) {
+                sm_event($run_id, 'files', 'file_added', 'info', $path,
+                    'Nayi file. Size: ' . number_format($f['size']) . ' bytes. Time: ' . sm_fmt_time($f['mtime']));
             }
-            sm_save_backup($path, $abs);
-        } elseif ($o['hash'] !== $hash && empty($o['restored'])) {
+            if ($key || !$over) sm_save_backup($path, $abs);
+        } elseif (!$same && ($o['hash'] === '' || $o['hash'] !== $hash) && empty($o['restored'])) {
             $changed++;
-            $sev = in_array($path, $cfg['key_files'], true) ? 'warning' : 'info';
+            $sev = $key ? 'warning' : 'info';
             if ($changed <= $limit) {
                 $diff = (int)$f['size'] - (int)$o['size'];
                 sm_event($run_id, 'files', 'file_changed', $sev, $path,
                     'File badli gayi: ' . sm_fmt_time($f['mtime']) . '. Size ' . number_format($o['size']) . ' → '
                     . number_format($f['size']) . ' bytes (' . ($diff >= 0 ? '+' : '') . number_format($diff) . ').');
             }
-            sm_save_backup($path, $abs);
-        } elseif (!is_file(sm_backup_path($path))) {
-            sm_save_backup($path, $abs);
+            if ($key || !$over) sm_save_backup($path, $abs);
+        } elseif (($key || !$over) && !is_file(sm_backup_path($path))) {
+            sm_save_backup($path, $abs); // backup dheere dheere har run mein poora hota hai
         }
         $vals[] = "('" . md5($path) . "', '" . sm_e($path) . "', " . (int)$f['size'] . ', ' . (int)$f['mtime'] . ", '" . $hash . "', " . (int)$run_id . ')';
         if (count($vals) >= 500) {
@@ -584,7 +592,7 @@ function sm_check_links($run_id, $baseline, &$stats)
     }
 
     // Har run mein kuch links check karo (jo sabse pehle check hue the / kabhi nahi hue)
-    $n = (int)$cfg['links_per_run'];
+    $n = PHP_SAPI === 'cli' ? (int)$cfg['links_per_run'] : min(60, (int)$cfg['links_per_run']);
     $todo = sm_rows("SELECT url_hash, url, last_code, broken_since FROM site_monitor_links WHERE in_sitemap=1 ORDER BY (broken_since IS NULL), last_checked IS NOT NULL, last_checked LIMIT $n");
     $map = [];
     foreach ($todo as $t) $map[$t['url']] = $t;
