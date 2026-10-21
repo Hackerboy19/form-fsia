@@ -83,7 +83,7 @@ $page = max(1, (int)($_GET['p'] ?? 1));
 $per = 100;
 $where = "created_at >= NOW() - INTERVAL $days DAY AND type <> 'baseline'";
 if ($area === 'important') $where .= " AND severity IN ('critical','warning')";
-elseif (in_array($area, ['files', 'profiles', 'links', 'pages'], true)) $where .= " AND area='" . sm_e($area) . "'";
+elseif (in_array($area, ['files', 'profiles', 'links', 'pages', 'logins'], true)) $where .= " AND area='" . sm_e($area) . "'";
 $total = (int)sm_rows("SELECT COUNT(*) c FROM site_monitor_events WHERE $where")[0]['c'];
 $events = sm_rows("SELECT * FROM site_monitor_events WHERE $where ORDER BY id DESC LIMIT " . (($page - 1) * $per) . ", $per");
 
@@ -100,6 +100,7 @@ $badSlugs = sm_rows("SELECT id, url, name FROM site_monitor_profiles WHERE url R
 $dupes = sm_rows("SELECT url, GROUP_CONCAT(id ORDER BY id SEPARATOR ', ') ids, COUNT(*) c FROM site_monitor_profiles GROUP BY url HAVING c > 1 ORDER BY c DESC LIMIT 50");
 $runs = sm_rows("SELECT * FROM site_monitor_runs WHERE trigger_by <> 'admin' ORDER BY id DESC LIMIT 24");
 $root = rtrim($cfg['site_root'], '/');
+try { sm_login_install(); $logins = sm_rows("SELECT * FROM site_monitor_logins ORDER BY at DESC LIMIT 60"); } catch (Throwable $e) { $logins = []; }
 
 $typeLabel = [
     'file_deleted' => ['File delete', 'red'], 'file_restored' => ['Wapas lagayi', 'green'], 'file_changed' => ['File badli', 'amber'],
@@ -108,6 +109,7 @@ $typeLabel = [
     'profile_url_added' => ['Naya URL', 'blue'], 'profile_status_changed' => ['Status badla', 'gray'], 'profile_suspended' => ['Suspend', 'amber'],
     'link_broken' => ['Link toota', 'red'], 'link_fixed' => ['Link theek', 'green'], 'sitemap_changed' => ['Sitemap badla', 'gray'],
     'sitemap_error' => ['Sitemap error', 'red'], 'monitor_error' => ['Monitor error', 'red'], 'too_many' => ['Aur bhi', 'gray'],
+    'new_login_ip' => ['Naya IP login', 'red'],
 ];
 $q = function ($over) { return '?' . http_build_query(array_merge($_GET, $over)); };
 $ago = function ($t) {
@@ -220,7 +222,7 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
 <div class="panel">
   <h2>Kya badla <span class="muted">· <?= number_format($total) ?> entries</span></h2>
   <div class="tabs">
-    <?php foreach (['all' => 'Sab', 'important' => 'Zaroori', 'files' => 'Files', 'profiles' => 'Profile URLs', 'links' => 'Toote links', 'pages' => 'Pages'] as $k => $l): ?>
+    <?php foreach (['all' => 'Sab', 'important' => 'Zaroori', 'files' => 'Files', 'profiles' => 'Profile URLs', 'links' => 'Toote links', 'pages' => 'Pages', 'logins' => 'Logins'] as $k => $l): ?>
       <a class="<?= $area === $k ? 'on' : '' ?>" href="<?= $h($q(['area' => $k, 'p' => 1])) ?>"><?= $l ?></a>
     <?php endforeach; ?>
     <select onchange="location.href=this.value">
@@ -270,6 +272,22 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
     <?php if ($page * $per < $total): ?><a href="<?= $h($q(['p' => $page + 1])) ?>">Agle →</a><?php endif; ?>
   </div>
   <?php endif; endif; ?>
+</div>
+
+<div class="panel">
+  <h2>Kaun kahan se login hua <span class="muted">· Admin panel, CMS admin, Site Monitor, Plesk SSH, FTP · naye IP par email</span></h2>
+  <div class="scroll">
+  <?php if (!$logins): ?><div class="empty">Abhi koi login record nahi hua. Admin page khulte hi yahan dikhega.</div><?php else: ?>
+  <table><tr><th style="width:150px">Kab</th><th>Kahan se login</th><th>IP + andazan jagah</th><th>Browser</th></tr>
+  <?php foreach ($logins as $l): ?>
+    <tr><td class="t"><?= $h(sm_fmt_time($l['at'])) ?></td>
+    <td><span class="badge b-<?= $l['new_ip'] ? 'red' : 'blue' ?>"><?= $h($l['kind']) ?></span><?php if ($l['new_ip']) echo ' <span class="badge b-red">Naya IP</span>'; ?>
+      <?php if ($l['user'] !== '' || $l['page'] !== ''): ?><div class="muted" style="font-size:12px;margin-top:4px"><?= $h(trim($l['user'] . ' ' . $l['page'])) ?></div><?php endif; ?></td>
+    <td class="tg"><?= $h($l['ip']) ?><?php if ($l['place'] !== ''): ?><div class="srcl" style="font-family:system-ui"><?= preg_replace('#(https://maps\.google\.com/\?q=[0-9.,-]+)#', '<a href="$1" target="_blank" rel="noopener">map par dekho</a>', $h($l['place'])) ?></div><?php endif; ?></td>
+    <td style="font-size:12.5px"><?= $h(sm_short_ua($l['ua'])) ?></td></tr>
+  <?php endforeach; ?></table><?php endif; ?>
+  </div>
+  <div class="muted" style="padding:10px 16px;font-size:12px">Jagah IP se andaza hai (mobile data par shehar tak hi sahi hota hai). Plesk panel ka login Plesk &rarr; Tools &amp; Settings &rarr; Action Log mein dikhta hai.</div>
 </div>
 
 <div class="grid2">
@@ -323,4 +341,4 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
   </table></div>
 </div>
 
-</div></body></html>
+</div><script src="track.php?js=1&amp;kind=Site+Monitor" defer></script></body></html>

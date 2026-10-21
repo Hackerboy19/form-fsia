@@ -30,6 +30,7 @@ function sm_show_errors($plain = false)
 }
 
 require_once __DIR__ . '/source.php';
+require_once __DIR__ . '/logins.php';
 
 function sm_config()
 {
@@ -743,6 +744,7 @@ function sm_run($trigger = 'cron')
         }
     }
     try { sm_fill_sources(); } catch (Throwable $e) { $errors[] = 'source: ' . $e->getMessage(); }
+    try { sm_collect_logins($run_id); } catch (Throwable $e) { $errors[] = 'logins: ' . $e->getMessage(); }
     if ($baseline) {
         sm_event($run_id, 'system', 'baseline', 'info', 'Pehla check',
             "Shuruaati list bana li: {$stats['files_total']} files, {$stats['profiles_total']} profile URLs, {$stats['links_total']} sitemap links. Ab se har badlaav yahan dikhega.");
