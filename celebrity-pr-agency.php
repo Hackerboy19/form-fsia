@@ -170,6 +170,10 @@ if (isset($_GET['action'])) {
 .fsia-err{display:block;color:#dc2626;font-size:.75rem;font-weight:600;margin-top:5px;}
 .fsia-field-invalid{border-color:#dc2626 !important;}
 
+/* Text pasted into the admin editor carries its own white background and colour; keep the card's look. */
+html body #fsiaStepsPanel p, html body #fsiaStepsPanel p *, html body #fsiaStepsPanel li, html body #fsiaStepsPanel li *,
+html body #fsiaSteps, html body #fsiaSteps *{ background:transparent !important; background-color:transparent !important; background-image:none !important; box-shadow:none !important; color:#020617 !important; font-family:inherit !important; }
+
 /* content pages */
 .fsia-prose p{margin:0 0 12px;}
 .fsia-prose p:last-child{margin:0;}
@@ -270,7 +274,7 @@ echo $header_html;
     </div>
     
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 border border-slate-100">
-      <div class="md:col-span-4 bg-gradient-to-b from-amber-500 to-amber-600 p-8 flex flex-col justify-between text-slate-950">
+      <div id="fsiaStepsPanel" class="md:col-span-4 bg-gradient-to-b from-amber-500 to-amber-600 p-8 flex flex-col justify-between text-slate-950">
         <div>
           <div class="flex items-center space-x-2 font-bold mb-6">
             <span class="h-2.5 w-2.5 rounded-full bg-slate-950 animate-ping"></span>
@@ -288,8 +292,6 @@ echo $header_html;
             .fsia-steps-content h4, .fsia-steps-content span, .fsia-steps-content li p{
               font-size:inherit !important; font-weight:inherit !important; margin:0 !important; display:inline !important;
             }
-            /* Text pasted into the admin editor carries its own white background and colour; keep the card's look. */
-            html body #fsiaSteps, html body #fsiaSteps *{ background:transparent !important; background-color:transparent !important; background-image:none !important; box-shadow:none !important; color:#020617 !important; font-family:inherit !important; }
             .fsia-steps-content strong, .fsia-steps-content b{ font-weight:700 !important; }
             .fsia-steps-content a{ text-decoration:underline !important; }
             .fsia-steps-content > p::before, .fsia-steps-content li::before{
@@ -620,6 +622,30 @@ function fsiaValidateForm(event) {
       alert('Please verify your WhatsApp mobile number first.');
     }
   }, true);
+})();
+</script>
+<script>
+/* Safety net for the steps panel: whatever adds the steps text (this page or a shared
+   script after load), strip the editor's inline backgrounds and leading spaces. */
+(function () {
+  var panel = document.getElementById('fsiaStepsPanel');
+  if (!panel) return;
+  function clean() {
+    panel.querySelectorAll('p, li, p *, li *').forEach(function (el) {
+      if (el.style && (el.style.background || el.style.backgroundColor || el.style.color)) {
+        el.style.removeProperty('background'); el.style.removeProperty('background-color'); el.style.removeProperty('color');
+      }
+      var t = el.firstChild;
+      if (t && t.nodeType === 3) { t.nodeValue = t.nodeValue.replace(/^[\s\u00a0]+/, ''); }
+    });
+  }
+  clean();
+  if (window.MutationObserver) {
+    var busy = false;
+    new MutationObserver(function () { if (busy) return; busy = true; clean(); busy = false; })
+      .observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+  }
+  window.addEventListener('load', clean);
 })();
 </script>
 </body>
