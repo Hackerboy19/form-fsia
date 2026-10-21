@@ -127,29 +127,26 @@ function sm_find_source($path, $type, $from, $to)
     foreach ($logs['ftp'] as $e) {
         if ($e['t'] < $from - 300 || $e['t'] > $to + 300) continue;
         if (substr($e['file'], -strlen('/' . $path)) !== '/' . $path && basename($e['file']) !== $base) continue;
-        $found[] = ['kind' => 'FTP', 'score' => 150, 't' => $e['t'],
+        $found[] = ['kind' => 'FTP', 'score' => 150, 't' => $e['t'], 'sure' => true,
             'text' => 'FTP ' . ($e['dir'] === 'i' ? 'upload' : 'download') . ' (user: ' . $e['user'] . ') · ' . sm_who($e['ip']) . ' · ' . date('h:i:s A', $e['t'])];
     }
 
-    // 2. Website / CMS request (POST/DELETE, ya URL mein file ka naam / delete / cleanup)
-    $name = preg_quote(pathinfo($base, PATHINFO_FILENAME), '#');
+    // 2. Website / CMS request. Sirf tab dikhao jab request sach mein file se judi lage:
+    //    URL mein file ka naam ho, ya admin/CMS/API ki POST/DELETE request ho jo file ka kaam karti ho.
+    $name = pathinfo($base, PATHINFO_FILENAME);
     foreach ($logs['web'] as $e) {
-        if ($e['t'] < $from - 120 || $e['t'] > $to + 120) continue;
-        $url = $e['url'];
+        if ($e['t'] < $from - 90 || $e['t'] > $to + 90) continue;
+        $url = urldecode($e['url']);
         if (preg_match('#\.(css|js|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|mp4)(\?|$)#i', $url)) continue;
-        $score = 0;
-        if (in_array($e['method'], ['POST', 'PUT', 'DELETE', 'PATCH'], true)) $score += 20;
-        if (preg_match('#delete|remove|unlink|cleanup|clean|trash|upload|restore|file|server|deploy|sync#i', $url)) $score += 40;
-        if (preg_match('#cms-admin|/api/|fsiaadmm21|admin#i', $url)) $score += 20;
-        if ($name !== '' && preg_match('#' . $name . '#i', urldecode($url))) $score += 30;
-        if ($type !== 'file_deleted') {
-            // badli/nayi file: mtime ke jitna paas, utna zyada
-            $score += max(0, 30 - abs($e['t'] - $to) / 4);
-        }
-        if ($score < 40) continue;
-        $score = min($score, 99);
-        $found[] = ['kind' => 'Website', 'score' => $score, 't' => $e['t'],
-            'text' => 'Website request: ' . $e['method'] . ' ' . mb_substr($url, 0, 120) . ' (HTTP ' . $e['code'] . ') · ' . sm_who($e['ip']) . ' · ' . date('h:i:s A', $e['t'])];
+        if ($e['code'] >= 400) continue;
+        $write = in_array($e['method'], ['POST', 'PUT', 'DELETE', 'PATCH'], true);
+        $named = strlen($name) >= 3 && stripos($url, $name) !== false && $write;
+        $adminFileOp = $write && preg_match('#cms-admin|/api/|fsiaadmm21|/admin#i', $url)
+            && preg_match('#delete|remove|unlink|cleanup|trash|upload|restore|file|deploy|sync|save|edit#i', $url);
+        if (!$named && !$adminFileOp) continue;
+        $sure = $named && $adminFileOp;
+        $found[] = ['kind' => 'Website/CMS', 'score' => $sure ? 120 : ($named ? 90 : 60), 't' => $e['t'], 'sure' => $sure,
+            'text' => 'Website/CMS request: ' . $e['method'] . ' ' . mb_substr($e['url'], 0, 120) . ' · ' . sm_who($e['ip']) . ' · ' . date('h:i:s A', $e['t'])];
     }
 
     // 3. SSH / Terminal command
@@ -157,8 +154,8 @@ function sm_find_source($path, $type, $from, $to)
         if (stripos($h['cmd'], $base) === false) continue;
         if (!preg_match('#\b(rm|mv|cp|unlink|sed|nano|vi|vim|echo|cat|tee|zip|unzip|rsync|git|find)\b#', $h['cmd'])) continue;
         if ($h['t'] && ($h['t'] < $from - 300 || $h['t'] > $to + 300)) continue;
-        $found[] = ['kind' => 'SSH', 'score' => $h['t'] ? 140 : 35, 't' => $h['t'],
-            'text' => 'SSH Terminal command: ' . mb_substr($h['cmd'], 0, 140) . ($h['t'] ? ' · ' . date('h:i:s A', $h['t']) : ' (samay pata nahi)')];
+        $found[] = ['kind' => 'SSH', 'score' => $h['t'] ? 140 : 35, 't' => $h['t'], 'sure' => (bool)$h['t'],
+            'text' => 'SSH Terminal command: ' . mb_substr($h['cmd'], 0, 140) . ($h['t'] ? ' · ' . date('h:i:s A', $h['t']) : ' (samay pata nahi)') . ' · Plesk SSH Terminal server ke andar chalta hai, isliye IP/jagah nahi milti'];
     }
 
     // File ka owner (PHP se ya FTP/SSH user se likhi gayi)
@@ -177,12 +174,11 @@ function sm_find_source($path, $type, $from, $to)
     }
     $out = array_values($uniq);
     if (!$out) {
-        $msg = $type === 'file_deleted'
-            ? 'Logs mein koi FTP/website/SSH entry nahi mili. Shayad Plesk File Manager se hua (Plesk → Logs / Action Log dekhein).'
-            : 'Logs mein koi entry nahi mili. Shayad Plesk File Manager ya kisi PHP script se.';
-        return ['kind' => 'Pata nahi', 'list' => [$msg], 'owner' => $owner];
+        $msg = 'Plesk File Manager / SSH Terminal / Plesk extract se hua lagta hai. Yeh Plesk panel ke andar hota hai, isliye website logs mein IP ya jagah nahi aati. (Plesk → Tools → Action Log mein user aur samay dikhega.)';
+        return ['kind' => 'Plesk se (jagah pata nahi)', 'list' => [$msg], 'owner' => $owner];
     }
-    return ['kind' => $out[0]['kind'], 'list' => array_column($out, 'text'), 'owner' => $owner];
+    $kind = $out[0]['kind'] . (empty($out[0]['sure']) ? ' (shayad)' : '');
+    return ['kind' => $kind, 'list' => array_column($out, 'text'), 'owner' => $owner];
 }
 
 // Run ke aakhir mein: is run ki file entries ke liye source bhar do
