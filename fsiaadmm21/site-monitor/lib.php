@@ -48,10 +48,26 @@ function sm_db()
     $cfg = sm_config();
     mysqli_report(MYSQLI_REPORT_OFF);
     $connect = null;
-    // Site ka apna config.php: isme $connect banta hai
+    // Site ka apna config.php: isme $connect banta hai. Site root se chalao taaki
+    // config.php ke andar ke relative include bhi mil jaayein.
+    $cwd = getcwd();
+    @chdir($cfg['site_root']);
+    ob_start();
     include $cfg['db_config'];
+    $out = trim(strip_tags((string)ob_get_clean()));
+    if ($cwd) @chdir($cwd);
     if (!($connect instanceof mysqli)) {
-        throw new RuntimeException('DB connection nahi mila (config.php mein $connect nahi bana).');
+        // naam alag ho sakta hai ($con, $conn, $db ...): koi bhi mysqli connection dhoondho
+        foreach (array_merge(get_defined_vars(), $GLOBALS) as $k => $v) {
+            if ($v instanceof mysqli) { $connect = $v; break; }
+        }
+    }
+    if (!($connect instanceof mysqli)) {
+        throw new RuntimeException('DB connection nahi mila. config.php: ' . $cfg['db_config']
+            . (is_file($cfg['db_config']) ? '' : ' (file nahi mili)') . ($out !== '' ? ' | config ka output: ' . mb_substr($out, 0, 200) : ''));
+    }
+    if ($connect->connect_errno) {
+        throw new RuntimeException('DB connect error: ' . $connect->connect_error);
     }
     mysqli_set_charset($connect, 'utf8mb4');
     mysqli_query($connect, "SET time_zone = '" . date('P') . "'");
