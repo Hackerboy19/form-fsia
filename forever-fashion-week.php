@@ -277,7 +277,7 @@ echo $header_html;
           <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 font-playfair">Registration Form</h2>
         </div>
 
-        <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)">
+        <form name="sform" action="savefashiondesigner.php" method="post" enctype="multipart/form-data" id="registrationForm" onsubmit="return fsiaValidateForm(event)"><input type="hidden" name="fsia_source" value="forever-fashion-week">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <h3 class="sm:col-span-2 text-sm font-bold text-slate-800 uppercase tracking-wider mt-4 mb-0 pb-1.5 border-b border-slate-200 flex items-center gap-2">👤 Personal Information</h3>
             <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5" for="fname">Full Name *</label>
