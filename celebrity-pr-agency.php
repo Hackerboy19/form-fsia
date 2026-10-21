@@ -303,6 +303,8 @@ echo $header_html;
           <?php
             $fsia_steps = fsia_cms_html($meta_tag['steps_content'] ?? '');
             if ($fsia_steps !== '') {
+                // Drop the inline styles the editor saves (white background, colours) so the gold panel shows through.
+                $fsia_steps = preg_replace('~\sstyle\s*=\s*("[^"]*"|\'[^\']*\')~i', '', $fsia_steps);
                 // Drop the spaces the editor leaves at the start of each step.
                 $fsia_steps = preg_replace('~(<(?:p|li|span|strong|b|em|i)\b[^>]*>)(?:\s|&nbsp;|&#160;|\xC2\xA0)+~iu', '$1', $fsia_steps);
                 $fsia_steps = str_replace('{FEE}', fsia_attr($meta_tag['app_fee'] ?? ''), $fsia_steps);
@@ -376,6 +378,8 @@ while($cres = mysqli_fetch_array($ctyq)){ ?>
   </div>
 </section>
 
+<!-- Participation Criteria Section (same shared block the other registration pages use) -->
+<?php if (function_exists('fsia_criteria_block')) { fsia_criteria_block(); } ?>
 <div class="mt-10"><?php include 'faq-section.php'; ?></div>
 
 <?php include 'footer1806.php'; ?>
