@@ -157,6 +157,8 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
 .pager{padding:12px 16px;display:flex;gap:8px;align-items:center}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
 .scroll{max-height:380px;overflow:auto}
+.b-purple{background:#f3e8ff;color:#6b21a8}.src{margin-top:8px;padding:8px 10px;background:#faf5ff;border-radius:8px;font-size:12.5px}.srcl{margin-top:4px;word-break:break-word}
+.diff{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-all}.diff div{padding:1px 12px}.diff .a{background:#dcfce7}.diff .d{background:#fee2e2}.diff .gap{color:var(--muted);background:#f9fafb;padding:6px 12px}
 @media(max-width:640px){th,td{padding:8px 10px}td.t{white-space:normal}}
 </style></head><body>
 <div class="top"><h1>Site Monitor <span style="font-weight:400;opacity:.8">· pages, files aur profile URLs</span></h1>
@@ -200,6 +202,21 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
   <div class="card <?= $brokenLinks ? 'red' : 'green' ?>"><div class="n"><?= count($brokenLinks) ?></div><div class="l">Abhi toote links (<?= (int)$linkStats['checked'] ?>/<?= (int)$linkStats['total'] ?> check hue)</div></div>
 </div>
 
+<?php if (isset($_GET['diff'])):
+    $dp = ltrim(str_replace('\\', '/', (string)$_GET['diff']), '/');
+    $old = strpos($dp, '..') === false ? @file(sm_backup_path($dp) . '.prev', FILE_IGNORE_NEW_LINES) : false;
+    $new = strpos($dp, '..') === false ? @file($root . '/' . $dp, FILE_IGNORE_NEW_LINES) : false;
+    if ($new === false && strpos($dp, '..') === false) $new = @file(sm_backup_path($dp), FILE_IGNORE_NEW_LINES);
+?>
+<div class="panel">
+  <h2>Kya badla: <span style="font-family:ui-monospace,Menlo,monospace"><?= $h($dp) ?></span> <span class="muted">· laal = hataya, hara = joda</span> <a href="<?= $h($self) ?>" style="margin-left:auto;font-weight:400">← Wapas</a></h2>
+  <?php if ($old === false || $new === false): ?><div class="empty">Purana version nahi mila.</div>
+  <?php else: $rows = sm_diff($old, $new); ?>
+  <div class="diff"><?php if (!$rows) echo '<div class="gap">Koi farak nahi.</div>'; foreach ($rows as $r): ?><div class="<?= $r[0] ?>"><?= $r[0] === 'a' ? '+ ' : ($r[0] === 'd' ? '− ' : ($r[0] === 'gap' ? '' : '  ')) ?><?= $h($r[1]) ?></div><?php endforeach; ?></div>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="panel">
   <h2>Kya badla <span class="muted">· <?= number_format($total) ?> entries</span></h2>
   <div class="tabs">
@@ -231,11 +248,16 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
       <td class="t"><?= $h(sm_fmt_time($e['created_at'])) ?></td>
       <td><span class="badge b-<?= $col ?>"><?= $h($lab) ?></span><?php if ($e['severity'] === 'critical') echo ' <span title="Zaroori">⚠</span>'; ?></td>
       <td class="tg"><?= $isUrl ? '<a href="' . $h($e['target']) . '" target="_blank" rel="noopener">' . $h(preg_replace('#^https?://[^/]+#', '', $e['target'])) . '</a>' : $h($e['target']) ?></td>
-      <td><?= $h($e['details']) ?></td>
+      <td><?= $h($e['details']) ?>
+        <?php if (!empty($e['source']) && ($src = json_decode($e['source'], true))): ?>
+          <div class="src"><span class="badge b-<?= $src['kind'] === 'Pata nahi' ? 'gray' : 'purple' ?>">Kahan se: <?= $h($src['kind']) ?></span>
+          <?php foreach ($src['list'] as $i => $line): ?><div class="srcl<?= $i ? ' muted' : '' ?>"><?= $i ? 'ya: ' : '' ?><?= preg_replace('#(https://maps\.google\.com/\?q=[0-9.,-]+)#', '<a href="$1" target="_blank" rel="noopener">map par dekho</a>', $h($line)) ?></div><?php endforeach; ?>
+          <?php if (!empty($src['owner'])): ?><div class="srcl muted"><?= $h($src['owner']) ?></div><?php endif; ?></div>
+        <?php endif; ?></td>
       <td style="white-space:nowrap"><?php if ($act): ?>
         <form method="post" onsubmit="return confirm('<?= $act === 'prev' ? 'Is file ka pichhla version wapas lagayein?' : 'Yeh file backup se wapas lagayein?' ?>')">
           <input type="hidden" name="csrf" value="<?= $h($csrf) ?>"><input type="hidden" name="action" value="restore"><input type="hidden" name="path" value="<?= $h($e['target']) ?>">
-          <?php if ($act === 'prev'): ?><input type="hidden" name="prev" value="1"><button class="btn sm ghost">Purana version</button>
+          <?php if ($act === 'prev'): ?><a class="btn sm ghost" style="text-decoration:none;display:inline-block;margin-bottom:6px" href="?diff=<?= $h(rawurlencode($e['target'])) ?>">Kya badla</a><br><input type="hidden" name="prev" value="1"><button class="btn sm ghost">Purana version</button>
           <?php else: ?><button class="btn sm">Wapas lagao</button><?php endif; ?>
         </form><?php endif; ?></td>
     </tr>

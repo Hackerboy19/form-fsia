@@ -76,5 +76,14 @@ return [
     // Purani entries kitne din baad hatani hain
     'keep_days' => 90,
 
+    // "Kahan se badla" ke liye server logs (Plesk: ~/logs). Web, FTP aur SSH history.
+    'log_dirs' => [
+        dirname(__DIR__, 3) . '/logs',
+        '/var/www/vhosts/system/fsia.in/logs',
+    ],
+    'log_read_bytes' => 30 * 1024 * 1024, // har log ka aakhri 30 MB
+    'shell_history' => [dirname(__DIR__, 3) . '/.bash_history'],
+    'ip_lookup' => true, // IP se shehar/desh (ip-api.com)
+
     'timezone' => 'Asia/Kolkata',
 ];

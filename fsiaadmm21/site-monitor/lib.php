@@ -29,6 +29,8 @@ function sm_show_errors($plain = false)
     });
 }
 
+require_once __DIR__ . '/source.php';
+
 function sm_config()
 {
     static $cfg = null;
@@ -136,6 +138,15 @@ function sm_install()
         KEY k_check (in_sitemap, last_checked)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    sm_q("CREATE TABLE IF NOT EXISTS site_monitor_ips (
+        ip VARCHAR(64) PRIMARY KEY,
+        place VARCHAR(255) NOT NULL,
+        looked_up DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $col = sm_rows("SHOW COLUMNS FROM site_monitor_events LIKE 'source'");
+    if (!$col) sm_q("ALTER TABLE site_monitor_events ADD COLUMN source TEXT NULL");
+
     sm_q("CREATE TABLE IF NOT EXISTS site_monitor_pages (
         path VARCHAR(255) PRIMARY KEY,
         last_checked DATETIME NULL,
@@ -195,13 +206,14 @@ function sm_event($run_id, $area, $type, $severity, $target, $details = '')
             $target = '(aur bhi badlaav)';
             $details = 'Is check mein bahut saare badlaav the, baaki ki list nahi dikhayi gayi.';
         } else {
-            return;
+            return 0;
         }
     }
     sm_q("INSERT INTO site_monitor_events (run_id, created_at, area, type, severity, target, details) VALUES ("
         . (int)$run_id . ", NOW(), '" . sm_e($area) . "', '" . sm_e($type) . "', '" . sm_e($severity) . "', '"
         . sm_e(mb_substr($target, 0, 700)) . "', '" . sm_e($details) . "')");
     $GLOBALS['sm_new_events'][] = compact('area', 'type', 'severity', 'target', 'details');
+    return mysqli_insert_id(sm_db());
 }
 
 function sm_fmt_time($ts)
@@ -259,6 +271,11 @@ function sm_check_files($run_id, $baseline, &$stats)
     }
     $last = sm_rows("SELECT MAX(finished_at) t FROM site_monitor_runs WHERE finished_at IS NOT NULL AND trigger_by <> 'admin' AND id <> " . (int)$run_id);
     $since = $last[0]['t'] ? 'Pichhla check: ' . sm_fmt_time($last[0]['t']) : '';
+    $prevTs = $last[0]['t'] ? strtotime($last[0]['t']) : time() - 3600;
+    $GLOBALS['sm_file_events'] = [];
+    $track = function ($id, $path, $type, $from, $to) {
+        if ($id) $GLOBALS['sm_file_events'][] = compact('id', 'path', 'type', 'from', 'to');
+    };
 
     // Key files: agar abhi gayab hain aur backup hai to wapas lagao
     foreach ($cfg['key_files'] as $kf) {
@@ -270,8 +287,8 @@ function sm_check_files($run_id, $baseline, &$stats)
             $st = stat($abs);
             $now[$kf] = ['size' => $st['size'], 'mtime' => $st['mtime']];
             $stats['files_restored']++;
-            sm_event($run_id, 'files', 'file_deleted', 'critical', $kf,
-                "Key file DELETE ho gayi thi. $since. Backup se apne aap wapas laga di gayi (" . sm_fmt_time(time()) . ").");
+            $track(sm_event($run_id, 'files', 'file_deleted', 'critical', $kf,
+                "Key file DELETE ho gayi thi. $since. Backup se apne aap wapas laga di gayi (" . sm_fmt_time(time()) . ")."), $kf, 'file_deleted', $prevTs, time());
             sm_event($run_id, 'files', 'file_restored', 'info', $kf, 'Backup se wapas lagayi gayi. Size: ' . number_format($st['size']) . ' bytes.');
             $old[$kf]['restored'] = true;
         }
@@ -301,8 +318,8 @@ function sm_check_files($run_id, $baseline, &$stats)
         if (!$o) {
             $added++;
             if (!$baseline && $added <= $limit) {
-                sm_event($run_id, 'files', 'file_added', 'info', $path,
-                    'Nayi file. Size: ' . number_format($f['size']) . ' bytes. Time: ' . sm_fmt_time($f['mtime']));
+                $track(sm_event($run_id, 'files', 'file_added', 'info', $path,
+                    'Nayi file. Size: ' . number_format($f['size']) . ' bytes. Time: ' . sm_fmt_time($f['mtime'])), $path, 'file_added', (int)$f['mtime'], (int)$f['mtime']);
             }
             if ($key || !$over) sm_save_backup($path, $abs);
         } elseif (!$same && ($o['hash'] === '' || $o['hash'] !== $hash) && empty($o['restored'])) {
@@ -310,9 +327,9 @@ function sm_check_files($run_id, $baseline, &$stats)
             $sev = $key ? 'warning' : 'info';
             if ($changed <= $limit) {
                 $diff = (int)$f['size'] - (int)$o['size'];
-                sm_event($run_id, 'files', 'file_changed', $sev, $path,
+                $track(sm_event($run_id, 'files', 'file_changed', $sev, $path,
                     'File badli gayi: ' . sm_fmt_time($f['mtime']) . '. Size ' . number_format($o['size']) . ' → '
-                    . number_format($f['size']) . ' bytes (' . ($diff >= 0 ? '+' : '') . number_format($diff) . ').');
+                    . number_format($f['size']) . ' bytes (' . ($diff >= 0 ? '+' : '') . number_format($diff) . ').'), $path, 'file_changed', (int)$f['mtime'], (int)$f['mtime']);
             }
             if ($key || !$over) sm_save_backup($path, $abs);
         } elseif (($key || !$over) && !is_file(sm_backup_path($path))) {
@@ -332,8 +349,8 @@ function sm_check_files($run_id, $baseline, &$stats)
         if ($deleted > $limit) continue;
         $isKey = in_array($path, $cfg['key_files'], true);
         $bk = is_file(sm_backup_path($path)) ? ' Backup hai: admin page se "Wapas lagao" daba sakte hain.' : ' Backup nahi mila.';
-        sm_event($run_id, 'files', 'file_deleted', $isKey ? 'critical' : 'warning', $path,
-            'File DELETE ho gayi. Aakhri baar dekhi: ' . sm_fmt_time($o['mtime']) . ' (last modified). ' . $since . '.' . $bk);
+        $track(sm_event($run_id, 'files', 'file_deleted', $isKey ? 'critical' : 'warning', $path,
+            'File DELETE ho gayi. Aakhri baar dekhi: ' . sm_fmt_time($o['mtime']) . ' (last modified). ' . $since . '.' . $bk), $path, 'file_deleted', $prevTs, time());
     }
     sm_q("DELETE FROM site_monitor_files WHERE seen_run <> " . (int)$run_id);
 
@@ -682,6 +699,7 @@ function sm_run($trigger = 'cron')
             $errors[] = $fn . ': ' . $e->getMessage();
         }
     }
+    try { sm_fill_sources(); } catch (Throwable $e) { $errors[] = 'source: ' . $e->getMessage(); }
     if ($baseline) {
         sm_event($run_id, 'system', 'baseline', 'info', 'Pehla check',
             "Shuruaati list bana li: {$stats['files_total']} files, {$stats['profiles_total']} profile URLs, {$stats['links_total']} sitemap links. Ab se har badlaav yahan dikhega.");
@@ -722,4 +740,60 @@ function sm_restore_file($rel, $usePrev = false)
     $rid = mysqli_insert_id(sm_db());
     sm_event($rid, 'files', 'file_restored', 'info', $rel, $usePrev ? 'Admin ne purana version wapas lagaya.' : 'Admin ne backup se file wapas lagayi.');
     return '';
+}
+
+// Do versions ka farak: [type, line] jahan type = '' (same), 'a' (joda), 'd' (hataya), 'gap'
+function sm_diff($a, $b, $ctx = 3)
+{
+    $n = count($a); $m = count($b);
+    $p = 0;
+    while ($p < $n && $p < $m && $a[$p] === $b[$p]) $p++;
+    $s = 0;
+    while ($s < $n - $p && $s < $m - $p && $a[$n - 1 - $s] === $b[$m - 1 - $s]) $s++;
+    $A = array_slice($a, $p, $n - $p - $s);
+    $B = array_slice($b, $p, $m - $p - $s);
+    $ops = [];
+    if (count($A) * count($B) > 4000000) {
+        foreach ($A as $l) $ops[] = ['d', $l];
+        foreach ($B as $l) $ops[] = ['a', $l];
+    } else {
+        // LCS
+        $x = count($A); $y = count($B);
+        $L = array_fill(0, $x + 1, array_fill(0, $y + 1, 0));
+        for ($i = $x - 1; $i >= 0; $i--)
+            for ($j = $y - 1; $j >= 0; $j--)
+                $L[$i][$j] = $A[$i] === $B[$j] ? $L[$i + 1][$j + 1] + 1 : max($L[$i + 1][$j], $L[$i][$j + 1]);
+        $i = $j = 0;
+        while ($i < $x && $j < $y) {
+            if ($A[$i] === $B[$j]) { $ops[] = ['', $A[$i]]; $i++; $j++; }
+            elseif ($L[$i + 1][$j] >= $L[$i][$j + 1]) { $ops[] = ['d', $A[$i++]]; }
+            else { $ops[] = ['a', $B[$j++]]; }
+        }
+        while ($i < $x) $ops[] = ['d', $A[$i++]];
+        while ($j < $y) $ops[] = ['a', $B[$j++]];
+    }
+    if (!$ops) return [];
+    $full = array_merge(array_map(function ($l) { return ['', $l]; }, array_slice($a, max(0, $p - $ctx), min($p, $ctx))), $ops,
+        array_map(function ($l) { return ['', $l]; }, array_slice($a, $n - $s, min($s, $ctx))));
+    // beech ke lambe same hisse chhota karo
+    $out = [];
+    $run = [];
+    $flush = function ($last) use (&$out, &$run, $ctx) {
+        if (count($run) > $ctx * 2 + 1) {
+            $out = array_merge($out, array_slice($run, 0, $ctx));
+            $out[] = ['gap', '… ' . (count($run) - $ctx * 2) . ' lines same …'];
+            $out = array_merge($out, array_slice($run, -$ctx));
+        } else {
+            $out = array_merge($out, $run);
+        }
+        $run = [];
+    };
+    foreach ($full as $r) {
+        if ($r[0] === '') { $run[] = $r; continue; }
+        $flush(false);
+        $out[] = $r;
+    }
+    $flush(true);
+    if ($p > $ctx) array_unshift($out, ['gap', '… line ' . ($p - $ctx + 1) . ' tak same …']);
+    return $out;
 }
