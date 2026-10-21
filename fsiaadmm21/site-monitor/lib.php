@@ -564,6 +564,28 @@ function sm_extract_locs($xml)
     return array_map(function ($u) { return html_entity_decode($u, ENT_QUOTES | ENT_XML1, 'UTF-8'); }, $m[1]);
 }
 
+function sm_extract_hrefs($html, $pageUrl)
+{
+    $host = parse_url($pageUrl, PHP_URL_HOST);
+    $scheme = parse_url($pageUrl, PHP_URL_SCHEME) ?: 'https';
+    preg_match_all('~<a\s[^>]*href\s*=\s*["\']([^"\'#]+)~i', $html, $m);
+    $out = [];
+    foreach ($m[1] as $h) {
+        $h = html_entity_decode(trim($h), ENT_QUOTES, 'UTF-8');
+        if ($h === '' || preg_match('#^(mailto|tel|javascript|whatsapp):#i', $h)) continue;
+        if (strpos($h, '//') === 0) $h = $scheme . ':' . $h;
+        elseif ($h[0] === '/') $h = $scheme . '://' . $host . $h;
+        elseif (!preg_match('#^https?://#i', $h)) $h = $scheme . '://' . $host . '/' . $h;
+        $hh = strtolower((string)parse_url($h, PHP_URL_HOST));
+        // sirf apni site (www.fsia.in, fsia.in, *.fsia.in)
+        $base = preg_replace('#^www\.#', '', strtolower($host));
+        if ($hh !== $base && substr($hh, -strlen('.' . $base)) !== '.' . $base) continue;
+        if (preg_match('#\.(jpe?g|png|webp|gif|svg|pdf|css|js|zip|mp4)(\?|$)#i', $h)) continue;
+        $out[$h] = true;
+    }
+    return array_keys($out);
+}
+
 function sm_check_links($run_id, $baseline, &$stats)
 {
     $cfg = sm_config();
@@ -585,6 +607,11 @@ function sm_check_links($run_id, $baseline, &$stats)
             }
             $fetchOk = true;
             $locs = sm_extract_locs($r['body']);
+            if (!$locs && stripos($r['body'], '<a ') !== false) {
+                // HTML sitemap page (jaise sitemap.php): <a href> wale links lo
+                foreach (sm_extract_hrefs($r['body'], $u) as $l) $links[$l] = true;
+                continue;
+            }
             if (stripos($r['body'], '<sitemapindex') !== false) {
                 foreach ($locs as $l) if (!isset($seenMaps[$l])) $queue[] = $l;
             } else {
