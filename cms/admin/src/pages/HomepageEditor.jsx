@@ -6,7 +6,7 @@ import ImageUpload from '../components/ImageUpload';
 import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 import { useToast } from '../lib/toast';
 import DEFAULTS from '../lib/homeDefaults.json';
-import { FinalCtaEditor, headerProblems, HeroTextEditor, PartnersEditor, SectionTextCard, StatsEditor, TeamEditor, TEXT_VALIDATORS } from './HomeTextEditors';
+import { FinalCtaEditor, headerProblems, HeroTextEditor, PartnersEditor, SectionTextCard, StatsEditor, TeamEditor, TEXT_VALIDATORS, TickerEditor } from './HomeTextEditors';
 
 /** The section-text card shown above a list tab's items. */
 function HeaderCard({ sectionKey, content, setContent }) {
@@ -27,6 +27,7 @@ function HeaderCard({ sectionKey, content, setContent }) {
 
 // In the order the sections appear on the homepage.
 const TABS = [
+  { key: 'home_ticker', label: 'Announcement Bar', icon: '📣' },
   { key: 'home_hero_text', label: 'Top Text', icon: 'T' },
   { key: 'hero_slides', label: 'Hero Slider', icon: '▶' },
   { key: 'home_stats', label: 'Stats', icon: '#' },
@@ -40,9 +41,10 @@ const TABS = [
 ];
 
 // Text blocks are one object each (not a list of items).
-const OBJECT_KEYS = ['home_hero_text', 'home_stats', 'home_team', 'home_partners', 'home_final_cta'];
+const OBJECT_KEYS = ['home_ticker', 'home_hero_text', 'home_stats', 'home_team', 'home_partners', 'home_final_cta'];
 
 const PREVIEW_ANCHORS = {
+  home_ticker: 'home',
   home_hero_text: 'home', hero_slides: 'home', home_stats: 'stats', calendar_events: 'schedule', advertisement: 'advertisement',
   social_profiles: 'social', celebrities: 'celebrities', home_partners: 'partners', home_team: 'team', home_final_cta: 'final-cta',
 };
@@ -56,7 +58,7 @@ function defaultsFor(key) {
 }
 
 export default function HomepageEditor() {
-  const [tab, setTab] = useState('home_hero_text');
+  const [tab, setTab] = useState('home_ticker');
   const [sections, setSections] = useState(null);
   const [error, setError] = useState('');
 
@@ -171,7 +173,7 @@ function SectionTab({ sectionKey, saved, onSaved }) {
         <div className="flex flex-wrap items-center gap-2">
           {dirty && <span className="text-xs font-semibold text-amber-600">Unsaved changes</span>}
           <button type="button" className="btn-ghost" onClick={resetToDefaults}>Load defaults</button>
-          <button type="button" className="btn-ghost" onClick={preview} title="Opens the homepage with these unsaved changes, only in this browser">👁 Preview on site</button>
+          {sectionKey !== 'home_ticker' && <button type="button" className="btn-ghost" onClick={preview} title="Opens the homepage with these unsaved changes, only in this browser">👁 Preview on site</button>}
           {dirty && <button type="button" className="btn-ghost" onClick={() => setContent(JSON.parse(clean))}>Discard</button>}
           <button type="button" className="btn-primary" onClick={save} disabled={saving || (!dirty && saved)}>
             {saving ? 'Saving…' : 'Save & publish'}
@@ -656,6 +658,7 @@ function CelebritiesEditor({ content, setContent }) {
 }
 
 const EDITORS = {
+  home_ticker: TickerEditor,
   home_hero_text: HeroTextEditor,
   home_stats: StatsEditor,
   home_team: TeamEditor,

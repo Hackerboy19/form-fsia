@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { assetUrl } from '../lib/api';
-import { Field } from '../components/Field';
+import { Field, Toggle } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
-import ListEditor, { newId } from '../components/ListEditor';
+import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 
 /*
  * Editors for the homepage's text blocks (page_sections keys home_*). Each is
@@ -384,3 +384,114 @@ export const headerProblems = (header) => {
   const h = header || {};
   return Object.entries(h).filter(([k, v]) => /Url$/.test(k) && !isLink(String(v || ''))).map(([k]) => `Section text: "${k}" must start with https://, /, tel: or mailto:.`);
 };
+
+/* ---------------- Announcement bar (LIVE UPDATES ticker) ---------------- */
+
+/** Same rule header1806.php uses to decide which announcements are shown now. */
+export function tickerVisible(it, now = Date.now()) {
+  if (it.active === false) return false;
+  const s = it.startDate ? new Date(it.startDate).getTime() : NaN;
+  const e = it.endDate ? new Date(it.endDate).getTime() : NaN;
+  return !(now < s) && !(now > e);
+}
+
+function TickerPreview({ c }) {
+  const items = (c.items || []).filter((it) => tickerVisible(it));
+  return (
+    <div className="overflow-hidden rounded-lg border border-[#d4af37]/40" aria-label="Announcement bar preview">
+      <div className="flex h-9 items-center text-[12px] text-white" style={{ background: 'linear-gradient(90deg,#6b0526,#a6093d 40%,#6b0526)' }}>
+        <div className="flex h-full flex-none items-center gap-1.5 border-r border-[#d4af37]/30 bg-black/35 px-3 text-[11px] font-bold uppercase tracking-wider text-[#fde8c4]">
+          <span className="h-[7px] w-[7px] rounded-full bg-[#d4af37]" />{c.label || 'LIVE UPDATES'}
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
+          {items.length === 0 && <span className="px-4 italic text-white/70">No announcement is showing right now, so the bar is hidden on the website.</span>}
+          {items.map((it) => (
+            <span key={it.id} className="inline-flex items-center gap-1.5 px-4">
+              {it.icon && <span>{it.icon}</span>}
+              <span>{it.title && <b className="font-semibold text-[#fde8c4]">{it.title} </b>}{it.text}</span>
+              {it.linkText && <span className="font-bold text-[#D4AF37] underline underline-offset-2">{it.linkText}</span>}
+              <span className="pl-2 text-[11px] text-[#d4af37]/60">✦</span>
+            </span>
+          ))}
+        </div>
+        <div className="flex-none px-3 text-white/75">❚❚ ✕</div>
+      </div>
+    </div>
+  );
+}
+
+export function TickerEditor({ content: c, setContent }) {
+  const set = (p) => setContent({ ...c, ...p });
+  const items = c.items || [];
+  const [selected, setSelected] = useState(items[0]?.id ?? null);
+  const showing = items.filter((it) => tickerVisible(it)).length;
+  return (
+    <div className="space-y-5">
+      <Card title="Announcement bar" hint="The dark red “LIVE UPDATES” strip at the very top of every page. It scrolls the announcements below from right to left.">
+        <div className="space-y-4">
+          <Toggle checked={c.enabled !== false} onChange={(enabled) => set({ enabled })} label="Show the announcement bar"
+            description="Off = the bar is hidden on the whole website. Your announcements stay saved here." />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Badge text (left side)" value={c.label} onChange={(label) => set({ label })} max={24} placeholder="LIVE UPDATES" />
+            <div>
+              <div className="flex items-baseline justify-between">
+                <label className="label" htmlFor="ticker-speed">Scroll speed</label>
+                <span className="text-sm font-bold text-gold-dark">{c.speed || 42} seconds per round</span>
+              </div>
+              <input id="ticker-speed" type="range" min="15" max="120" step="1" value={c.speed || 42}
+                onChange={(e) => set({ speed: Number(e.target.value) })} className="w-full accent-[#D4AF37]" />
+              <div className="flex justify-between text-[10px] text-slate-400"><span>15s (fast)</span><span>120s (slow)</span></div>
+            </div>
+          </div>
+          <div>
+            <span className="label">Preview ({showing} of {items.length} showing now)</span>
+            {c.enabled === false
+              ? <p className="rounded-lg bg-slate-100 p-3 text-xs text-slate-600">The bar is switched off, so the website does not show it.</p>
+              : <TickerPreview c={c} />}
+          </div>
+        </div>
+      </Card>
+      <Card title="Announcements" hint="Add, edit, reorder or delete. Use the dates to show an announcement only for a while (Indian time).">
+        <ListEditor
+          items={items}
+          selected={selected}
+          onSelect={setSelected}
+          onChange={(next) => set({ items: next })}
+          addLabel="Add announcement"
+          makeNew={() => ({ id: newId('ticker'), active: true, icon: '📢', title: 'New:', text: '', linkText: 'Know More →', link: '', newTab: true, startDate: '', endDate: '' })}
+          describe={(it) => ({
+            title: `${it.icon ? `${it.icon} ` : ''}${it.title || ''} ${it.text || ''}`.trim(),
+            subtitle: it.linkText ? `${it.linkText} ${it.link || ''}` : 'No link',
+            badge: it.active === false ? { text: 'Hidden', tone: 'bg-slate-200 text-slate-600' } : scheduleStatus(it.startDate, it.endDate),
+          })}
+          renderForm={(it, upd) => (
+            <div className="space-y-4">
+              <Toggle checked={it.active !== false} onChange={(active) => upd({ active })} label="Show this announcement" description="Off = hidden on the website, but kept here." />
+              <div className="grid gap-4 sm:grid-cols-[110px_minmax(0,1fr)]">
+                <Field label="Icon / emoji" value={it.icon} onChange={(icon) => upd({ icon })} max={8} placeholder="🏆" />
+                <Field label="Bold heading" value={it.title} onChange={(title) => upd({ title })} max={40} placeholder="Award Nominations:" />
+              </div>
+              <Field label="Announcement text" type="textarea" rows={2} value={it.text} onChange={(text) => upd({ text })} max={200} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Link text" value={it.linkText} onChange={(linkText) => upd({ linkText })} max={40} hint="Empty = no link" />
+                <Field label="Link" value={it.link} onChange={(link) => upd({ link })} hint={linkHint} />
+              </div>
+              <Toggle checked={!!it.newTab} onChange={(newTab) => upd({ newTab })} label="Open the link in a new tab" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Show from (optional)" type="datetime-local" value={it.startDate} onChange={(startDate) => upd({ startDate })} hint="Empty = from now" />
+                <Field label="Hide after (optional)" type="datetime-local" value={it.endDate} onChange={(endDate) => upd({ endDate })} hint="Empty = never expires" />
+              </div>
+            </div>
+          )}
+        />
+      </Card>
+    </div>
+  );
+}
+
+TEXT_VALIDATORS.home_ticker = (c) => (c.items || []).flatMap((it, i) => [
+  !String(it.text || it.title || '').trim() && `Announcement ${i + 1} needs some text.`,
+  it.linkText && !String(it.link || '').trim() && `Announcement ${named(it, i, 'title')}: add a link, or empty the link text.`,
+  !isLink(it.link) && `Announcement ${named(it, i, 'title')}: the link must start with https://, /, #, tel: or mailto:.`,
+  it.startDate && it.endDate && it.startDate > it.endDate && `Announcement ${named(it, i, 'title')}: “Hide after” is before “Show from”.`,
+]).filter(Boolean);

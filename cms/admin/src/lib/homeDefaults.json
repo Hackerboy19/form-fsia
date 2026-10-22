@@ -765,5 +765,96 @@
     "box1Text": "Forever Star India Awards is an officially protected trademark under Govt. of India intellectual property laws, safeguarding the integrity of all titleholders and awardees.",
     "box2Title": "Grand Finale Arena • Zee Studio Jaipur",
     "box2Text": "The grand crowning ceremonies are produced with broadcast cameras, specialized lighting rigs, national media coverage, and live streaming to millions of viewers."
+  },
+  "home_ticker": {
+    "enabled": true,
+    "label": "LIVE UPDATES",
+    "speed": 42,
+    "items": [
+      {
+        "id": "ticker-1",
+        "active": true,
+        "icon": "🟡",
+        "title": "Now Open:",
+        "text": "Auditions Miss India, Mrs India (G-1 & G-2) & Miss Teen India 2026 — Limited City Entries",
+        "linkText": "Register Online →",
+        "link": "https://www.fsia.in/quickapply",
+        "newTab": true,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-2",
+        "active": true,
+        "icon": "👑",
+        "title": "Zee Studio Finale:",
+        "text": "Grand National Coronation Gala 2026 at Zee Studio Jaipur — Live Nationwide Broadcast",
+        "linkText": "View Dates Calendar →",
+        "link": "#schedule",
+        "newTab": false,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-3",
+        "active": true,
+        "icon": "🏆",
+        "title": "Award Nominations:",
+        "text": "Super Woman Award (Season 8) & Super Hero Award 2026 — Nominations Open",
+        "linkText": "Nominate Now →",
+        "link": "https://www.fsia.in/super-woman-award.php",
+        "newTab": true,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-4",
+        "active": true,
+        "icon": "▶",
+        "title": "Winner Reels:",
+        "text": "Watch Video Success Journeys of Crowned Titleholders Across India",
+        "linkText": "Watch Stories →",
+        "link": "#success-stories",
+        "newTab": false,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-5",
+        "active": true,
+        "icon": "🇮🇳",
+        "title": "National Recognition:",
+        "text": "Bharat National Awards honoring Achievers & Leaders across 4,000+ Cities & 28 States",
+        "linkText": "Explore Awardees →",
+        "link": "https://www.fsia.in/top-awardee-in-india",
+        "newTab": true,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-6",
+        "active": true,
+        "icon": "📞",
+        "title": "Delegate Helpline:",
+        "text": "+91-99832-86999 (Mon–Sat, 10 AM – 7 PM IST) for Auditions & Registration Inquiries",
+        "linkText": "Call Helpline →",
+        "link": "tel:+919983286999",
+        "newTab": false,
+        "startDate": "",
+        "endDate": ""
+      },
+      {
+        "id": "ticker-7",
+        "active": true,
+        "icon": "🎖️",
+        "title": "Govt. Certified:",
+        "text": "Govt. of India Class 41 Registered Trademark Organization for Pageantry & Awards",
+        "linkText": "Verify Credential →",
+        "link": "https://www.fsia.in/about-us.php",
+        "newTab": true,
+        "startDate": "",
+        "endDate": ""
+      }
+    ]
   }
 }
