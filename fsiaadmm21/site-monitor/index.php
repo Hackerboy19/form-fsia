@@ -2,6 +2,22 @@
 // File paths go base64 in links/forms: the server firewall blocks ".htaccess" in a URL or form (403 Forbidden).
 function sm_b64e(string $p): string { return rtrim(strtr(base64_encode($p), '+/', '-_'), '='); }
 function sm_b64d(string $s): string { $d = base64_decode(strtr($s, '-_', '+/'), true); return $d === false ? '' : $d; }
+// Links/forms carry only the event number, never the file name; the path is read back from the DB.
+function sm_ev_path($id): string { $r = sm_rows('SELECT target FROM site_monitor_events WHERE id = ' . (int)$id . ' LIMIT 1'); return $r ? (string)$r[0]['target'] : ''; }
+// Badi file (jaise 13,000 line ki .htaccess) par bhi jaldi aur kam memory mein farak dikhao.
+function sm_diff_safe(array $a, array $b): array
+{
+    $n = count($a); $m = count($b); $p = 0; $s = 0;
+    while ($p < $n && $p < $m && $a[$p] === $b[$p]) $p++;
+    while ($s < $n - $p && $s < $m - $p && $a[$n - 1 - $s] === $b[$m - 1 - $s]) $s++;
+    if (($n - $p - $s) * ($m - $p - $s) <= 250000) return sm_diff($a, $b);
+    $out = [];
+    if ($p > 0) $out[] = ['gap', '… line ' . $p . ' tak same …'];
+    foreach (array_slice($a, $p, $n - $p - $s) as $l) $out[] = ['d', $l];
+    foreach (array_slice($b, $p, $m - $p - $s) as $l) $out[] = ['a', $l];
+    if ($s > 0) $out[] = ['gap', '… aakhri ' . $s . ' lines same …'];
+    return $out;
+}
 
 // Site Monitor admin page: https://www.fsia.in/fsiaadmm21/site-monitor/
 require __DIR__ . '/lib.php';
@@ -66,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = 'err|' . $e->getMessage();
         }
     } elseif (($_POST['action'] ?? '') === 'restore') {
-        $rp = isset($_POST['pathb']) ? sm_b64d((string)$_POST['pathb']) : (string)($_POST['path'] ?? '');
+        $rp = isset($_POST['ev']) ? sm_ev_path($_POST['ev']) : (isset($_POST['pathb']) ? sm_b64d((string)$_POST['pathb']) : (string)($_POST['path'] ?? ''));
         $err = sm_restore_file($rp, !empty($_POST['prev']));
         $flash = $err ? 'err|' . $err : 'ok|' . $rp . ' wapas laga di gayi.';
     }
@@ -209,8 +225,9 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
   <div class="card <?= $brokenLinks ? 'red' : 'green' ?>"><div class="n"><?= count($brokenLinks) ?></div><div class="l">Abhi toote links (<?= (int)$linkStats['checked'] ?>/<?= (int)$linkStats['total'] ?> check hue)</div></div>
 </div>
 
-<?php if (isset($_GET['f']) || isset($_GET['diff'])):
-    $dp = isset($_GET['f']) ? sm_b64d((string)$_GET['f']) : (string)$_GET['diff'];
+<?php if (isset($_GET['ev']) || isset($_GET['f']) || isset($_GET['diff'])):
+    @ini_set('memory_limit', '512M'); @set_time_limit(120);
+    $dp = isset($_GET['ev']) ? sm_ev_path($_GET['ev']) : (isset($_GET['f']) ? sm_b64d((string)$_GET['f']) : (string)$_GET['diff']);
     $dp = ltrim(str_replace('\\', '/', $dp), '/');
     $old = strpos($dp, '..') === false ? @file(sm_backup_path($dp) . '.prev', FILE_IGNORE_NEW_LINES) : false;
     $new = strpos($dp, '..') === false ? @file($root . '/' . $dp, FILE_IGNORE_NEW_LINES) : false;
@@ -219,7 +236,7 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
 <div class="panel">
   <h2>Kya badla: <span style="font-family:ui-monospace,Menlo,monospace"><?= $h($dp) ?></span> <span class="muted">· laal = hataya, hara = joda</span> <a href="<?= $h($self) ?>" style="margin-left:auto;font-weight:400">← Wapas</a></h2>
   <?php if ($old === false || $new === false): ?><div class="empty">Purana version nahi mila.</div>
-  <?php else: $rows = sm_diff($old, $new); ?>
+  <?php else: $rows = sm_diff_safe($old, $new); ?>
   <div class="diff"><?php if (!$rows) echo '<div class="gap">Koi farak nahi.</div>'; foreach ($rows as $r): ?><div class="<?= $r[0] ?>"><?= $r[0] === 'a' ? '+ ' : ($r[0] === 'd' ? '− ' : ($r[0] === 'gap' ? '' : '  ')) ?><?= $h($r[1]) ?></div><?php endforeach; ?></div>
   <?php endif; ?>
 </div>
@@ -264,8 +281,8 @@ td.t{white-space:nowrap;color:var(--muted);font-size:12.5px}td.tg{word-break:bre
         <?php endif; ?></td>
       <td style="white-space:nowrap"><?php if ($act): ?>
         <form method="post" onsubmit="return confirm('<?= $act === 'prev' ? 'Is file ka pichhla version wapas lagayein?' : 'Yeh file backup se wapas lagayein?' ?>')">
-          <input type="hidden" name="csrf" value="<?= $h($csrf) ?>"><input type="hidden" name="action" value="restore"><input type="hidden" name="pathb" value="<?= $h(sm_b64e($e['target'])) ?>">
-          <?php if ($act === 'prev'): ?><a class="btn sm ghost" style="text-decoration:none;display:inline-block;margin-bottom:6px" href="?f=<?= $h(sm_b64e($e['target'])) ?>">Kya badla</a><br><input type="hidden" name="prev" value="1"><button class="btn sm ghost">Purana version</button>
+          <input type="hidden" name="csrf" value="<?= $h($csrf) ?>"><input type="hidden" name="action" value="restore"><input type="hidden" name="ev" value="<?= (int)$e['id'] ?>">
+          <?php if ($act === 'prev'): ?><a class="btn sm ghost" style="text-decoration:none;display:inline-block;margin-bottom:6px" href="?ev=<?= (int)$e['id'] ?>">Kya badla</a><br><input type="hidden" name="prev" value="1"><button class="btn sm ghost">Purana version</button>
           <?php else: ?><button class="btn sm">Wapas lagao</button><?php endif; ?>
         </form><?php endif; ?></td>
     </tr>
