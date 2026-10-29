@@ -5,7 +5,7 @@
  *
  * It reads the homepage's "Event Calendar" from the CMS (Homepage > Event Calendar)
  * and, on pages that have a registration form, shows a month calendar, an agenda
- * list and a day inspector right below the form. The same CMS tab has the switch
+ * list and a day inspector at the top of the page, just above the form. The same CMS tab has the switch
  * "Show on registration form pages" and the option to hide it by itself once every
  * event is over. To place it somewhere else on a page, put
  *   <div id="fsia-event-calendar"></div>
@@ -482,7 +482,7 @@
     var anchor = form.closest('section') || form;
     var holder = document.createElement('div');
     holder.id = 'fsia-event-calendar';
-    anchor.parentNode.insertBefore(holder, anchor.nextSibling);
+    anchor.parentNode.insertBefore(holder, anchor); // top of the page content, just above the form section
     return holder;
   }
 
