@@ -378,6 +378,21 @@ function CalendarEditor({ content, setContent }) {
   return (
     <>
       <HeaderCard sectionKey="calendar_events" content={content} setContent={setContent} />
+      <div className="card mb-5 space-y-4 p-5">
+        <h3 className="font-display text-base font-bold">Calendar on registration form pages</h3>
+        <Toggle
+          checked={content.formPages?.enabled !== false}
+          onChange={(enabled) => setContent({ ...content, formPages: { ...content.formPages, enabled } })}
+          label="Show this calendar below the registration forms"
+          description="Pageant, award and quick-apply form pages show these same events under the form. Switch off to hide it everywhere."
+        />
+        <Toggle
+          checked={content.formPages?.autoHide !== false}
+          onChange={(autoHide) => setContent({ ...content, formPages: { ...content.formPages, autoHide } })}
+          label="Hide automatically when every event has ended"
+          description="Once the last event's date (or end date) is past, or all are marked Concluded, the calendar disappears from the form pages by itself."
+        />
+      </div>
       <div className="card mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-xs">
         <span className="font-bold uppercase tracking-wider text-slate-500">Calendar colours</span>
         {EVENT_TYPES.map((t) => (
