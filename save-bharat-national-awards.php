@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 /* ---- Settings: change these if the award details change ---- */
 const BNA_REGTYPE   = '50';                        // registration type saved in the `registration` table
 const BNA_TITLE     = 'Bharat National Awards 2026';
-const BNA_FEE       = '499';                       // application fee shown in the email (Rs)
+const BNA_FEE       = '2,999';                     // fee shown in the email, same as the form page (Rs)
 const BNA_IMAGE1    = 'Super-Heroes-2024.jpg';     // same banner values the old file saved
 const BNA_IMAGE2    = 'Super Heroes 2024.jpg';
 const BNA_FORM_PAGE = 'bharat-national-awards.php';
