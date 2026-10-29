@@ -383,8 +383,8 @@ function CalendarEditor({ content, setContent }) {
         <Toggle
           checked={content.formPages?.enabled !== false}
           onChange={(enabled) => setContent({ ...content, formPages: { ...content.formPages, enabled } })}
-          label="Show this calendar below the registration forms"
-          description="Pageant, award and quick-apply form pages show these same events under the form. Switch off to hide it everywhere."
+          label="Show this calendar at the top of the registration forms"
+          description="Pageant, award and other form pages show these same events at the top of the page, above the form. Switch off to hide it everywhere."
         />
         <Toggle
           checked={content.formPages?.autoHide !== false}
