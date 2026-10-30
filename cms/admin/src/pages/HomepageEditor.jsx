@@ -204,13 +204,15 @@ const VALIDATORS = {
       s.startDate && s.endDate && s.startDate > s.endDate && `Slide ${named(s, i)}: the end date is before the start date.`,
     ]).filter(Boolean),
   ],
-  calendar_events: ({ items }) =>
-    items.flatMap((e, i) => [
+  calendar_events: ({ items, types }) => [
+    ...(Array.isArray(types) ? types : []).map((t, i) => !t.label?.trim() && `Your own event type ${i + 1} needs a name.`),
+    ...items.flatMap((e, i) => [
       !e.title?.trim() && `Event ${i + 1} needs a title.`,
       !/^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && `Event ${named(e, i)} needs a date.`,
       e.endDate && e.endDate < e.date && `Event ${named(e, i)}: the end date is before the start date.`,
       !isUrl(e.ctaUrl) && `Event ${named(e, i)}: the button link must start with https:// or /.`,
-    ]).filter(Boolean),
+    ]),
+  ].filter(Boolean),
   advertisement: ({ items }) =>
     items.flatMap((a, i) => [
       !a.image && `Ad ${named(a, i)} needs a desktop image.`,
@@ -367,7 +369,61 @@ const EVENT_STATUS = [
   { value: 'closing_soon', label: 'Closing soon' },
   { value: 'concluded', label: 'Concluded' },
 ];
-const typeColor = (t) => EVENT_TYPES.find((x) => x.value === t)?.color || '#94a3b8';
+// Built-in types plus the ones added under "Event types" (saved as content.types).
+const allTypes = (custom) => [...EVENT_TYPES, ...(Array.isArray(custom) ? custom : []).filter((t) => t && t.value)];
+const typeColor = (t, custom) => allTypes(custom).find((x) => x.value === t)?.color || '#94a3b8';
+
+function EventTypesCard({ content, setContent }) {
+  const custom = Array.isArray(content.types) ? content.types : [];
+  const usedBy = (v) => content.items.filter((e) => e.type === v).length;
+  const setCustom = (types) => setContent({ ...content, types });
+  const add = () => {
+    let value = `c-${newId('t').slice(-6)}`;
+    while (allTypes(custom).some((t) => t.value === value)) value = `c-${newId('t').slice(-6)}`;
+    setCustom([...custom, { value, label: '', color: '#6366f1' }]);
+  };
+  const Used = ({ v }) => {
+    const n = usedBy(v);
+    return n ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{n} event{n > 1 ? 's' : ''} · shown on site</span>
+      : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">not used · hidden on site</span>;
+  };
+
+  return (
+    <div className="card mb-5 space-y-4 p-5">
+      <div>
+        <h3 className="font-display text-base font-bold">Event types (calendar colour + filter)</h3>
+        <p className="mt-1 text-xs text-slate-500">The website's filter buttons and colour key show only the types that at least one event uses. Add your own type below, then pick it in an event's Type.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {EVENT_TYPES.map((t) => (
+          <span key={t.value} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />{t.label}<Used v={t.value} />
+          </span>
+        ))}
+      </div>
+      {custom.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Your own types</p>
+          {custom.map((t, i) => {
+            const n = usedBy(t.value);
+            const patch = (p) => setCustom(custom.map((x, j) => (j === i ? { ...x, ...p } : x)));
+            return (
+              <div key={t.value} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-2">
+                <input type="color" aria-label="Colour" className="h-9 w-12 cursor-pointer rounded border border-slate-200 bg-white p-0.5" value={t.color || '#6366f1'} onChange={(e) => patch({ color: e.target.value })} />
+                <input className="input min-w-[200px] flex-1" placeholder="Type name, e.g. Fashion Show" maxLength={40} value={t.label} onChange={(e) => patch({ label: e.target.value })} />
+                <Used v={t.value} />
+                <button type="button" className="text-xs font-semibold text-red-600 disabled:cursor-not-allowed disabled:text-slate-300" disabled={n > 0}
+                  title={n > 0 ? 'Change the Type of those events first' : 'Remove this type'}
+                  onClick={() => setCustom(custom.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button type="button" className="rounded-lg border border-dashed border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-cream" onClick={add}>+ Add your own type</button>
+    </div>
+  );
+}
 const fmtDate = (d) => (d ? new Date(`${d}T00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date');
 
 function CalendarEditor({ content, setContent }) {
@@ -393,11 +449,8 @@ function CalendarEditor({ content, setContent }) {
           description="Once the last event's date (or end date) is past, or all are marked Concluded, the calendar disappears from the form pages by itself."
         />
       </div>
+      <EventTypesCard content={content} setContent={setContent} />
       <div className="card mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-xs">
-        <span className="font-bold uppercase tracking-wider text-slate-500">Calendar colours</span>
-        {EVENT_TYPES.map((t) => (
-          <span key={t.value} className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />{t.label}</span>
-        ))}
         <span className="inline-flex items-center gap-1.5"><span className="text-gold-dark">★</span>Featured (Season Peak)</span>
         <label className="ml-auto inline-flex items-center gap-2">
           <input type="checkbox" checked={sortByDate} onChange={(e) => setSortByDate(e.target.checked)} /> Sort by date
@@ -418,10 +471,10 @@ function CalendarEditor({ content, setContent }) {
           title: `${e.highlight ? '★ ' : ''}${e.title}`,
           subtitle: `${fmtDate(e.date)}${e.city ? ` • ${e.city}` : ''}`,
           image: e.image,
-          dot: typeColor(e.type),
+          dot: typeColor(e.type, content.types),
           badge: { text: EVENT_STATUS.find((s) => s.value === e.status)?.label || e.status, tone: e.status === 'concluded' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700' },
         })}
-        renderForm={(e, set) => <EventForm key={e.id} ev={e} set={set} />}
+        renderForm={(e, set) => <EventForm key={e.id} ev={e} set={set} types={allTypes(content.types).map((t) => ({ value: t.value, label: t.label || '(unnamed type)' }))} />}
       />
     </>
   );
@@ -429,7 +482,7 @@ function CalendarEditor({ content, setContent }) {
 
 const splitList = (s, sep) => s.split(sep).map((x) => x.trim()).filter(Boolean);
 
-function EventForm({ ev: e, set }) {
+function EventForm({ ev: e, set, types }) {
   // Keep the raw text while typing so commas/new lines are not eaten.
   const [keywords, setKeywords] = useState((e.keywords || []).join(', '));
   const [highlights, setHighlights] = useState((e.highlights || []).join('\n'));
@@ -438,7 +491,7 @@ function EventForm({ ev: e, set }) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2"><Field label="Event title" value={e.title} onChange={(title) => set({ title })} max={120} /></div>
-        <SelectField label="Type (calendar colour + filter)" value={e.type} options={EVENT_TYPES} onChange={(type) => set({ type })} />
+        <SelectField label="Type (calendar colour + filter)" value={e.type} options={types} onChange={(type) => set({ type })} />
         <SelectField label="Status" value={e.status} options={EVENT_STATUS} onChange={(status) => set({ status })} />
         <Field label="Date" type="date" value={e.date} onChange={(date) => set({ date })} />
         <Field label="End date (optional)" type="date" value={e.endDate} onChange={(endDate) => set({ endDate })} hint="For events spanning several days" />

@@ -161,6 +161,14 @@
   }
   function longDate(s) { var d = parse(s); return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
   function typeOf(t) { for (var i = 1; i < TYPES.length; i++) if (TYPES[i].value === t) return TYPES[i]; return { value: t, label: 'Event', color: '#64748B', soft: '#64748B' }; }
+  /* Types added in the CMS (Event Calendar -> Event types): [{ value, label, color }]. */
+  function addCustomTypes(list) {
+    (Array.isArray(list) ? list : []).forEach(function (t) {
+      if (!t || !str(t.value) || !str(t.label) || typeOf(t.value).label !== 'Event') return;
+      var col = /^#[0-9a-f]{6}$/i.test(t.color || '') ? t.color : '#64748B';
+      TYPES.push({ value: str(t.value), label: str(t.label), color: col, soft: col });
+    });
+  }
   function isDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || ''); }
 
   /* Dates an event is drawn on: every day of a short event (up to a week), otherwise its first and last day. */
@@ -252,7 +260,9 @@
     views.appendChild(vMonth); views.appendChild(vAgenda);
     bar.appendChild(views);
     var chips = el('div', 'fcal-chips');
-    var chipBtns = TYPES.map(function (t) {
+    // Only the types some event uses get a filter button and a colour-key entry.
+    var shown = TYPES.filter(function (t, i) { return i === 0 || events.some(function (e) { return e.type === t.value; }); });
+    var chipBtns = shown.map(function (t) {
       var b = el('button', '', t.label); b.type = 'button';
       b.addEventListener('click', function () { state.type = t.value; render(); });
       chips.appendChild(b);
@@ -401,7 +411,7 @@
       cal.appendChild(days);
 
       var lg = el('div', 'fcal-legend');
-      TYPES.slice(1).forEach(function (t) {
+      shown.slice(1).forEach(function (t) {
         var s = el('span'); var dot = el('i'); dot.style.background = t.soft; s.appendChild(dot); s.appendChild(document.createTextNode(t.label)); lg.appendChild(s);
       });
       var st = el('span', '', '★ Featured'); st.style.color = '#7E591B'; lg.appendChild(st);
@@ -462,7 +472,7 @@
       vMonth.setAttribute('aria-pressed', state.view === 'month');
       vAgenda.setAttribute('aria-pressed', state.view === 'agenda');
       vAgendaTxt.textContent = 'Agenda Timeline (' + events.filter(matches).length + ')';
-      chipBtns.forEach(function (b, i) { b.setAttribute('aria-pressed', TYPES[i].value === state.type); });
+      chipBtns.forEach(function (b, i) { b.setAttribute('aria-pressed', shown[i].value === state.type); });
       body.textContent = '';
       body.appendChild(state.view === 'month' ? renderMonth() : renderAgenda());
     }
@@ -499,6 +509,7 @@
         if (!c || typeof c !== 'object') return;
         var opt = c.formPages || {};
         if (opt.enabled === false) return; // switched off in the CMS
+        addCustomTypes(c.types);
         var events = normalize(c.items);
         if (!events.length) return;
         var today = todayIST();
