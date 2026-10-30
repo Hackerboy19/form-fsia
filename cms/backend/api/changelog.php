@@ -140,11 +140,16 @@ function chl_self_test(array $cols): void
         $row = site_db_rows("SELECT `id` FROM $test LIMIT 1")[0] ?? null;
         if ($row) {
             // Flip every tracked text column between 'x' and 'y' (fits any length); the copy is thrown away.
+            // JSON columns (MariaDB: longtext + CHECK json_valid) only accept valid JSON, so they flip between '"x"' and '"y"'.
+            $create = (string) (array_values(site_db_rows("SHOW CREATE TABLE $test")[0] ?? [])[1] ?? '');
+            preg_match_all('/json_valid\(`([^`]+)`\)/i', $create, $m);
+            $jsonCols = array_map('strtolower', $m[1]);
             $sets = [];
             foreach (site_db_rows("SHOW COLUMNS FROM $test") as $t) {
-                if (chl_ignored($t['Field']) || !preg_match('/char|text/i', $t['Type'])) continue;
+                $isJson = stripos($t['Type'], 'json') === 0 || in_array(strtolower($t['Field']), $jsonCols, true);
+                if (chl_ignored($t['Field']) || (!$isJson && !preg_match('/char|text/i', $t['Type']))) continue;
                 $c = chl_ident($t['Field']);
-                $sets[] = "$c = IF($c = 'x', 'y', 'x')";
+                $sets[] = $isJson ? "$c = IF($c = '\"x\"', '\"y\"', '\"x\"')" : "$c = IF($c = 'x', 'y', 'x')";
             }
             if ($sets) site_db_exec("UPDATE $test SET " . implode(', ', $sets) . ' WHERE `id` = ' . (int) $row['id']);
             site_db_exec("DELETE FROM $test WHERE `id` = " . (int) $row['id']);
