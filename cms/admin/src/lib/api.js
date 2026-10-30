@@ -124,6 +124,12 @@ export const api = {
     form.append('image', file);
     return request('upload.php', { method: 'POST', body: form, isForm: true });
   },
+  // PDF / PPT / PPTX for event brochures (calendar).
+  uploadDoc: (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request('upload-doc.php', { method: 'POST', body: form, isForm: true });
+  },
 };
 
 // Image paths stored as "/static/media/x.jpg" are relative to the public site,
