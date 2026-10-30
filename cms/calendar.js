@@ -113,6 +113,16 @@
     '.fcal-doc:hover{border-color:#B8860B}',
     '.fcal-doc i{font-style:normal;font-size:10px;font-weight:800;color:#fff;border-radius:4px;padding:2px 4px}',
     '.fcal-row .fcal-doc{margin-top:10px;padding:6px 12px;font-size:12px}',
+    'button.fcal-doc{cursor:pointer;font-family:inherit}',
+    '.fcal-dv{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:8px}',
+    '.fcal-dv-box{display:flex;flex-direction:column;width:100%;max-width:1024px;height:92vh;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}',
+    '.fcal-dv-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #E7E5E4;font:600 14px/1.3 "Plus Jakarta Sans",Poppins,system-ui,sans-serif;color:#0C1322}',
+    '.fcal-dv-head b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.fcal-dv-head a,.fcal-dv-head button{border:1px solid #E7E5E4;background:#fff;border-radius:8px;padding:6px 10px;font:600 12px/1 system-ui,sans-serif;color:#0C1322;text-decoration:none;cursor:pointer}',
+    '.fcal-dv iframe{flex:1;width:100%;border:0;background:#F5F5F4}',
+    '.fcal-dv-pages{flex:1;overflow:auto;background:#E7E5E4;padding:12px;text-align:center}',
+    '.fcal-dv-pages canvas{display:block;max-width:100%;height:auto !important;margin:0 auto 12px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15)}',
+    '.fcal-dv-msg{padding:40px 16px;color:#57534E;font:500 14px/1.5 system-ui,sans-serif}',
     '.fcal-empty{padding:28px 10px;text-align:center;color:var(--mut);font-size:13.5px}',
     '.fcal-empty button{margin-top:12px;border:1px solid #EADBAC;background:#FFFDF7;color:var(--gd);padding:8px 14px;border-radius:8px;font-size:13px}',
     '.fcal-ag{padding:10px 24px}',
@@ -175,6 +185,71 @@
       var col = /^#[0-9a-f]{6}$/i.test(t.color || '') ? t.color : '#64748B';
       TYPES.push({ value: str(t.value), label: str(t.label), color: col, soft: col });
     });
+  }
+  /* Shows a PDF / PPT inside the page: the browser's PDF viewer, or an online viewer for phones and PowerPoint. */
+  var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  var pdfJsLoading = null;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfJsLoading) {
+      pdfJsLoading = new Promise(function (ok, fail) {
+        var sc = document.createElement('script'); sc.src = PDFJS + 'pdf.min.js';
+        sc.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; ok(window.pdfjsLib); };
+        sc.onerror = function () { pdfJsLoading = null; fail(new Error('pdf.js')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return pdfJsLoading;
+  }
+  /* Draws every page of the PDF as an image, so it shows the same on phones and computers. */
+  function renderPdf(url, box, isOpen) {
+    var msg = el('div', 'fcal-dv-msg', 'Loading…'); box.appendChild(msg);
+    loadPdfJs().then(function (lib) { return lib.getDocument(url).promise; }).then(function (pdf) {
+      msg.parentNode && msg.parentNode.removeChild(msg);
+      var scale = Math.min(2, (window.devicePixelRatio || 1) * 1.5);
+      function page(n) {
+        if (n > pdf.numPages || !isOpen()) return;
+        pdf.getPage(n).then(function (pg) {
+          var vp = pg.getViewport({ scale: scale });
+          var cv = el('canvas'); cv.width = vp.width; cv.height = vp.height; cv.style.width = (vp.width / scale) + 'px';
+          box.appendChild(cv);
+          return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        }).then(function () { page(n + 1); });
+      }
+      page(1);
+    }).catch(function () {
+      msg.textContent = 'This file could not be shown here. Use Download to open it.';
+    });
+  }
+  function openDoc(kind, url, title, color) {
+    var abs = new URL(url, location.href).href;
+    var open = true;
+    var wrap = el('div', 'fcal-dv'); wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
+    var box = el('div', 'fcal-dv-box');
+    var head = el('div', 'fcal-dv-head');
+    var tag = el('i', '', kind); tag.style.cssText = 'font-style:normal;font-size:10px;font-weight:800;color:#fff;border-radius:4px;padding:2px 5px;background:' + color;
+    head.appendChild(tag); head.appendChild(el('b', '', title));
+    var dl = el('a', '', 'Download'); dl.href = url; dl.target = '_blank'; dl.rel = 'noopener'; dl.setAttribute('download', '');
+    var x = el('button', '', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+    head.appendChild(dl); head.appendChild(x);
+    box.appendChild(head);
+    if (kind === 'PPT') {
+      // PowerPoint has no viewer in the browser: Microsoft's free Office viewer shows it (the file must be public).
+      var frame = el('iframe'); frame.title = kind + ': ' + title;
+      frame.src = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(abs);
+      box.appendChild(frame);
+    } else {
+      var pages = el('div', 'fcal-dv-pages'); box.appendChild(pages);
+      renderPdf(abs, pages, function () { return open; });
+    }
+    wrap.appendChild(box);
+    var prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    function close() { open = false; document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; wrap.parentNode && wrap.parentNode.removeChild(wrap); }
+    function onKey(ev) { if (ev.key === 'Escape') close(); }
+    x.addEventListener('click', close);
+    wrap.addEventListener('click', function (ev) { if (ev.target === wrap) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(wrap);
   }
   function isDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || ''); }
 
@@ -319,9 +394,10 @@
       var b = cta(e); if (b) row.appendChild(b);
       [['PDF', e.pdfUrl, '#DC2626'], ['PPT', e.pptUrl, '#EA580C']].forEach(function (d) {
         if (!d[1]) return;
-        var a = el('a', 'fcal-doc'); a.href = d[1]; a.target = '_blank'; a.rel = 'noopener';
+        var a = el('button', 'fcal-doc'); a.type = 'button';
         var tag = el('i', '', d[0]); tag.style.background = d[2];
-        a.appendChild(tag); a.appendChild(document.createTextNode('Download ' + d[0]));
+        a.appendChild(tag); a.appendChild(document.createTextNode('View ' + d[0]));
+        a.addEventListener('click', function () { openDoc(d[0], d[1], e.title, d[2]); });
         row.appendChild(a);
       });
       return row.childNodes.length ? row : null;

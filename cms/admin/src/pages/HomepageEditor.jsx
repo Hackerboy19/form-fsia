@@ -527,7 +527,7 @@ function EventForm({ ev: e, set, types }) {
 
       <div className="rounded-xl border border-gold-light bg-cream/60 p-4">
         <h3 className="mb-1 font-display text-base font-bold">Downloads (optional)</h3>
-        <p className="mb-3 text-xs text-slate-500">Brochure, schedule or rules for this event. Visitors get a “PDF” / “PPT” button on the calendar.</p>
+        <p className="mb-3 text-xs text-slate-500">Brochure, schedule or rules for this event. Visitors get a “View PDF” / “View PPT” button on the calendar; the file opens right on the page.</p>
         <div className="space-y-4">
           <DocUpload label="PDF file" kind="pdf" value={e.pdfUrl} onChange={(pdfUrl) => set({ pdfUrl })} />
           <DocUpload label="PPT file" kind="ppt" value={e.pptUrl} onChange={(pptUrl) => set({ pptUrl })} hint="PowerPoint (.ppt or .pptx)" />
