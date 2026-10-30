@@ -19,7 +19,7 @@ Data files in this folder:
 |---|---|---|---|
 | 1 | **Critical** | **Every static asset and page is served `Cache-Control: no-store`.** CSS, JS, images and logo are re-downloaded on every page view; nothing is ever cached by browsers or a CDN. | nginx/Plesk config |
 | 2 | **Critical** | **`bharat-couture-week-fashion-week.php` declares canonical `register-bharat-couture.php`, which 302-redirects to the homepage.** Google is being told this page is a duplicate of a redirect to `/` → it will drop the page from the index. | `bharat-couture-week-fashion-week.php` |
-| 3 | **Critical** | **52 live form pages from this repo (plus 7 other live pages) are missing from every sitemap**: 25 of 31 state Miss pages, 26 of 32 state Mrs pages, and India Fashion Week. | see §3 |
+| 3 | **Critical** | **52 live form pages from this repo (plus 7 other live pages) are missing from every sitemap**: 25 of 32 state Miss pages, 26 of 32 state Mrs pages, and India Fashion Week. | see §3 |
 | 4 | **High** | **Tailwind Play CDN (`cdn.tailwindcss.com`) on all 73 pages.** 126 KB (br) render-blocking JS that compiles CSS in the browser on every load; browser console prints "should not be used in production". | every form `<head>` |
 | 5 | **High** | **Second public OTP endpoint with no rate limit.** Each state page has an inline `?action=send_otp` / `?action=verify_otp` handler that is reachable on live (`/miss-delhi.php?action=verify_otp…` answers `Content-Type: application/json` with HTTP 500). By the code, `send_otp` sends a WhatsApp message to any number on demand with no throttling — an abuse vector and a cost leak. (Not exercised during the audit, to avoid sending a real message.) The front-end doesn't use it; it calls `send_otpnew.php`. | 66 state pages, lines ~22–63 |
 | 6 | **High** | OTP generated with `rand()` (not cryptographically secure), no attempt limit on verify (1,000,000 codes, 10-minute window), TLS verification disabled on the WhatsApp webhook call, and the webhook ID is hard-coded in 67 files. | 68 pages |
@@ -116,7 +116,7 @@ On a real Indian 4G phone with CPU throttling, expect these numbers to be **2–
 
 **From this repo (52 live + 1 not deployed)** — all return 200 at `.php`, 404 without it:
 
-- **Miss (25 of 31 states):** andhra-pradesh, arunachal-pradesh, assam, bihar, chandigarh, chattisgarh, delhi, goa, haryana, himachal-pradesh, jammu-kashmir, jharkhand, kerala, madhya-pradesh, manipur, meghalaya, mizoram, nagaland, odisha, poducherry, punjab, sikkim, tamil-nadu, tripura, uttarakhand. _(In sitemap: gujarat, karnataka, maharashtra, rajasthan, telangana, uttar-pradesh, west-bengal.)_
+- **Miss (25 of 32 states):** andhra-pradesh, arunachal-pradesh, assam, bihar, chandigarh, chattisgarh, delhi, goa, haryana, himachal-pradesh, jammu-kashmir, jharkhand, kerala, madhya-pradesh, manipur, meghalaya, mizoram, nagaland, odisha, poducherry, punjab, sikkim, tamil-nadu, tripura, uttarakhand. _(In sitemap: gujarat, karnataka, maharashtra, rajasthan, telangana, uttar-pradesh, west-bengal.)_
 - **Mrs (26 of 32 states):** andhra-pradesh, arunachal-pradesh, assam, bihar, chandigarh, chattisgarh, gujarat, haryana, himachal-pradesh, jammu-kashmir, jharkhand, karnataka, madhya-pradesh, maharashtra, manipur, meghalaya, mizoram, nagaland, punjab, sikkim, tamil-nadu, telangana, tripura, uttar-pradesh, uttarakhand, west-bengal. _(In sitemap: delhi, goa, kerala, odisha, poducherry, rajasthan.)_
 - **Other:** `india-fashion-week-fashion-show.php`; `miss-universe-registration.php` (in repo, **not deployed — 404**)
 
