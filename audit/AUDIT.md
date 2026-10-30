@@ -75,7 +75,7 @@ On a real Indian 4G phone with CPU throttling, expect these numbers to be **2–
 | PHP page generation | ✅ Fast (~20–200 ms) |
 | CMS/profile pages (5,325 URLs) | ✅ Consistent, p99 ≈ TTFB of a static file + 0.3 s |
 | Slow outliers | ⚠️ 11 URLs > 1.5 s (`sitemap-slow-urls.tsv`) |
-| Errors | ❌ 76 sitemap URLs return HTTP 500 consistently (see §3.2) |
+| Errors | ❌ 76 sitemap URLs return HTTP 500 consistently — full list in §3.2.1 |
 | Caching headers | ❌ `no-store` on everything |
 | Sessions | ❌ every anonymous page view starts a PHP session |
 
@@ -139,6 +139,95 @@ Crawled every one of the 5,519 sitemap URLs (10 parallel requests, then retried 
 | **302 → another page** | 10 | `/forever-star-kids-contest.php` → `/star-india-kids-contest`; `/fsia-awards.php` → `/international-award.php`; `/media-coverage.php` → `/news-coverage.php`; `/mrs-fsia-rising-star-2022-india-neha-khare` → same slug with **uppercase** `Neha-Khare` | List the target URL in the sitemap; make these redirects **301** (permanent), not 302 |
 | Wrong host/scheme | 3 | `https://fsia.in/…`, `http://www.fsia.in/…` | Emit `https://www.fsia.in` only |
 | Literal space in URL | 1 | `/miss-andhra-pradesh-2022-divya krishna` | Invalid XML-sitemap URL; slugify |
+
+#### 3.2.1 All 76 URLs returning HTTP 500
+
+Each one returned 500 on the first crawl and again on a retry. Also in `sitemap-broken-urls.tsv`.
+
+**A. `…-miss-india-2021` / `…-mrs-india-2021` slugs with no `-id-` (42)**
+
+1. https://www.fsia.in/aashi-chariya-miss-india-2021
+2. https://www.fsia.in/ankana-pal-miss-india-2021
+3. https://www.fsia.in/ankita-shetty-mrs-india-2021
+4. https://www.fsia.in/ankita-toshniwal-miss-india-2021
+5. https://www.fsia.in/bhavya-gaur-miss-india-2021
+6. https://www.fsia.in/dipti-ketan-loat-mrs-india-2021
+7. https://www.fsia.in/dr-ampritpal-kaur-mrs-india-2021
+8. https://www.fsia.in/dr-priyanka-suthariya-mrs-india-2021
+9. https://www.fsia.in/dr-sonali-soner-miss-india-2021
+10. https://www.fsia.in/dr.-somyashree-patnaik-miss-india-2021
+11. https://www.fsia.in/er-meena-mandal-mrs-india-2021
+12. https://www.fsia.in/gopika-sajikumar-mrs-india-2021
+13. https://www.fsia.in/gundeep-kaur-miss-india-2021
+14. https://www.fsia.in/guneshwari-ghatge-miss-india-2021
+15. https://www.fsia.in/hinal-shah-jain-mrs-india-2021
+16. https://www.fsia.in/jenny-koshy-miss-india-2021
+17. https://www.fsia.in/karishma-kaur-miss-india-2021
+18. https://www.fsia.in/manasmita-palo-mrs-india-2021
+19. https://www.fsia.in/manikanta-jain-mrs-india-2021
+20. https://www.fsia.in/manya-vats-miss-india-2021
+21. https://www.fsia.in/meenakshi-sharma-mrs-india-2021
+22. https://www.fsia.in/naomi-ribeiro-miss-india-2021
+23. https://www.fsia.in/neena-jose-miss-india-2021
+24. https://www.fsia.in/neha-barwase-miss-india-2021
+25. https://www.fsia.in/neha-yadav-mrs-india-2021
+26. https://www.fsia.in/pardeep-kaur-mrs-india-2021
+27. https://www.fsia.in/pooja-mishra-miss-india-2021
+28. https://www.fsia.in/priti-pankaj-khandelwal-mrs-india-2021
+29. https://www.fsia.in/priyanka-bharat-shah-mrs-india-2021
+30. https://www.fsia.in/rajni-yadav-miss-india-2021
+31. https://www.fsia.in/sara-rayees-miss-india-2021
+32. https://www.fsia.in/sarita-jadhav-mrs-india-2021
+33. https://www.fsia.in/sasmita-tripathy-mrs-india-2021
+34. https://www.fsia.in/satabdi-roy-debnath-mrs-india-2021
+35. https://www.fsia.in/sheron-kalsi-miss-india-2021
+36. https://www.fsia.in/shobitha-mallepula-miss-india-2021
+37. https://www.fsia.in/sonal-wadhwa-arora-mrs-india-2021
+38. https://www.fsia.in/suman-mishra-miss-india-2021
+39. https://www.fsia.in/supriya-nayak-miss-india-2021
+40. https://www.fsia.in/surarchi-kumar-miss-india-2021
+41. https://www.fsia.in/tabassum-shaikh-miss-india-2021
+42. https://www.fsia.in/teaser-launch-grand-finale-miss-india-and-mrs-india-2021
+
+**B. `…-is-coming-for-the-grand-finale` (15)**
+
+1. https://www.fsia.in/amrita-shrivastava-is-coming-for-the-grand-finale
+2. https://www.fsia.in/dimpy-jain-is-coming-for-the-grand-finale
+3. https://www.fsia.in/dr.-rakhi-is-coming-for-the-grand-finale
+4. https://www.fsia.in/glory-kalai-is-coming-for-the-grand-finale
+5. https://www.fsia.in/jasmine-rayat-is-coming-for-the-grand-finale
+6. https://www.fsia.in/lipi-malakar-is-coming-for-the-grand-finale
+7. https://www.fsia.in/madhuri-danane-is-coming-for-the-grand-finale
+8. https://www.fsia.in/nayana-basarani-is-coming-for-the-grand-finale
+9. https://www.fsia.in/prashasti-is-coming-for-the-grand-finale
+10. https://www.fsia.in/prerna-nayyar-is-coming-for-the-grand-finale
+11. https://www.fsia.in/rajlaxmi-chavan-is-coming-for-the-grand-finale
+12. https://www.fsia.in/sadhna-singh-is-coming-for-the-grand-finale
+13. https://www.fsia.in/samidha-is-coming-for-the-grand-finale
+14. https://www.fsia.in/smitha-xavier-is-coming-for-the-grand-finale
+15. https://www.fsia.in/sonu-khoshya-is-coming-for-the-grand-finale
+
+**C. Other profile, video and article pages (19)**
+
+1. https://www.fsia.in/forever-miss-india-2021-building-smile,-confidence,-style,-and-personality
+2. https://www.fsia.in/how-forever-star-india-transforms-you-and-taking-out-your-inner-beauty
+3. https://www.fsia.in/jenny-khoshy-miss-india
+4. https://www.fsia.in/miss-india-2021-bhavika-kiran-tilekar
+5. https://www.fsia.in/miss-india-2021-pratima-sarkar
+6. https://www.fsia.in/miss-india-amrita-srivastava
+7. https://www.fsia.in/miss-india-contestant-samprikta-mandal
+8. https://www.fsia.in/miss-india-purva-parate-makeup-and-grooming
+9. https://www.fsia.in/miss-tamil-nadu-2022-nishoja-d-1st-runner-up
+10. https://www.fsia.in/miss-tamil-nadu-2022-rakshya
+11. https://www.fsia.in/multi-talent-candidate-performance-by-mrs-india-participant-piyali-de
+12. https://www.fsia.in/performance-of-miss-india-2021-shubhi-bhadauriya
+13. https://www.fsia.in/performance-of-miss-india-participant-namya-shrivastava
+14. https://www.fsia.in/pratima-sarkar-miss-india-2021-contestant
+15. https://www.fsia.in/preparing-for-the-ramp-walk-miss-india-contestant-ria-paul
+16. https://www.fsia.in/super-model-performance-by-miss-india-participant-purva-parate
+17. https://www.fsia.in/sure-movie-performance-by-miss-india-participant-radhika-rane
+18. https://www.fsia.in/talent-video-of-miss-india-participant-drishti-kohli
+19. https://www.fsia.in/transformation-makes-you-perfect-sara-rayees-miss-india-2021-participant
 
 Also in the sitemap and worth removing/rewriting: **123 query-string URLs** (`verified_user_details_women.php?id=…&view=1&name=…` ×74, `verified_user_details.php?id=…` ×49). They are duplicates of the clean profile slugs and some redirect targets above use the same `?id=…&view=1` pattern — give them clean slugs or a canonical and drop them from the sitemap.
 
