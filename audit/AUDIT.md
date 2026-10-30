@@ -21,9 +21,9 @@ Data files in this folder:
 | 2 | **Critical** | **`bharat-couture-week-fashion-week.php` declares canonical `register-bharat-couture.php`, which 302-redirects to the homepage.** Google is being told this page is a duplicate of a redirect to `/` → it will drop the page from the index. | `bharat-couture-week-fashion-week.php` |
 | 3 | **Critical** | **52 live form pages from this repo (plus 7 other live pages) are missing from every sitemap**: 25 of 31 state Miss pages, 26 of 32 state Mrs pages, and India Fashion Week. | see §3 |
 | 4 | **High** | **Tailwind Play CDN (`cdn.tailwindcss.com`) on all 73 pages.** 126 KB (br) render-blocking JS that compiles CSS in the browser on every load; browser console prints "should not be used in production". | every form `<head>` |
-| 5 | **High** | **Second public OTP endpoint with no rate limit.** Each state page has an inline `?action=send_otp` / `?action=verify_otp` handler that is live (`/miss-delhi.php?action=verify_otp…` returns HTTP 500). `send_otp` will fire a WhatsApp message to any number on demand — SMS-pumping/abuse vector and a cost leak. The front-end doesn't even use it (it calls `send_otpnew.php`). | 66 state pages, lines ~22–63 |
+| 5 | **High** | **Second public OTP endpoint with no rate limit.** Each state page has an inline `?action=send_otp` / `?action=verify_otp` handler that is reachable on live (`/miss-delhi.php?action=verify_otp…` answers `Content-Type: application/json` with HTTP 500). By the code, `send_otp` sends a WhatsApp message to any number on demand with no throttling — an abuse vector and a cost leak. (Not exercised during the audit, to avoid sending a real message.) The front-end doesn't use it; it calls `send_otpnew.php`. | 66 state pages, lines ~22–63 |
 | 6 | **High** | OTP generated with `rand()` (not cryptographically secure), no attempt limit on verify (1,000,000 codes, 10-minute window), TLS verification disabled on the WhatsApp webhook call, and the webhook ID is hard-coded in 67 files. | 68 pages |
-| 7 | **High** | __SITEMAP_BROKEN_HEADLINE__ | sitemap |
+| 7 | **High** | **192 of 5,519 sitemap URLs (3.5%) are broken**: 80 → 404, **76 → HTTP 500** (server errors on every retry), 22 → 302 to the homepage (soft 404s), 10 → 302 to another page, 3 on the wrong host, 1 with a literal space. ~177 of them sit in `sitemap-complete.xml`. | `sitemap-broken-urls.tsv` |
 | 8 | **High** | Sitemaps are effectively frozen: child sitemaps have **no `<lastmod>`**, the index `lastmod` values are 2023–2024, and **only 3 of 5,519 URLs are 2026 content** while the site is running the 2026 season. | `sitemap.xml` + children |
 | 9 | **Medium** | No CSRF tokens on any form (0 of 73). | all forms |
 | 10 | **Medium** | 73 files are ~95% identical copies (`miss-delhi.php` vs `miss-goa.php`: 42 of 855 lines differ). Every fix must be made 64–73 times, which is how drift and bugs creep in. | whole repo |
@@ -43,7 +43,9 @@ Data files in this folder:
 | `/makeup-artist.php` | 0.60 s | 1.71 s | 1.71 s | 0.009 | 18 | 92 KB |
 | `/forever-fashion-week.php` | 0.56 s | 1.92 s | 1.92 s | 0.002 | 18 | 87 KB |
 
-All 72 deployed form pages: average server TTFB **0.87 s** (max 1.66 s — `channel-partner.php`), raw HTML **165–193 KB** each (≈37 KB gzipped).
+All 72 deployed form pages: average TTFB **0.87 s** from the test location (max 1.66 s — `channel-partner.php`), raw HTML **165–193 KB** each (≈37 KB gzipped).
+
+**Important baseline:** a static file (`robots.txt`) has TTFB ≈ 0.77 s from the same location (≈0.5 s of that is the TLS handshake over the distance). PHP pages come in at 0.79–0.98 s, so **server-side processing is only ~20–200 ms. The back-end is fast; the slowness users feel is front-end.** Across all 5,325 working sitemap URLs TTFB was p50 0.84 s / p90 0.88 s / p99 1.06 s — consistent and healthy; only 11 URLs exceeded 1.5 s (`sitemap-slow-urls.tsv`).
 
 On a real Indian 4G phone with CPU throttling, expect these numbers to be **2–3× worse**; the form pages will sit around LCP 4–6 s.
 
@@ -63,9 +65,19 @@ On a real Indian 4G phone with CPU throttling, expect these numbers to be **2–
 5. **`/cms/calendar.js` + `/cms/promo.js` + `sections.php?page=index&key=calendar_events`** — the three slowest requests on every form page (1.0–2.1 s), loaded on registration forms where the calendar/promo isn't the point. Load them after `load` or only where needed.
 6. **~95 KB of inline `<style>`/`<script>` per page** (55 KB CSS + 40 KB JS, duplicated in all 73 files) — none of it can be cached. Move to one shared, cacheable file.
 7. **Homepage**: 1.55 MB, LCP 4.1 s. 41 `<img>` with **no `width`/`height`** (causes CLS 0.071), 10 without `alt`, partner logos served as JPG with spaces in filenames, several images duplicated in the markup. Convert to WebP/AVIF, add dimensions, `fetchpriority="high"` on the hero, lazy-load the rest (33/41 already are).
-8. **Server TTFB 0.6–1.7 s** for a page whose only DB work is one `SELECT * FROM more_pages` — worth checking OPcache, the `more_pages` index on `page_name`, and whatever `header1806.php` / `footer1806.php` / `faq-section.php` query.
+8. **A few slow outliers on the server** — only 11 of 5,325 URLs had TTFB > 1.5 s (worst 2.4 s: `miss-uttar-pradesh-2021-first-runner-up-hemlata-kashyap`, `shubhangi-sharma-miss-india-2022-id-26764`, `sitemap.php` 2.0 s). Check these queries; the rest of the back-end is fine.
+9. **TLS handshake** takes ~0.5 s from outside India. Enabling TLS 1.3 + session resumption, or putting the site behind a CDN with Indian and global edges (e.g. Cloudflare), cuts this for every visitor.
 
-__SITEMAP_SLOW_SECTION__
+### 1.4 Back-end speed summary
+
+| Area | Verdict |
+|---|---|
+| PHP page generation | ✅ Fast (~20–200 ms) |
+| CMS/profile pages (5,325 URLs) | ✅ Consistent, p99 ≈ TTFB of a static file + 0.3 s |
+| Slow outliers | ⚠️ 11 URLs > 1.5 s (`sitemap-slow-urls.tsv`) |
+| Errors | ❌ 76 sitemap URLs return HTTP 500 consistently (see §3.2) |
+| Caching headers | ❌ `no-store` on everything |
+| Sessions | ❌ every anonymous page view starts a PHP session |
 
 ---
 
@@ -117,7 +129,18 @@ Full list with status codes: `live-pages-missing-from-sitemap.tsv`.
 
 ### 3.2 Pages in the sitemap that we don't have (broken sitemap entries)
 
-__SITEMAP_BROKEN_SECTION__
+Crawled every one of the 5,519 sitemap URLs (10 parallel requests, then retried every 500/timeout once). **5,327 return 200; 192 do not.** Full list with status and redirect target: `sitemap-broken-urls.tsv`.
+
+| Problem | Count | Examples | Fix |
+|---|---|---|---|
+| **404 Not Found** | 80 | profile/winner pages that were deleted or renamed | Remove from sitemap; 301 to the replacement where one exists |
+| **500 Server Error** (every retry) | 76 | 42 are `…-miss-india-2021` / `…-mrs-india-2021` slugs without an `-id-` (e.g. `/aashi-chariya-miss-india-2021`); 15 are `…-is-coming-for-the-grand-finale`; others like `/miss-india-2021-pratima-sarkar`, `/talent-video-of-miss-india-participant-drishti-kohli` | These are code crashes in the profile/video router, not missing pages — check the PHP error log for these slugs. Fix or 410 them. Google treats repeated 5xx as a site-health signal. |
+| **302 → homepage** (soft 404) | 22 | `/amerika-dewangan-mrs-india-2022-id-27776`, `/miss-india-contestant-2025-riddhi-jamnagar`; several redirect to `https://fsia.in/` (non-www → second hop) | Return a real 404/410, or 301 to the right profile; drop from sitemap |
+| **302 → another page** | 10 | `/forever-star-kids-contest.php` → `/star-india-kids-contest`; `/fsia-awards.php` → `/international-award.php`; `/media-coverage.php` → `/news-coverage.php`; `/mrs-fsia-rising-star-2022-india-neha-khare` → same slug with **uppercase** `Neha-Khare` | List the target URL in the sitemap; make these redirects **301** (permanent), not 302 |
+| Wrong host/scheme | 3 | `https://fsia.in/…`, `http://www.fsia.in/…` | Emit `https://www.fsia.in` only |
+| Literal space in URL | 1 | `/miss-andhra-pradesh-2022-divya krishna` | Invalid XML-sitemap URL; slugify |
+
+Also in the sitemap and worth removing/rewriting: **123 query-string URLs** (`verified_user_details_women.php?id=…&view=1&name=…` ×74, `verified_user_details.php?id=…` ×49). They are duplicates of the clean profile slugs and some redirect targets above use the same `?id=…&view=1` pattern — give them clean slugs or a canonical and drop them from the sitemap.
 
 ### 3.3 Sitemap hygiene problems
 
