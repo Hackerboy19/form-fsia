@@ -3,6 +3,7 @@ import { api, assetUrl } from '../lib/api';
 import { PageHeader } from '../components/Layout';
 import { Field, SelectField, Toggle } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
+import DocUpload from '../components/DocUpload';
 import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 import { useToast } from '../lib/toast';
 import DEFAULTS from '../lib/homeDefaults.json';
@@ -211,6 +212,8 @@ const VALIDATORS = {
       !/^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && `Event ${named(e, i)} needs a date.`,
       e.endDate && e.endDate < e.date && `Event ${named(e, i)}: the end date is before the start date.`,
       !isUrl(e.ctaUrl) && `Event ${named(e, i)}: the button link must start with https:// or /.`,
+      e.pdfUrl && !isUrl(e.pdfUrl) && `Event ${named(e, i)}: the PDF link must start with https:// or /.`,
+      e.pptUrl && !isUrl(e.pptUrl) && `Event ${named(e, i)}: the PPT link must start with https:// or /.`,
     ]),
   ].filter(Boolean),
   advertisement: ({ items }) =>
@@ -521,6 +524,15 @@ function EventForm({ ev: e, set, types }) {
         <Field label="Button link" value={e.ctaUrl} onChange={(ctaUrl) => set({ ctaUrl })} />
       </div>
       <ImageUpload label="Event image (optional)" value={e.image} onChange={(image) => set({ image })} size={{ w: 1600, h: 900, fit: 'cover' }} />
+
+      <div className="rounded-xl border border-gold-light bg-cream/60 p-4">
+        <h3 className="mb-1 font-display text-base font-bold">Downloads (optional)</h3>
+        <p className="mb-3 text-xs text-slate-500">Brochure, schedule or rules for this event. Visitors get a “PDF” / “PPT” button on the calendar.</p>
+        <div className="space-y-4">
+          <DocUpload label="PDF file" kind="pdf" value={e.pdfUrl} onChange={(pdfUrl) => set({ pdfUrl })} />
+          <DocUpload label="PPT file" kind="ppt" value={e.pptUrl} onChange={(pptUrl) => set({ pptUrl })} hint="PowerPoint (.ppt or .pptx)" />
+        </div>
+      </div>
     </div>
   );
 }

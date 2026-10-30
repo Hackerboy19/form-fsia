@@ -106,6 +106,13 @@
     '.fcal-hl li::before{content:"\\2726";position:absolute;left:0;color:#D4AF37;font-size:11px}',
     '.fcal-cta{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 18px;border-radius:999px;background:linear-gradient(135deg,#F6DC8C,#D4AF37 55%,#B98F1E);color:#0C1322 !important;font-size:13.5px;font-weight:700;text-decoration:none !important}',
     '.fcal-cta:hover{filter:brightness(1.05)}',
+    '.fcal-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}',
+    '.fcal-acts .fcal-cta,.fcal-acts .fcal-doc{margin-top:0 !important}',
+    '.fcal-row .fcal-acts{margin-top:10px}',
+    '.fcal-doc{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 14px;border-radius:999px;border:1px solid #E7E5E4;background:#fff;color:#0C1322 !important;font-size:12.5px;font-weight:700;text-decoration:none !important}',
+    '.fcal-doc:hover{border-color:#B8860B}',
+    '.fcal-doc i{font-style:normal;font-size:10px;font-weight:800;color:#fff;border-radius:4px;padding:2px 4px}',
+    '.fcal-row .fcal-doc{margin-top:10px;padding:6px 12px;font-size:12px}',
     '.fcal-empty{padding:28px 10px;text-align:center;color:var(--mut);font-size:13.5px}',
     '.fcal-empty button{margin-top:12px;border:1px solid #EADBAC;background:#FFFDF7;color:var(--gd);padding:8px 14px;border-radius:8px;font-size:13px}',
     '.fcal-ag{padding:10px 24px}',
@@ -194,6 +201,7 @@
         highlights: Array.isArray(r.highlights) ? r.highlights.map(str).filter(Boolean) : [],
         status: str(r.status) || 'upcoming',
         ctaText: str(r.ctaText), ctaUrl: safeUrl(r.ctaUrl), image: safeUrl(r.image),
+        pdfUrl: safeUrl(r.pdfUrl), pptUrl: safeUrl(r.pptUrl),
         keywords: Array.isArray(r.keywords) ? r.keywords.map(str).filter(Boolean) : [],
         star: !!r.highlight,
       };
@@ -305,6 +313,19 @@
       a.appendChild(icon('arrow'));
       return a;
     }
+    /* Register button + the event's PDF / PPT downloads, side by side. */
+    function actions(e) {
+      var row = el('div', 'fcal-acts');
+      var b = cta(e); if (b) row.appendChild(b);
+      [['PDF', e.pdfUrl, '#DC2626'], ['PPT', e.pptUrl, '#EA580C']].forEach(function (d) {
+        if (!d[1]) return;
+        var a = el('a', 'fcal-doc'); a.href = d[1]; a.target = '_blank'; a.rel = 'noopener';
+        var tag = el('i', '', d[0]); tag.style.background = d[2];
+        a.appendChild(tag); a.appendChild(document.createTextNode('Download ' + d[0]));
+        row.appendChild(a);
+      });
+      return row.childNodes.length ? row : null;
+    }
     function statusText(e) { return isOver(e) ? 'Concluded' : (STATUS[e.status] || 'Upcoming'); }
 
     function eventCard(e) {
@@ -333,7 +354,7 @@
         e.highlights.slice(0, 6).forEach(function (h) { ul.appendChild(el('li', '', h)); });
         c.appendChild(ul);
       }
-      var b = cta(e); if (b) c.appendChild(b);
+      var b = actions(e); if (b) c.appendChild(b);
       return c;
     }
 
@@ -461,7 +482,7 @@
         rb.appendChild(pill);
         rb.appendChild(el('h4', '', e.title));
         rb.appendChild(meta(e, !!e.end));
-        var b = cta(e); if (b) rb.appendChild(b);
+        var b = actions(e); if (b) rb.appendChild(b);
         row.appendChild(rb);
         box.appendChild(row);
       });
