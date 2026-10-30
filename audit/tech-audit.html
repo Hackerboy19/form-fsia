@@ -1,0 +1,334 @@
+<title>fsia.in Technical Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~880px) — verdict first, then sections in fix-priority order; tables scroll inside their own boxes */
+:root{
+  --bg:#f7f6f3; --surface:#ffffff; --ink:#1d1b26; --muted:#5f5b6e; --line:#e3e0e8;
+  --accent:#9a6a12; --accent-soft:#f5ead3;
+  --crit:#b42318; --crit-soft:#fde8e6; --warn:#a35a00; --warn-soft:#fdf0dc; --ok:#1f7a4a; --ok-soft:#e2f4ea; --info:#3d4f8f; --info-soft:#e7eaf7;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px;min-width:0}
+.sec-head{display:grid;gap:4px}
+
+/* header */
+header{display:grid;gap:10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:14px}
+
+/* TL;DR */
+.tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:14px}
+.tldr ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.tldr li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.tldr li p{min-width:0}
+
+/* verdict tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile .k{font-size:13px;color:var(--muted);font-weight:600}
+.tile .v{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .s{font-size:13px;color:var(--muted)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap;text-transform:uppercase}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.crit{color:var(--crit);background:var(--crit-soft)}
+.high{color:var(--warn);background:var(--warn-soft)}
+.med{color:var(--info);background:var(--info-soft)}
+.good{color:var(--ok);background:var(--ok-soft)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.fix{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* fast vs slow */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.panel ul{margin:0;padding-left:18px;display:grid;gap:7px}
+.panel h3{display:flex;align-items:center;gap:8px}
+
+/* bar charts */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 12px;display:grid;gap:10px}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;align-items:center;font-size:14px}
+.bar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:22px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fill.g{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.fill.w{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.fill.c{background:var(--crit-soft);color:var(--crit);box-shadow:inset 0 0 0 1px var(--crit)}
+.mark{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1.5px dashed var(--muted);opacity:.7}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{position:relative;height:16px}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+
+/* stacked bar */
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack div{min-width:3px}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;font-size:14px}
+.key{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px}
+.key b{font-variant-numeric:tabular-nums}
+
+/* state grid */
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.st{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.st span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;font-family:var(--f-mono)}
+.dot.in{color:var(--ok);background:var(--ok-soft)}
+.dot.out{color:var(--crit);background:var(--crit-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+/* details lists */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:13px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"Show";font-size:13px;color:var(--accent);font-weight:600}
+details[open] summary::after{content:"Hide"}
+summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dbody{padding:0 16px 16px;display:grid;gap:14px}
+.dbody ol{margin:0;padding-left:28px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all}
+.grp{display:grid;gap:6px}
+.grp h3{font-size:15px}
+button.copy{font:600 13px var(--f-body);color:var(--accent);background:var(--accent-soft);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;justify-self:start}
+
+/* plan */
+.plan{display:grid;gap:10px}
+.wk{display:grid;grid-template-columns:84px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.wk .w{font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--accent)}
+.wk ul{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:480px){.wk{grid-template-columns:1fr;gap:6px}}
+
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* added for the focused reports */
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.toc a{text-decoration:none;border-bottom:1px solid var(--line)}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.task input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent)}
+.task .tb{display:grid;gap:6px;min-width:0}
+.task .th{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.task .th b{font-size:16px}
+.task.done .th b{text-decoration:line-through;color:var(--muted)}
+.task .ac{font-size:14px;color:var(--muted)}
+.task .ac ul{margin:4px 0 0;padding-left:18px;display:grid;gap:2px}
+.tag{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.panelbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:12px}
+.panelbox ol{margin:0;padding-left:30px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all;max-height:420px;overflow:auto}
+pre.code{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto;font:400 13px/1.55 var(--f-mono)}
+.flag{font-weight:700}
+.flag.bad{color:var(--crit)} .flag.mid{color:var(--warn)} .flag.okc{color:var(--ok)}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;font-size:15px}
+.phase{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.phase .ph{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.phase .ph .w{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--accent)}
+.phase ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.gantt{display:grid;gap:6px;font-size:13px}
+.grow{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;align-items:center}
+.gtrack{position:relative;height:20px;background:var(--bg);border-radius:4px}
+.gbar{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--accent);opacity:.85}
+.gaxis{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;font-size:12px;color:var(--muted)}
+.gticks{position:relative;height:16px}
+.gticks span{position:absolute;transform:translateX(-50%)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Engineering brief · 30 Oct 2026</span>
+  <h1>fsia.in technical audit</h1>
+  <div class="meta">
+    <span>73 form files reviewed line by line</span>
+    <span>Live headers, endpoints and include files probed</span>
+    <span>Read-only checks: nothing was submitted or exploited</span>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#tldr">TL;DR</a><a href="#findings">All findings</a><a href="#good">What's good</a><a href="#unknown">Needs server access</a><a href="#order">Fix order</a>
+  </nav>
+</header>
+
+<section class="tldr" id="tldr" aria-labelledby="tldr-h">
+  <h2 id="tldr-h">TL;DR</h2>
+  <ul>
+    <li><span class="pill crit">Lost leads</span><p><b>The Bharat Couture Week form submits to <code>save-bharat-couture-week.php</code>, which returns 404 on the live site.</b> Every registration from that page is being lost.</p></li>
+    <li><span class="pill high">Mis-filed</span><p><b>Celebrity PR Agency and Forever Fashion Week post to the fashion-designer save script without a type or category.</b> India Fashion Week sends the same type code (43) as Fashion Designer, so the back office can't tell these registrations apart.</p></li>
+    <li><span class="pill high">Silent errors</span><p><b>None of the 72 pages shows server validation errors.</b> They read <code>$_SESSION['form_error']</code> but never print it. The save scripts reply with bare text such as "Name is required", which leaves users on a blank page.</p></li>
+    <li><span class="pill high">Security</span><p><b>No security headers, an insecure session cookie, a public unthrottled OTP sender, include files that can be loaded directly, no CSRF tokens, and unescaped CMS text in every page head.</b></p></li>
+    <li><span class="pill high">Speed</span><p><b>The ~5,000 profile pages have the same problems as the forms.</b> They load the Tailwind CDN, the full 557 KB Lucide icon library, and 16 images that each redirect from <code>fsia.in</code> to <code>www</code> first.</p></li>
+    <li><span class="pill med">Data</span><p><b>Google Analytics is configured twice on the homepage</b>, so homepage pageviews and bounce rate are wrong.</p></li>
+  </ul>
+</section>
+
+<section aria-label="Severity counts">
+  <div class="tiles" id="sevtiles"></div>
+</section>
+
+<section id="findings" aria-labelledby="f-h">
+  <div class="sec-head"><span class="eyebrow">Findings</span><h2 id="f-h">All findings</h2></div>
+  <div class="tabs" role="tablist" id="areaTabs"></div>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Finding and evidence</th><th>Fix</th></tr></thead>
+    <tbody id="frows"></tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="perf-h">
+  <div class="sec-head"><span class="eyebrow">Performance detail</span><h2 id="perf-h">Measured pages</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Page</th><th class="n">TTFB</th><th class="n">FCP</th><th class="n">LCP</th><th class="n">Transferred</th><th>Main cost</th></tr></thead>
+    <tbody>
+      <tr><td>Homepage</td><td class="n">0.99 s</td><td class="n">2.15 s</td><td class="n"><span class="flag bad">4.09 s</span></td><td class="n">1.55 MB</td><td>41 images, no dimensions; GA loaded twice</td></tr>
+      <tr><td>Profile: miss-india-2025-winner</td><td class="n">1.01 s</td><td class="n">2.08 s</td><td class="n"><span class="flag mid">3.20 s</span></td><td class="n">69 KB*</td><td>16 images via a 301 hop; Tailwind CDN; Lucide</td></tr>
+      <tr><td>Profile: sudeepthi-s-artist…</td><td class="n">0.60 s</td><td class="n">1.20 s</td><td class="n"><span class="flag mid">2.74 s</span></td><td class="n">69 KB*</td><td>Same pattern</td></tr>
+      <tr><td>Form: miss-delhi.php</td><td class="n">1.07 s</td><td class="n">2.75 s</td><td class="n"><span class="flag mid">2.75 s</span></td><td class="n">83 KB</td><td>Tailwind CDN; 6 blocking stylesheets; calendar/promo JS</td></tr>
+      <tr><td>Form: makeup-artist.php</td><td class="n">0.60 s</td><td class="n">1.71 s</td><td class="n"><span class="flag okc">1.71 s</span></td><td class="n">92 KB</td><td>Same pattern; 8 inputs without labels</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted" style="font-size:14px">Headless Chromium at phone width, no throttling, from a US datacenter. *The transfer figure is captured at page load and excludes lazy-loaded images. A static file has TTFB ≈ 0.77 s from the same place, so server processing is only about 0.02–0.2 s.</p>
+</section>
+
+<section id="good" aria-labelledby="good-h">
+  <div class="sec-head"><span class="eyebrow">Keep</span><h2 id="good-h">What's already right</h2></div>
+  <div class="split">
+    <div class="panel"><h3><span class="pill good">Security</span></h3><ul>
+      <li><code>.git</code>, <code>.env</code>, <code>composer.*</code>, <code>*.sql</code> and backups return 403</li>
+      <li>Directory listing is off (<code>/uploads/</code>, <code>/cms/</code>, <code>/static/</code>)</li>
+      <li>http → https and non-www → www 301s work</li>
+      <li>The Miss/Mrs India and Channel Partner save scripts reject submissions without OTP ("Verify Mobile Number First")</li>
+      <li>Email: SPF plus DMARC <code>p=quarantine</code> with strict alignment</li>
+      <li>No phpMyAdmin, <code>phpinfo</code> or <code>server-status</code> exposed</li>
+    </ul></div>
+    <div class="panel"><h3><span class="pill good">Platform</span></h3><ul>
+      <li>PHP 8.3 is a supported version (security fixes until end of 2027)</li>
+      <li>HTTP/2, gzip and Brotli are on</li>
+      <li>Server is fast: about 0.1 s of processing, p99 TTFB 1.06 s across 5,325 URLs</li>
+      <li>Real 404s for unknown URLs</li>
+      <li>Form pages barely shift while loading (CLS ≤ 0.01)</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="unknown" aria-labelledby="u-h">
+  <div class="sec-head"><span class="eyebrow">Blind spots</span><h2 id="u-h">Can't be checked without server access</h2></div>
+  <p class="muted">This code runs only on the live server; it isn't in the repo. Each item below should be reviewed before the migration starts.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td><code>savefashiondesigner.php</code>, <code>save_makeup_artist.php</code>, <code>saveworld.php</code></td><td>They answered "Name is required" or "Invalid registration type" before any OTP check. Confirm they require a verified phone.</td></tr>
+      <tr><td><code>get_city_name.php</code> (<code>sids</code> parameter)</td><td>Builds HTML from a DB query. Confirm it uses a prepared statement or an integer cast.</td></tr>
+      <tr><td><code>save_reg_profile.php</code> (photo upload, 200 on GET)</td><td>Check file type, size, filename and storage outside executable paths.</td></tr>
+      <tr><td><code>/cms/backend/</code> admin and write APIs</td><td>The read API is public, which is fine for public content. Check that the write endpoints require login, CSRF protection and 2FA.</td></tr>
+      <tr><td><code>config.php</code></td><td>DB credentials location, error display setting, and session settings</td></tr>
+      <tr><td>Plesk / nginx config, cron jobs, backups</td><td>Needed for headers, caching, the URL-style change, and recovery</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="order" aria-labelledby="o-h">
+  <div class="sec-head"><span class="eyebrow">Order</span><h2 id="o-h">Fix order</h2></div>
+  <div class="plan">
+    <div class="wk"><span class="w">Today</span><ul><li>T-01: point the Bharat Couture form at a working save script, then check whether its past registrations can be recovered from server logs</li><li>T-06: delete the inline <code>?action=send_otp</code> handler from 66 pages</li></ul></div>
+    <div class="wk"><span class="w">Week 1</span><ul><li>T-02, T-03: fix registration types and show errors on the form</li><li>T-07–T-11: OTP hardening, security headers, cookie flags, hide version, block include files</li><li>T-20, T-22: cache headers, sessions only when needed</li></ul></div>
+    <div class="wk"><span class="w">Week 2</span><ul><li>T-12–T-14: CSRF, escape CMS output, server-set categories</li><li>T-21, T-23, T-24, T-27: Tailwind build, Lucide subset, image host fix, GA fix</li></ul></div>
+    <div class="wk"><span class="w">Then</span><ul><li>Bring all server code into git and add CI. This is phase 0 of the migration plan.</li></ul></div>
+  </div>
+</section>
+
+<footer>
+  <span>Repo: <a href="https://github.com/Hackerboy19/form-fsia/pull/10">Hackerboy19/form-fsia#10</a>. Every check was a GET request to a public URL or a reading of the repo code. No forms were submitted, no OTPs sent, no payloads injected.</span>
+</footer>
+</div>
+
+<script>
+(function(){
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+/* [id, area, severity, title, evidence (html), fix (html)] */
+var F=[
+["T-01","Broken flows","crit","Bharat Couture Week form posts to a 404","The live page's form uses <code>action=\"save-bharat-couture-week.php\"</code>. A GET on that URL returns <b>404 File not found</b>.","Point it at the correct handler or deploy the missing file. Test one real submission. Check the access logs for lost POSTs."],
+["T-02","Broken flows","high","Four programs share one save script with no way to tell them apart","<code>celebrity-pr-agency</code> and <code>forever-fashion-week</code> post to <code>savefashiondesigner.php</code> with no <code>regtype</code> or <code>category</code>. <code>india-fashion-week-fashion-show</code> sends <code>regtype=43</code>, the same as Fashion Designer.","Give each program its own type code, set on the server per page. Then reclassify existing rows."],
+["T-03","Broken flows","high","Server validation errors are never shown","All 72 pages read <code>$_SESSION['form_error']</code> and never print it. Save scripts reply with bare text (\"Name is required\", \"Verify Mobile Number First\").","Redirect back with the error and render it above the form. Or submit with fetch and show inline errors."],
+["T-04","Broken flows","high","76 profile URLs return HTTP 500","Consistent on retry. 42 match <code>…-miss/mrs-india-2021</code> without an <code>-id-</code>. 15 are <code>…-is-coming-for-the-grand-finale</code>.","Read the error log for these routes. Fix the router, or return 410 for deleted profiles."],
+["T-05","Broken flows","med","<code>miss-universe-registration.php</code> not deployed","It is in the repo but returns 404 live. It posts to itself and includes <code>process_registration.php</code>, which is also 404. It shares CMS meta row 145 with another page.","Deploy it with its own meta row, or delete it."],
+["T-06","Security","high","Public OTP sender with no rate limit","66 state pages run an inline handler on <code>?action=send_otp&amp;phone=…</code> that sends a WhatsApp message. <code>?action=verify_otp</code> is reachable (returns HTTP 500). The forms use <code>send_otpnew.php</code> instead.","Delete the inline handler. Add per-phone and per-IP limits on the remaining endpoint."],
+["T-07","Security","high","Weak OTP handling","<code>rand()</code> instead of <code>random_int()</code>; unlimited verify attempts in a 10-minute window; <code>CURLOPT_SSL_VERIFYPEER=false</code>; ClickChat webhook ID hard-coded in 67 files; phone and OTP sent in the URL query string.","Use random_int, lock after 5 wrong attempts, enable TLS checks, move the webhook ID to env and rotate it, POST the OTP in the body."],
+["T-08","Security","high","No security headers","No <code>Strict-Transport-Security</code>, <code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code> or <code>Permissions-Policy</code>. The forms can be framed (clickjacking).","Add the headers in nginx. Start the CSP in report-only mode."],
+["T-09","Security","med","Insecure session cookie on every visit","<code>Set-Cookie: PHPSESSID=…; path=/</code>, without <code>Secure</code>, <code>HttpOnly</code> or <code>SameSite</code>. A session is started for every anonymous visitor.","Set <code>session.cookie_secure</code>, <code>httponly</code> and <code>samesite=Lax</code>. Start the session only at OTP or submit."],
+["T-10","Security","med","Version disclosure","<code>X-Powered-By: PHP/8.3.36</code> and <code>X-Powered-By: PleskLin</code> on every response.","<code>expose_php=Off</code>; remove the Plesk header."],
+["T-11","Security","med","Include files can be loaded directly","<code>header1806.php</code> (62 KB) and <code>footer1806.php</code> render on their own. <code>config.php</code> and <code>form_header.php</code> return 200, and <code>state-city.php</code> returns 500.","Move includes outside the web root or deny them in nginx."],
+["T-12","Security","med","No CSRF protection","0 of 73 forms carry a token.","Per-session token, checked in every save script."],
+["T-13","Security","med","CMS text printed unescaped in every page head","<code>&lt;?php echo $meta_tag['meta_title']?&gt;</code> and 6 similar echoes per page go into the title, meta and OG tags without <code>htmlspecialchars</code>. A bad CMS value or a DB write would inject script into all 72 forms.","Escape all output with <code>htmlspecialchars(…, ENT_QUOTES)</code>."],
+["T-14","Security","med","The browser chooses where a registration is filed","Hidden <code>category</code> (34 pages) and <code>landing</code> (64 pages) inputs are trusted.","Set them on the server from the page, or check against an allowlist."],
+["T-15","Security","med","Third-party script supply chain","The unpinned Tailwind CDN runs whatever code it serves on forms that collect phone numbers. No script uses SRI.","Self-host the built CSS. Pin versions and add SRI for jQuery and Lucide."],
+["T-16","Security","low","No CAA DNS record","Any certificate authority may issue certificates for fsia.in.","Add CAA records for the CA(s) actually used."],
+["T-17","Security","low","Age limits enforced only in the browser","DOB range and minimum age are checked in JavaScript.","Check them again in the save scripts."],
+["T-18","Ops","med","A test page is live and indexed","<code>/test.php</code> (\"Model Gallery 2026\", 86 KB) is self-canonical and listed in the sitemap.","Rename it to a real URL, or remove it."],
+["T-19","Ops","low","Three different error handlers","Apache-style 403 page (iso-8859-1); PHP-FPM \"File not found.\" for missing <code>.php</code>; the site's own 404 page elsewhere.","Use <code>try_files</code> before FastCGI and one branded 404/403 page."],
+["T-20","Performance","high","<code>Cache-Control: no-store</code> on every asset","CSS, JS, images and the logo are downloaded again on every page view.","1-year <code>immutable</code> caching for versioned assets; short caching for HTML where safe."],
+["T-21","Performance","high","Tailwind compiled in the browser on ~5,500 pages","Forms and profile pages all load <code>cdn.tailwindcss.com</code> (126 KB br) and compile before paint.","Build one purged CSS file with the Tailwind CLI."],
+["T-22","Performance","med","Sessions block caching","A <code>PHPSESSID</code> cookie plus <code>no-store</code> on all HTML, so no CDN can cache any page.","Sessions only on interaction; cache public HTML at the edge."],
+["T-23","Performance","med","Full Lucide icon library on profile pages","<code>lucide@0.383.0</code> UMD, 557 KB raw (90 KB compressed), for a few icons.","Inline the handful of SVG icons used."],
+["T-24","Performance","med","Profile images take a redirect hop","16 images per profile page use <code>https://fsia.in/…</code>, which 301s to <code>www</code> before loading (~0.9 s extra each on first connection).","Write image URLs with <code>www</code>, or serve them from a CDN host."],
+["T-25","Performance","med","calendar.js and promo.js on every form","The slowest requests on each form (1.0–2.1 s), plus a CMS API call.","Load them after the page is interactive, or only where needed."],
+["T-26","Performance","med","Homepage weight","1.55 MB; LCP 4.09 s; 41 images without dimensions; 10 without alt; JPG logos with spaces in filenames.","WebP/AVIF, width and height, fetchpriority on the hero image."],
+["T-27","Analytics","med","GA4 configured twice on the homepage","Two <code>gtag('config','G-Y4WSHCXRGB')</code> calls, so every homepage view counts twice.","Keep one config call. Note the inflated period in reports."],
+["T-28","Code","med","73 copies of one form","About 95% identical (<code>miss-delhi</code> vs <code>miss-goa</code>: 42 of 855 lines differ); 3.7 MB in total; about 95 KB of inline CSS/JS per page.","One template plus a config per page, or the migration plan."],
+["T-29","Code","med","Most of the site isn't in version control","Headers, footers, config, 8 save scripts, OTP endpoints, the CMS, assets and the profile router are only on the server.","Pull everything into git, move secrets to env, add CI."],
+["T-30","Code","low","Accessibility gaps","<code>makeup-artist.php</code>: 8 inputs without labels; <code>forever-miss-india-new.php</code>: 2.","Associate every input with a <code>&lt;label&gt;</code>."]
+];
+var SEV={crit:["Critical","crit"],high:["High","high"],med:["Medium","med"],low:["Low","good"]};
+var counts={crit:0,high:0,med:0,low:0}; F.forEach(function(f){counts[f[2]]++;});
+document.getElementById("sevtiles").innerHTML=[["crit","var(--crit)"],["high","var(--warn)"],["med","var(--info)"],["low","var(--muted)"]].map(function(s){return '<div class="tile"><span class="k">'+SEV[s[0]][0]+'</span><span class="v" style="color:'+s[1]+'">'+counts[s[0]]+'</span><span class="s">findings</span></div>';}).join("");
+var areas=["All"]; F.forEach(function(f){if(areas.indexOf(f[1])<0)areas.push(f[1]);});
+var tabs=document.getElementById("areaTabs"), body=document.getElementById("frows");
+areas.forEach(function(a,i){tabs.insertAdjacentHTML("beforeend",'<button type="button" role="tab" aria-selected="'+(i===0)+'">'+a+' ('+(a=="All"?F.length:F.filter(function(f){return f[1]==a;}).length)+')</button>');});
+function render(a){
+  [].forEach.call(tabs.children,function(b){b.setAttribute("aria-selected",String(b.textContent.indexOf(a+" (")===0));});
+  body.innerHTML=F.filter(function(f){return a=="All"||f[1]==a;}).map(function(f){return '<tr><td style="white-space:nowrap"><b class="mono">'+f[0]+'</b><br><span class="pill '+SEV[f[2]][1]+'" style="margin-top:6px">'+SEV[f[2]][0]+'</span></td><td><b>'+f[3]+'</b><div class="fix">'+f[4]+'</div><span class="tag" style="display:inline-block;margin-top:6px">'+esc(f[1])+'</span></td><td style="font-size:14px">'+f[5]+'</td></tr>';}).join("");
+}
+tabs.addEventListener("click",function(e){var b=e.target.closest("button");if(b)render(b.textContent.replace(/ \(\d+\)$/,""));});
+render("All");
+})();
+</script>

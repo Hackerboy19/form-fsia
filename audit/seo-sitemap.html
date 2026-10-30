@@ -1,0 +1,461 @@
+<title>fsia.in Sitemap & SEO Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~880px) — verdict first, then sections in fix-priority order; tables scroll inside their own boxes */
+:root{
+  --bg:#f7f6f3; --surface:#ffffff; --ink:#1d1b26; --muted:#5f5b6e; --line:#e3e0e8;
+  --accent:#9a6a12; --accent-soft:#f5ead3;
+  --crit:#b42318; --crit-soft:#fde8e6; --warn:#a35a00; --warn-soft:#fdf0dc; --ok:#1f7a4a; --ok-soft:#e2f4ea; --info:#3d4f8f; --info-soft:#e7eaf7;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px;min-width:0}
+.sec-head{display:grid;gap:4px}
+
+/* header */
+header{display:grid;gap:10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:14px}
+
+/* TL;DR */
+.tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:14px}
+.tldr ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.tldr li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.tldr li p{min-width:0}
+
+/* verdict tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile .k{font-size:13px;color:var(--muted);font-weight:600}
+.tile .v{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .s{font-size:13px;color:var(--muted)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap;text-transform:uppercase}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.crit{color:var(--crit);background:var(--crit-soft)}
+.high{color:var(--warn);background:var(--warn-soft)}
+.med{color:var(--info);background:var(--info-soft)}
+.good{color:var(--ok);background:var(--ok-soft)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.fix{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* fast vs slow */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.panel ul{margin:0;padding-left:18px;display:grid;gap:7px}
+.panel h3{display:flex;align-items:center;gap:8px}
+
+/* bar charts */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 12px;display:grid;gap:10px}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;align-items:center;font-size:14px}
+.bar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:22px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fill.g{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.fill.w{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.fill.c{background:var(--crit-soft);color:var(--crit);box-shadow:inset 0 0 0 1px var(--crit)}
+.mark{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1.5px dashed var(--muted);opacity:.7}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{position:relative;height:16px}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+
+/* stacked bar */
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack div{min-width:3px}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;font-size:14px}
+.key{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px}
+.key b{font-variant-numeric:tabular-nums}
+
+/* state grid */
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.st{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.st span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;font-family:var(--f-mono)}
+.dot.in{color:var(--ok);background:var(--ok-soft)}
+.dot.out{color:var(--crit);background:var(--crit-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+/* details lists */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:13px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"Show";font-size:13px;color:var(--accent);font-weight:600}
+details[open] summary::after{content:"Hide"}
+summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dbody{padding:0 16px 16px;display:grid;gap:14px}
+.dbody ol{margin:0;padding-left:28px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all}
+.grp{display:grid;gap:6px}
+.grp h3{font-size:15px}
+button.copy{font:600 13px var(--f-body);color:var(--accent);background:var(--accent-soft);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;justify-self:start}
+
+/* plan */
+.plan{display:grid;gap:10px}
+.wk{display:grid;grid-template-columns:84px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.wk .w{font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--accent)}
+.wk ul{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:480px){.wk{grid-template-columns:1fr;gap:6px}}
+
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* added for the focused reports */
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.toc a{text-decoration:none;border-bottom:1px solid var(--line)}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.task input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent)}
+.task .tb{display:grid;gap:6px;min-width:0}
+.task .th{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.task .th b{font-size:16px}
+.task.done .th b{text-decoration:line-through;color:var(--muted)}
+.task .ac{font-size:14px;color:var(--muted)}
+.task .ac ul{margin:4px 0 0;padding-left:18px;display:grid;gap:2px}
+.tag{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.panelbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:12px}
+.panelbox ol{margin:0;padding-left:30px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all;max-height:420px;overflow:auto}
+pre.code{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto;font:400 13px/1.55 var(--f-mono)}
+.flag{font-weight:700}
+.flag.bad{color:var(--crit)} .flag.mid{color:var(--warn)} .flag.okc{color:var(--ok)}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;font-size:15px}
+.phase{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.phase .ph{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.phase .ph .w{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--accent)}
+.phase ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.gantt{display:grid;gap:6px;font-size:13px}
+.grow{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;align-items:center}
+.gtrack{position:relative;height:20px;background:var(--bg);border-radius:4px}
+.gbar{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--accent);opacity:.85}
+.gaxis{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;font-size:12px;color:var(--muted)}
+.gticks{position:relative;height:16px}
+.gticks span{position:absolute;transform:translateX(-50%)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">SEO team brief · 30 Oct 2026</span>
+  <h1>Sitemap & SEO plan for fsia.in</h1>
+  <div class="meta">
+    <span>All 5,519 sitemap URLs crawled</span>
+    <span>72 live form pages checked</span>
+    <span>Every URL list below has a copy button</span>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#tldr">TL;DR</a><a href="#tasks">Task list</a><a href="#missing">Missing pages</a><a href="#broken">Broken URLs</a><a href="#target">Target sitemap</a><a href="#onpage">On-page fixes</a><a href="#schema">Structured data</a><a href="#verify">How to verify</a>
+  </nav>
+</header>
+
+<section class="tldr" id="tldr" aria-labelledby="tldr-h">
+  <h2 id="tldr-h">TL;DR</h2>
+  <ul>
+    <li><span class="pill crit">Missing</span><p><b>59 live pages aren't in any sitemap.</b> That includes 51 of the 64 state Miss/Mrs registration forms, the pages that should bring in this season's sign-ups.</p></li>
+    <li><span class="pill crit">Broken</span><p><b>192 sitemap URLs don't return 200.</b> 80 return 404, 76 return a 500 server error, and 32 redirect, 22 of them to the homepage.</p></li>
+    <li><span class="pill high">Stale</span><p><b>The sitemap is hand-written and frozen.</b> No child sitemap has a <code>lastmod</code>, the index dates are from 2023–24, and only 3 of 5,519 URLs are 2026 content.</p></li>
+    <li><span class="pill crit">Canonical</span><p><b>Bharat Couture Week's canonical points to a page that redirects to the homepage.</b> Google will likely drop it from search.</p></li>
+    <li><span class="pill med">On-page</span><p><b>49 of 72 form titles are too long, 49 descriptions are too long, and 13 pages have two H1s.</b> 71 pages also mark up a year-long "Event" at the Jaipur office.</p></li>
+    <li><span class="pill good">Fix</span><p><b>Replace the 25 static XML files with one sitemap generated from the database.</b> That fixes missing pages, dead URLs, duplicates and dates together. The task list below starts with quick manual fixes for this week.</p></li>
+  </ul>
+</section>
+
+<section aria-label="Key numbers">
+  <div class="tiles">
+    <div class="tile"><span class="k">URLs in sitemap</span><span class="v">5,519</span><span class="s">25 child files, 1 index</span></div>
+    <div class="tile"><span class="k">Broken</span><span class="v" style="color:var(--crit)">192</span><span class="s">3.5% of the sitemap</span></div>
+    <div class="tile"><span class="k">Live but missing</span><span class="v" style="color:var(--warn)">59</span><span class="s">52 forms + 7 site pages</span></div>
+    <div class="tile"><span class="k">2026 URLs</span><span class="v" style="color:var(--warn)">3</span><span class="s">during the 2026 season</span></div>
+  </div>
+</section>
+
+<!-- TASKS -->
+<section id="tasks" aria-labelledby="tasks-h">
+  <div class="sec-head"><span class="eyebrow">Task list</span><h2 id="tasks-h">What to do, in order</h2></div>
+  <p class="muted" style="font-size:14px">Checkboxes are saved in your own browser only. Each task lists what "done" looks like.</p>
+  <div class="tasks" id="tasklist"></div>
+</section>
+
+<!-- MISSING -->
+<section id="missing" aria-labelledby="miss-h">
+  <div class="sec-head"><span class="eyebrow">Gap 1</span><h2 id="miss-h">Live pages missing from the sitemap (59)</h2></div>
+  <h3>State registration forms</h3>
+  <div class="legend"><span><span class="dot in">IN</span> in sitemap</span><span><span class="dot out">—</span> live, missing</span><span>Each row shows Miss, then Mrs</span></div>
+  <div class="states" id="states"></div>
+  <div class="panelbox">
+    <div class="th" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><b>All 52 live repo pages to add</b><button class="copy" type="button" data-copy="missing">Copy 52 URLs</button></div>
+    <ol id="missingList"></ol>
+    <p class="muted" style="font-size:13px"><code>miss-universe-registration.php</code> is in the repo but not deployed (404), so it isn't in this list. Either deploy it or delete it.</p>
+  </div>
+  <h3>Other live pages linked from the nav or footer</h3>
+  <div class="panelbox">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><b>7 pages to add</b><button class="copy" type="button" data-copy="other">Copy 7 URLs</button></div>
+    <ol id="otherList"></ol>
+    <p class="muted" style="font-size:13px"><code>news-coverage</code> also answers at <code>news-coverage.php</code>. Choose one URL and 301 the other before adding it.</p>
+  </div>
+</section>
+
+<!-- BROKEN -->
+<section id="broken" aria-labelledby="broken-h">
+  <div class="sec-head"><span class="eyebrow">Gap 2</span><h2 id="broken-h">Sitemap URLs that don't work (192)</h2></div>
+  <div class="chart">
+    <div class="stack" id="stack" role="img" aria-label="Broken sitemap URLs: 80 404, 76 500, 22 redirect to homepage, 10 redirect elsewhere, 3 wrong host, 1 space in URL"></div>
+    <div class="keys" id="keys"></div>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="panelbox" id="tabpanel" role="tabpanel"></div>
+</section>
+
+<!-- TARGET -->
+<section id="target" aria-labelledby="target-h">
+  <div class="sec-head"><span class="eyebrow">Gap 3</span><h2 id="target-h">Target sitemap: generated, not hand-written</h2></div>
+  <div class="split">
+    <div class="panel">
+      <h3><span class="pill crit">Today</span></h3>
+      <ul>
+        <li>25 static XML files, edited by hand</li>
+        <li>No <code>lastmod</code> in any child file. Index dates are 2023–24.</li>
+        <li><code>sitemap-complete.xml</code> is a 4,332-URL catch-all</li>
+        <li>110 duplicate entries; 123 <code>?id=</code> URLs; 3 on the wrong host</li>
+        <li>Season files stop at 2025. No 2026 sitemaps.</li>
+        <li>Mixes <code>.php</code> and extensionless URLs</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3><span class="pill good">Target</span></h3>
+      <ul>
+        <li>One generator script reading the DB and a short list of static pages</li>
+        <li>Only URLs that return 200, are indexable, and canonicalise to themselves</li>
+        <li>Always <code>https://www.fsia.in</code>, lowercase, no query strings</li>
+        <li><code>lastmod</code> taken from each record's <code>updated_at</code></li>
+        <li>Split by type and season so Search Console reports coverage per section</li>
+        <li>Cached for 1 hour and rebuilt when content changes</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Proposed sitemap index</h3>
+<pre class="code">sitemap.xml                      (index, generated)
+├─ sitemap-pages.xml             home, about, contact, policies, galleries, hubs
+├─ sitemap-registration.xml      all 64 state forms + fashion week, MUA, designer, partner forms
+├─ sitemap-winners-2026.xml      new season: winners, title holders
+├─ sitemap-contestants-2026.xml
+├─ sitemap-profiles-2025.xml     one file per season, each ≤ 50,000 URLs
+├─ sitemap-profiles-2024.xml
+├─ sitemap-profiles-2023.xml
+├─ sitemap-profiles-2022.xml
+├─ sitemap-profiles-2021.xml
+├─ sitemap-profiles-2020.xml
+└─ sitemap-news.xml              news-coverage, articles, videos</pre>
+  <h3>Rules for the generator</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Rule</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Include a URL only if its live response is 200 and it isn't <code>noindex</code></td><td>Stops the 192 broken entries from returning</td></tr>
+      <tr><td>The URL must equal the page's canonical</td><td>Stops cases like Bharat Couture, where the sitemap and canonical disagree</td></tr>
+      <tr><td>Emit absolute <code>https://www.fsia.in/…</code>, lowercase, with no spaces or <code>?</code></td><td>Removes the 3 wrong-host, 136 uppercase and 123 query-string entries</td></tr>
+      <tr><td>De-duplicate across all child files</td><td>Removes the 110 duplicates</td></tr>
+      <tr><td><code>&lt;lastmod&gt;</code> = record's last edit, in W3C datetime</td><td>Google uses lastmod to decide what to recrawl</td></tr>
+      <tr><td>Skip <code>priority</code> and <code>changefreq</code></td><td>Google ignores both</td></tr>
+      <tr><td>Weekly job: request every sitemap URL and alert if more than 0.5% fail</td><td>Catches the next batch of deleted profiles early</td></tr>
+    </tbody>
+  </table></div>
+  <h3>URL style decision (needed before the rebuild)</h3>
+  <div class="callout">70 of 72 form pages only work with <code>.php</code>, while most profiles are extensionless and 4 pages answer at both. Pick one style. We recommend <b>extensionless</b> (<code>/miss-delhi</code>), served by an nginx rewrite, with a <b>301 from every <code>.php</code> URL</b>. Sitemap, canonical and nav links must all use the chosen form.</div>
+</section>
+
+<!-- ON-PAGE -->
+<section id="onpage" aria-labelledby="onpage-h">
+  <div class="sec-head"><span class="eyebrow">Gap 4</span><h2 id="onpage-h">On-page fixes for the 72 form pages</h2></div>
+  <p class="muted">Targets: title ≤ 60 characters, description 120–155, exactly one H1. The proposed state-page titles follow one pattern and all fit within 60 characters.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Page</th><th class="n">Title</th><th class="n">Desc</th><th class="n">H1s</th><th>Proposed title</th></tr></thead>
+    <tbody id="pageRows"></tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Also fix</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>Second H1 "Schedule Online Auditions Now" comes from a CMS block</td><td>Change that block's heading to H2, once in the CMS</td></tr>
+      <tr><td>"Auditions Open for for Fresh Faces"</td><td><code>miss-delhi</code> title, description and schema</td></tr>
+      <tr><td>Misspelled slugs: <code>poducherry</code> (Puducherry), <code>chattisgarh</code> (Chhattisgarh)</td><td>Add correctly spelled URLs with 301s from the old ones when the URL style changes</td></tr>
+      <tr><td>Remove <code>meta keywords</code></td><td>Google ignores it; it's just extra page weight</td></tr>
+      <tr><td><code>test.php</code> ("Model Gallery 2026") is live, self-canonical and in the sitemap</td><td>Move it to a real URL or <code>noindex</code> it and remove it from the sitemap</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- SCHEMA -->
+<section id="schema" aria-labelledby="schema-h">
+  <div class="sec-head"><span class="eyebrow">Gap 5</span><h2 id="schema-h">Structured data</h2></div>
+  <p>Every form page outputs valid JSON-LD. The problem is the <code>Event</code> block on 71 pages: it claims a 365-day event (2026-01-01 → 2026-12-31) at the Jaipur office, including on Miss Delhi and Miss Kerala. A registration window isn't an event under Google's guidelines, and misleading event markup can lead to a manual action.</p>
+  <div class="split">
+    <div class="panel"><h3>Option A (recommended): remove <code>Event</code> from form pages</h3><p class="muted">Keep <code>Organization</code>, <code>WebPage</code>, <code>BreadcrumbList</code> and <code>FAQPage</code>. Put <code>Event</code> only on pages for real dated events, such as auditions or the grand finale.</p></div>
+    <div class="panel"><h3>Option B: describe each real audition</h3><p class="muted">One <code>Event</code> per audition with its real date, venue and city, plus <code>offers.price</code>, <code>priceCurrency: "INR"</code>, <code>availability</code> and <code>validFrom</code>.</p></div>
+  </div>
+<pre class="code">{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "Forever Miss India 2026 — Grand Finale",
+  "startDate": "YYYY-MM-DDT10:00+05:30",
+  "endDate":   "YYYY-MM-DDT22:00+05:30",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "location": { "@type": "Place", "name": "The Fern Nest by Marriott",
+                "address": { "@type": "PostalAddress", "addressLocality": "Jaipur",
+                             "addressRegion": "Rajasthan", "addressCountry": "IN" } },
+  "offers": { "@type": "Offer", "url": "https://www.fsia.in/forever-miss-india-new",
+              "price": "2999", "priceCurrency": "INR",
+              "availability": "https://schema.org/InStock", "validFrom": "YYYY-MM-DD" },
+  "organizer": { "@type": "Organization", "name": "Forever Star India", "url": "https://www.fsia.in" }
+}</pre>
+  <p class="muted" style="font-size:14px">The venue comes from the site's own calendar feed. Replace the date placeholders with confirmed dates. The ₹2,999 figure is from <code>miss-universe-registration.php</code>; use the real fee for each event.</p>
+</section>
+
+<!-- VERIFY -->
+<section id="verify" aria-labelledby="verify-h">
+  <div class="sec-head"><span class="eyebrow">Done means</span><h2 id="verify-h">How to verify</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Check</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Request every URL in the new sitemap</td><td>100% return 200, with zero redirects</td></tr>
+      <tr><td>Compare each URL with its page's <code>&lt;link rel="canonical"&gt;</code></td><td>100% match</td></tr>
+      <tr><td>Search Console → Sitemaps</td><td>Resubmitted; "Discovered" count matches the URL count</td></tr>
+      <tr><td>Search Console → Pages → "Not found (404)" and "Server error (5xx)"</td><td>Trending to zero within 4–6 weeks</td></tr>
+      <tr><td>Rich Results Test on 3 state pages</td><td>No Event warnings; FAQ and Breadcrumb valid</td></tr>
+      <tr><td><code>site:fsia.in miss-goa</code> (spot-check 5 newly added states)</td><td>Indexed within 2–3 weeks</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <span>Data files: <code>audit/sitemap-broken-urls.tsv</code>, <code>audit/repo-pages-missing-from-sitemap.txt</code>, <code>audit/live-pages-missing-from-sitemap.tsv</code> in <a href="https://github.com/Hackerboy19/form-fsia/pull/10">Hackerboy19/form-fsia#10</a>.</span>
+  <span>Method: downloaded <code>sitemap.xml</code> and all 25 child files, requested every URL, retried failures once, and parsed the live HTML of all form pages. Crawled 30 Oct 2026.</span>
+</footer>
+</div>
+
+<script>
+(function(){
+var DATA={"cat": {"404 not found": [["-sandhya-rani-jena-miss-india-2021-id-17867", ""], ["Miss-West-Bengal-2022-2nd-Runner-Up-Priyanka-Pal", ""], ["aadisha-soni-miss-india-2021-id-17623", ""], ["aarti-bingi-miss-india-2021-id-18647", ""], ["abhinav-datta-heroes-awards-2021-id-16787", ""], ["afsha-shaikh-miss-india-2021-id-21843", ""], ["aishwarya-suman-miss-india-2021-id-14806", ""], ["ajay-belose-heroes-awards-2021-id-21228", ""], ["akansha-oberai-miss-india-2021-id-17409", ""], ["akansha-sawan-miss-india-2021-id-20785", ""], ["akshita-sakshi-miss-india-2021-id-14618", ""], ["anita-mishra-mrs-india-2021-id-13095", ""], ["anjali-sharma-miss-india-2021-id-18789", ""], ["ankita-miss-india-2021-id-17759", ""], ["arti-jangid-miss-india-2021-id-14557", ""], ["avani-lubri--miss-india-2021-id-12811", ""], ["azra-chennai-title-holder-lawyer-2025", ""], ["bangaru-laxmi-miss-india-2021-id-14408", ""], ["best-astrologer-in-ayodhya-2024-astro-prabhakar-pandey", ""], ["best-supplement-manufacturer-in-gujarat-2024-leroy-nutrascience", ""], ["bhavya-srivastava-miss-india-2021-id-14757", ""], ["bhumika-sharma-miss-india-2021-id-16564", ""], ["chandani-kumari-miss-india-2021-id-20163", ""], ["chandrita-misra-miss-india-2021-id-21431", ""], ["chitra-ufadiyal-miss-india-2021-id-15687", ""], ["chitrita-khan-women-awards-2021-id-20106", ""], ["darshana-deshmukh-miss-india-2021-id-15891", ""], ["deepak-kranti-heroes-awards-2021-id-21197", ""], ["dr-monica-phd-women-awards-2022-id-26503", ""], ["fashion-designer-naomi-dharmi-anand-id-21867", ""], ["gayatri-sanjay-gunge-miss-india-2021-id-15913", ""], ["hemlata-chaudhary-mrs-india-2021-id-16262", ""], ["jagriti-thakur-miss-india-2021-id-18139", ""], ["jhilmil-goswami-miss-india-2021-id-13528", ""], ["jyoti-kumari-miss-india-2021-id-16743", ""], ["kajal-nitin-javheri-miss-india-2021-id-18275", ""], ["khushbu-pandey-miss-india-2021-id-15364", ""], ["kinjal-bhaskar-patil-miss-india-2021-id-15569", ""], ["kiran-kumari-mrs-india-2021-id-18824", ""], ["krati-malik-gulati-mrs-india-2021-id-21542", ""], ["laly-santosh-mrs-india-2021-id-21740", ""], ["makeup-artist-chhaya-gotecha-id-22587", ""], ["makeup-artist-jyoti-chouhan-id-21324", ""], ["makeup-artist-kinita-rathod-id-227678", ""], ["makeup-artist-manisha-suyal-id-22090", ""], ["makeup-artist-shalu-yadav-id-19680", ""], ["makeup-artist-simran-kaur-id-20277", ""], ["makeup-artist-uzma-afraaz-id-22203", ""], ["megha-jain-miss-india-2021-id-17874", ""], ["miss-india-ananya-dalui--building-confidence-with-training-and-grooming-sessions-from-expert", ""], ["miss-india-contestant-2025-aishwarya-koppanatham-tirupati", ""], ["miss-india-contestant-2025-deepika-luthra-yamuna-nagar", ""], ["mrs-abhipsa-dash-de-mrs-india-2021-id-20037", ""], ["mrs-india-contestant-2025-anupriya-lata-ranchi", ""], ["mrs-india-contestant-2025-dipti-behl-raturi-porbandar", ""], ["mrs-india-contestant-2025-dr.-nidhi-vanesa-haldia", ""], ["mrs.-priyanka-dutta-mrs-india-2021-id-19507", ""], ["muskaan-alam-khan-miss-india-2021-id-15328", ""], ["neetu-singh-women-awards-2021-id-21832", ""], ["neha-b-shinde-mrs-india-2021-id-21056", ""], ["nidhi-tiwari-miss-india-2021-id-14511", ""], ["niharika-sharma-miss-india-2021-id-16646", ""], ["pradnya-jadhav-mrs-india-2021-id-22194", ""], ["pratiksha-rajendra-phadale-mrs-india-2021-id-18390", ""], ["punam-m-jagtap-miss-india-2021-id-13336", ""], ["rajlaxmi-rathi-miss-india-2021-id-14275", ""], ["revati-sitendra-miss-india-2021-id-21565", ""], ["sakshi-chandrasekhar-bhosale-miss-india-2021-id-18163", ""], ["sanchita-kundu-women-awards-2021-id-20142", ""], ["sanika-sachin-deshmukh--miss-india-2021-id-12787", ""], ["shibani-jha-miss-india-2021-id-14920", ""], ["shiwani-miss-india-2021-id-18340", ""], ["shraddha-bharvad-miss-india-2021-id-14594", ""], ["shruti-bist-miss-india-2021-id-19799", ""], ["social-activist-super-heroes-awards-2022-dipak-dixit-dhule-maharashtrah", ""], ["sonali-patra-mrs-india-2021-id-15882", ""], ["supriya-jain-mrs-india-2021-id-15273", ""], ["tanvi-sarwal-miss-india-2023-id-41016", ""], ["vinita-miss-india-2021-id-15340", ""], ["yashika-tuteja-women-awards-2021-id-19407", ""]], "500 server error": [["aashi-chariya-miss-india-2021", ""], ["amrita-shrivastava-is-coming-for-the-grand-finale", ""], ["ankana-pal-miss-india-2021", ""], ["ankita-shetty-mrs-india-2021", ""], ["ankita-toshniwal-miss-india-2021", ""], ["bhavya-gaur-miss-india-2021", ""], ["dimpy-jain-is-coming-for-the-grand-finale", ""], ["dipti-ketan-loat-mrs-india-2021", ""], ["dr-ampritpal-kaur-mrs-india-2021", ""], ["dr-priyanka-suthariya-mrs-india-2021", ""], ["dr-sonali-soner-miss-india-2021", ""], ["dr.-rakhi-is-coming-for-the-grand-finale", ""], ["dr.-somyashree-patnaik-miss-india-2021", ""], ["er-meena-mandal-mrs-india-2021", ""], ["forever-miss-india-2021-building-smile,-confidence,-style,-and-personality", ""], ["glory-kalai-is-coming-for-the-grand-finale", ""], ["gopika-sajikumar-mrs-india-2021", ""], ["gundeep-kaur-miss-india-2021", ""], ["guneshwari-ghatge-miss-india-2021", ""], ["hinal-shah-jain-mrs-india-2021", ""], ["how-forever-star-india-transforms-you-and-taking-out-your-inner-beauty", ""], ["jasmine-rayat-is-coming-for-the-grand-finale", ""], ["jenny-khoshy-miss-india", ""], ["jenny-koshy-miss-india-2021", ""], ["karishma-kaur-miss-india-2021", ""], ["lipi-malakar-is-coming-for-the-grand-finale", ""], ["madhuri-danane-is-coming-for-the-grand-finale", ""], ["manasmita-palo-mrs-india-2021", ""], ["manikanta-jain-mrs-india-2021", ""], ["manya-vats-miss-india-2021", ""], ["meenakshi-sharma-mrs-india-2021", ""], ["miss-india-2021-bhavika-kiran-tilekar", ""], ["miss-india-2021-pratima-sarkar", ""], ["miss-india-amrita-srivastava", ""], ["miss-india-contestant-samprikta-mandal", ""], ["miss-india-purva-parate-makeup-and-grooming", ""], ["miss-tamil-nadu-2022-nishoja-d-1st-runner-up", ""], ["miss-tamil-nadu-2022-rakshya", ""], ["multi-talent-candidate-performance-by-mrs-india-participant-piyali-de", ""], ["naomi-ribeiro-miss-india-2021", ""], ["nayana-basarani-is-coming-for-the-grand-finale", ""], ["neena-jose-miss-india-2021", ""], ["neha-barwase-miss-india-2021", ""], ["neha-yadav-mrs-india-2021", ""], ["pardeep-kaur-mrs-india-2021", ""], ["performance-of-miss-india-2021-shubhi-bhadauriya", ""], ["performance-of-miss-india-participant-namya-shrivastava", ""], ["pooja-mishra-miss-india-2021", ""], ["prashasti-is-coming-for-the-grand-finale", ""], ["pratima-sarkar-miss-india-2021-contestant", ""], ["preparing-for-the-ramp-walk-miss-india-contestant-ria-paul", ""], ["prerna-nayyar-is-coming-for-the-grand-finale", ""], ["priti-pankaj-khandelwal-mrs-india-2021", ""], ["priyanka-bharat-shah-mrs-india-2021", ""], ["rajlaxmi-chavan-is-coming-for-the-grand-finale", ""], ["rajni-yadav-miss-india-2021", ""], ["sadhna-singh-is-coming-for-the-grand-finale", ""], ["samidha-is-coming-for-the-grand-finale", ""], ["sara-rayees-miss-india-2021", ""], ["sarita-jadhav-mrs-india-2021", ""], ["sasmita-tripathy-mrs-india-2021", ""], ["satabdi-roy-debnath-mrs-india-2021", ""], ["sheron-kalsi-miss-india-2021", ""], ["shobitha-mallepula-miss-india-2021", ""], ["smitha-xavier-is-coming-for-the-grand-finale", ""], ["sonal-wadhwa-arora-mrs-india-2021", ""], ["sonu-khoshya-is-coming-for-the-grand-finale", ""], ["suman-mishra-miss-india-2021", ""], ["super-model-performance-by-miss-india-participant-purva-parate", ""], ["supriya-nayak-miss-india-2021", ""], ["surarchi-kumar-miss-india-2021", ""], ["sure-movie-performance-by-miss-india-participant-radhika-rane", ""], ["tabassum-shaikh-miss-india-2021", ""], ["talent-video-of-miss-india-participant-drishti-kohli", ""], ["teaser-launch-grand-finale-miss-india-and-mrs-india-2021", ""], ["transformation-makes-you-perfect-sara-rayees-miss-india-2021-participant", ""]], "invalid URL (contains space)": [["miss-andhra-pradesh-2022-divya krishna", ""]], "redirects to another page (list the target instead)": [["best-doctor-in-ahmedabad-award-2022-awardee-dr-janvi-jain", "/best-dermatologist-in-ahmedabad-award-2022-awardee-dr-janvi-jain"], ["daniya-manaal-fayyaz-women-awards-2021-id-18271", "/?id=18271&view=1&name=Daniya-Manaal-Fayyaz"], ["dr.m.saratha-saratha-women-awards-2021-id-19788", "/social-activist-super-women-awards-2024-dr.m.saratha-hyderabad-city"], ["forever-star-kids-contest.php", "/star-india-kids-contest"], ["fsia-awards.php", "/international-award.php"], ["media-coverage.php", "/news-coverage.php"], ["miss-maharashtra-2022-chaitali-pramod-sukekar", "/miss-elegant-2022-india-chaitali-pramod-sukekar?id=25851&view=1&name="], ["miss-patna-2023-runner-up-winner-shalini-kumari", "/miss-patna-2023-runner-up-shalini-kumari"], ["mrs-assam-2022-jafreen-begun-hazarika", "https://fsia.in/mrs-india-runner-up-2022-jafreen-begum-hazarika"], ["mrs-fsia-rising-star-2022-india-neha-khare", "/mrs-fsia-rising-star-2022-india-Neha-Khare"]], "redirects to homepage (soft 404)": [["amerika-dewangan-mrs-india-2022-id-27776", "/"], ["anita-goswami-mrs-india-2021-id-13553", "/"], ["anjani-dubey-miss-india-2021-id-21369", "/"], ["arun-kumar-member-2022-id-35078", "https://fsia.in/"], ["deepa-andiyappan-real-super-women-2020-id-10235", "/"], ["deepika-samundre-miss-india-2022-id-28059", "https://fsia.in/"], ["fathima-ratheeka-real-super-women-2020-id-10952", "/"], ["herry-khosa--miss-india-2021-id-12829", "/"], ["miss-india-2022-choreographer-shailza-suri", "/"], ["miss-india-contestant-2025-hushanjot-patiala", "/"], ["miss-india-contestant-2025-kavya-sri-murala-guntur", "/"], ["miss-india-contestant-2025-riddhi-jamnagar", "/"], ["miss-teen-india-contestant-2025-ramneet-kour-jammu", "/"], ["miss-teen-mathura-2024-deeksha-singh", "/"], ["nishi-chandrakar-miss-india-2023-id-36996", "/"], ["pageant-groomer-smita-ghosh-2021-id-23062", "https://fsia.in/"], ["pageant-groomer-sonu-singh-2021-id-19294", "https://fsia.in/"], ["roneeca-sahu-is-coming-for-the-grand-finale", "https://fsia.in/"], ["soumya-chippagiri-real-super-women-2020-id-10522", "/"], ["sri-chaitra-kareddy-miss-india-2021-id-21136", "/"], ["student-super-women-awards-2023-alu-krishna-al-trivandrum-north", "/"], ["subhash-sharma-member-2022-id-34860", "https://fsia.in/"]], "wrong host/scheme in sitemap": [["http://fsia.in/anjali-damahe-saharsa-title-achiever-businesswoman-2025", "/anjali-damahe-saharsa-title-achiever-businesswoman-2025"], ["http://www.fsia.in/miss-india-contestant-2025-tanishka-atul-borse-jalgaon", "/miss-india-contestant-2025-tanishka-atul-borse-jalgaon"], ["https://fsia.in/best-multi-talent-in-idukki-2024-sofiya-james", "/best-multi-talent-in-idukki-2024-sofiya-james"]]}, "missing": ["india-fashion-week-fashion-show.php", "miss-andhra-pradesh.php", "miss-arunachal-pradesh.php", "miss-assam.php", "miss-bihar.php", "miss-chandigarh.php", "miss-chattisgarh.php", "miss-delhi.php", "miss-goa.php", "miss-haryana.php", "miss-himachal-pradesh.php", "miss-jammu-kashmir.php", "miss-jharkhand.php", "miss-kerala.php", "miss-madhya-pradesh.php", "miss-manipur.php", "miss-meghalaya.php", "miss-mizoram.php", "miss-nagaland.php", "miss-odisha.php", "miss-poducherry.php", "miss-punjab.php", "miss-sikkim.php", "miss-tamil-nadu.php", "miss-tripura.php", "miss-universe-registration.php", "miss-uttarakhand.php", "mrs-andhra-pradesh.php", "mrs-arunachal-pradesh.php", "mrs-assam.php", "mrs-bihar.php", "mrs-chandigarh.php", "mrs-chattisgarh.php", "mrs-gujarat.php", "mrs-haryana.php", "mrs-himachal-pradesh.php", "mrs-jammu-kashmir.php", "mrs-jharkhand.php", "mrs-karnataka.php", "mrs-madhya-pradesh.php", "mrs-maharashtra.php", "mrs-manipur.php", "mrs-meghalaya.php", "mrs-mizoram.php", "mrs-nagaland.php", "mrs-punjab.php", "mrs-sikkim.php", "mrs-tamil-nadu.php", "mrs-telangana.php", "mrs-tripura.php", "mrs-uttar-pradesh.php", "mrs-uttarakhand.php", "mrs-west-bengal.php"], "pages": [["bharat-couture-week-fashion-week", 24, 117, 2, "Bharat Couture Week 2026"], ["celebrity-pr-agency", 38, 148, 1, "Celebrity PR Agency Forever Star India"], ["channel-partner", 47, 213, 1, "Channel Partner 2026 | Opportunity | Miss India"], ["fashion-designer", 80, 134, 1, "Inviting Fashion Designer from PAN India | Forever Fashion Week 2026 | Apply Now"], ["forever-fashion-week", 25, 185, 1, "Forever Fashion Week 2026"], ["india-fashion-week-fashion-show", 23, 143, 1, "India Fashion Week 2026"], ["makeup-artist", 72, 165, 1, "Inviting Makeup Artist from PAN India | Forever Fashion Week | Apply Now"], ["miss-andhra-pradesh", 49, 201, 1, "Miss Andhra Pradesh 2025 | Apply for Audition Now"], ["miss-arunachal-pradesh", 78, 178, 2, "Miss Arunachal Pradesh 2026 | Online Registration Form | Schedule Audition Now"], ["miss-assam", 64, 123, 1, "Miss Assam 2026 | City | State | National Level | Beauty Pageant"], ["miss-bihar", 107, 203, 1, "Miss Bihar 2026 | Register for Auditions Now | City Winners | State Winners | National Level Beauty Pageant"], ["miss-chandigarh", 84, 141, 2, "Miss Chandigarh 2026 | Biggest Model Hunt in Chandigarh | Auditions Open | Apply Now"], ["miss-chattisgarh", 80, 131, 1, "Miss Chhattisgarh 2026 | Biggest Beauty Contest in Chhattisgarh | Auditions Open"], ["miss-delhi", 64, 117, 1, "Forever Miss Delhi 2026 | Register for Auditions Now | Apply Now"], ["miss-goa", 60, 140, 1, "Miss Goa 2026 | City | State | National Level Beauty Contest"], ["miss-gujarat", 70, 170, 1, "Miss Gujarat 2026 | Biggest Beauty Contest in Gujarat | Auditions Open"], ["miss-haryana", 58, 166, 1, "Miss Haryana 2026 | Modelling Auditons Started | Apply Now"], ["miss-himachal-pradesh", 60, 168, 1, "Miss Himachal Pradesh 2026 | Registration Open for Auditions"], ["miss-jammu-kashmir", 78, 194, 1, "Miss Jammu Kashmir 2026 | Enroll for Online Auditions Now | Biggest Model Hunt"], ["miss-jharkhand", 65, 163, 1, "Miss Jharkhand 2026 | Online Auditions for Modelling in Jharkhand"], ["miss-karnataka", 93, 146, 1, "Miss Karnataka 2026 | State and National Level Pageant | Audition Started | Apply Now | f-sia"], ["miss-kerala", 84, 217, 1, "Miss Kerala 2026 | Auditions Started for Next Top Model of Kerala | Auditions Online"], ["miss-madhya-pradesh", 61, 198, 1, "Miss Madhya Pradesh 2026 | Biggest Beauty Contest | Apply Now"], ["miss-maharashtra", 77, 218, 1, "Miss Maharashtra 2025 | Auditons Open from Every City Maharashtra | Apply Now"], ["miss-manipur", 85, 192, 1, "Miss Manipur 2025 | Apply for Audition Now | Selection Open for Every City of Manipur"], ["miss-meghalaya", 70, 188, 2, "Miss Meghalaya 2025 | Schedule Audition for Your Dream Ramp Now | FSIA"], ["miss-mizoram", 85, 188, 2, "Miss Mizoram 2025 | City Level and State Level Beauty Pageant | Auditions Open | FSIA"], ["miss-nagaland", 69, 170, 1, "Miss Nagaland 2025 | Online Audition Process | Registrations Open Now"], ["miss-odisha", 79, 190, 2, "Miss Odisha 2025 | Schedule Online Auditions Now | Registration Forms Available"], ["miss-poducherry", 74, 153, 2, "Miss Puducherry 2025 | India's Biggest Beauty Pageant | Auditions Open Now"], ["miss-punjab", 81, 171, 2, "Miss Punjab 2026 | Schedule Audition Now | City | State | National Beauty Pageant"], ["miss-rajasthan", 70, 198, 1, "Miss Forever Rajasthan 2026 | Auditions Open | National Beauty Pageant"], ["miss-sikkim", 82, 227, 2, "Miss Sikkim 2026 | Official Website | Registration Open | Grand Finale in December"], ["miss-tamil-nadu", 81, 165, 2, "Forever Miss India Tamilnadu 2026 | Register for Auditions Now | Application Form"], ["miss-telangana", 89, 114, 1, "Miss Telangana 2026 | City | State | National Level | Beauty Pageant | Forever Miss India"], ["miss-tripura", 91, 179, 2, "Miss Tripura 2026 | India's Biggest City, State, and National Level Beauty Contest Platform"], ["miss-universe-beauty-pageant", 99, 161, 3, "Miss Universe 2026 | How to Apply | Registration Started | Applications Accepted from 139 Countries"], ["miss-uttar-pradesh", 86, 185, 1, "Miss Uttar Pradesh 2026 | Modeling Auditions Started | Organized by Forever Star India"], ["miss-uttarakhand", 84, 171, 2, "Miss Uttarakhand 2026 | Online Auditions Open | Uttarakhand's Biggest Beauty Contest"], ["miss-west-bengal", 70, 120, 1, "Miss West Bengal 2026 | City | State | National Level | Beauty Pageant"], ["mrs-andhra-pradesh", 67, 235, 1, "Mrs Andhra Pradesh 2026 | Official Beauty Pageant Registration Form"], ["mrs-arunachal-pradesh", 105, 155, 1, "Mrs Arunachal Pradesh 2026 | City | State | National Level Winners Announcement | Apply Now for Auditions"], ["mrs-assam", 84, 130, 1, "Mrs Assam 2026 | Auditions Started from Every City | Biggest Beauty Contest Platform"], ["mrs-bihar", 93, 121, 1, "Mrs Bihar 2026 | Auditions Started from Every City | Biggest Beauty Contest Platform of Bihar"], ["mrs-chandigarh", 83, 118, 1, "Mrs Chandigarh 2026 | Searching City and State Level Queens | Auditions Started Now"], ["mrs-chattisgarh", 47, 155, 1, "Mrs Chhattisgarh 2026 | Apply for Auditions Now"], ["mrs-delhi", 60, 170, 1, "Mrs Delhi 2026 | Auditions Open | Fill Registration Form Now"], ["mrs-goa", 55, 183, 1, "Mrs Goa 2026 | Auditions Open | Online Application Form"], ["mrs-gujarat", 64, 151, 1, "Mrs Gujarat 2026 | City | State | National Winners to be Crowned"], ["mrs-haryana", 62, 152, 1, "Mrs Haryana 2026 | Auditions Open | Fill Registration Form Now"], ["mrs-himachal-pradesh", 25, 155, 1, "Mrs Himachal Pradesh 2026"], ["mrs-jammu-kashmir", 67, 177, 1, "Mrs Jammu Kashmir 2026 | Pageant for Married Woman in Jammu Kashmir"], ["mrs-jharkhand", 64, 166, 1, "Mrs Jharkhand 2026 | Enroll Now for Online Auditions | Apply Now"], ["mrs-karnataka", 70, 173, 1, "Mrs Karnataka 2026 | Auditions Started for Karnataka's Next Model Hunt"], ["mrs-kerala", 82, 229, 1, "Mrs Forever Kerala 2026 | Beauty Contest for Married Woman | Register for Audition"], ["mrs-madhya-pradesh", 92, 223, 1, "Mrs Madhya Pradesh 2026 | Register for Online Auditions Now | Biggest Model Hunt of the Year"], ["mrs-maharashtra", 65, 214, 1, "Mrs Maharashtra 2026 | Online Auditions | Official Beauty Pageant"], ["mrs-manipur", 93, 150, 1, "Mrs Manipur 2026 | Official Beauty Pageant Platform for Married Woman | Online Auditions Open"], ["mrs-meghalaya", 73, 164, 1, "Mrs Meghalaya 2026 | Meghalaya's Biggest Beauty Contest for Married Woman"], ["mrs-mizoram", 74, 199, 1, "Mrs Mizoram 2026 | Audition Lines Open | Biggest Beauty Pageant in Mizoram"], ["mrs-nagaland", 49, 141, 1, "Mrs Nagaland 2026 | Auditions Started | Apply Now"], ["mrs-odisha", 94, 206, 1, "Mrs Odisha 2026 | Biggest State and National Level Beauty Pageant in India | Auditions Started"], ["mrs-poducherry", 83, 186, 1, "Mrs Puducherry 2026 | Biggest Beauty Contest for Married Woman | Auditions Open Now"], ["mrs-punjab", 72, 178, 1, "Mrs Punjab 2026 | Auditions Online | Biggest Beauty Queen Hunt in Punjab"], ["mrs-rajasthan", 56, 190, 1, "Mrs Rajasthan 2026 | Online Auditions | Application Form"], ["mrs-sikkim", 67, 218, 1, "Mrs Sikkim 2026 | Online Auditions Open | Application Form for 2026"], ["mrs-tamil-nadu", 69, 204, 1, "Mrs Tamil Nadu 2026 | Schedule Online Audition Now | Application Form"], ["mrs-telangana", 75, 229, 1, "Mrs Telangana 2026 | Fill Online Application Form and Schedule Audition now"], ["mrs-tripura", 80, 187, 1, "Mrs Tripura 2026 | Searching City and State Level Queens | Auditions Started Now"], ["mrs-uttar-pradesh", 91, 179, 1, "Mrs Uttar Pradesh 2026 | City and State Level Beauty Contest | Schedule Online Audition Now"], ["mrs-uttarakhand", 67, 162, 1, "Mrs Uttarakhand 2026 | Auditions Open | Become a Aspiring Model Now"], ["mrs-west-bengal", 70, 213, 1, "Mrs West Bengal 2026 | City | State | National Winners to be Announced"]]};
+var B="https://www.fsia.in/";
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+/* tasks */
+var TASKS=[
+ ["P0","Fix the Bharat Couture canonical","Dev",["Canonical on bharat-couture-week-fashion-week is the page's own URL","The nav link to register-bharat-couture.php is removed or points to the real page"]],
+ ["P0","Add the 59 missing live pages to the sitemap","SEO + Dev",["All 52 repo pages and 7 site pages in the sections below are listed","Each one returns 200 and canonicalises to itself"]],
+ ["P0","Remove the 192 broken URLs from the sitemap","SEO",["404 and 500 entries removed (or fixed first, then kept)","Redirecting entries replaced by their final target URL","Wrong-host and space-in-URL entries rewritten"]],
+ ["P0","Resubmit the sitemap in Google Search Console","SEO",["Submitted; no fetch errors reported"]],
+ ["P1","Fix the 76 URLs returning HTTP 500","Dev",["Root cause found in the PHP error log (42 share the '-miss/mrs-india-2021' pattern)","Each URL returns 200, or 410 if the profile is gone"]],
+ ["P1","Make content redirects permanent","Dev",["The 10 page-to-page 302s become 301s","The 22 redirect-to-homepage URLs return 404/410 or 301 to the right profile"]],
+ ["P1","Shorten titles and descriptions; one H1 per page","SEO + Content",["All 72 form titles ≤ 60 characters (proposed titles in the table below)","Descriptions 120–155 characters","The CMS 'Schedule Online Auditions Now' block uses H2"]],
+ ["P1","Fix or remove the Event schema on 71 form pages","Dev",["No year-long events; real dates and venues only","Rich Results Test passes"]],
+ ["P2","Choose one URL style and 301 the other","Dev + SEO",["Recommended: extensionless, with 301s from .php","Sitemap, canonicals, internal links and hreflang (if added) all use it"]],
+ ["P2","Build the database-generated sitemap","Dev",["Matches the 'Target sitemap' section","lastmod from the DB; split by type and season; cached for 1 hour"]],
+ ["P2","Weekly sitemap health check","Dev",["A job requests every sitemap URL and alerts when more than 0.5% are not 200"]],
+ ["P2","Clean up stray pages and slugs","SEO + Dev",["test.php moved or noindexed","Correct spellings for Puducherry and Chhattisgarh, with 301s","123 ?id= profile URLs replaced by clean slugs"]]
+];
+var tl=document.getElementById("tasklist"), saved={};
+try{saved=JSON.parse(localStorage.getItem("fsia-seo-tasks")||"{}");}catch(e){}
+TASKS.forEach(function(t,i){
+  var pc=t[0]=="P0"?"crit":t[0]=="P1"?"high":"med";
+  var id="task"+i, done=!!saved[id];
+  tl.insertAdjacentHTML("beforeend",'<label class="task'+(done?' done':'')+'" for="'+id+'"><input type="checkbox" id="'+id+'"'+(done?' checked':'')+'><div class="tb"><div class="th"><span class="pill '+pc+'">'+t[0]+'</span><b>'+esc(t[1])+'</b><span class="tag">'+t[2]+'</span></div><div class="ac">Done when:<ul>'+t[3].map(function(a){return "<li>"+esc(a)+"</li>";}).join("")+'</ul></div></div></label>');
+});
+tl.addEventListener("change",function(e){
+  if(!e.target.id)return; saved[e.target.id]=e.target.checked;
+  e.target.closest(".task").classList.toggle("done",e.target.checked);
+  try{localStorage.setItem("fsia-seo-tasks",JSON.stringify(saved));}catch(err){}
+});
+
+/* states */
+var states=["andhra-pradesh","arunachal-pradesh","assam","bihar","chandigarh","chattisgarh","delhi","goa","gujarat","haryana","himachal-pradesh","jammu-kashmir","jharkhand","karnataka","kerala","madhya-pradesh","maharashtra","manipur","meghalaya","mizoram","nagaland","odisha","poducherry","punjab","rajasthan","sikkim","tamil-nadu","telangana","tripura","uttar-pradesh","uttarakhand","west-bengal"];
+var DISPLAY={"poducherry":"Puducherry","chattisgarh":"Chhattisgarh","jammu-kashmir":"Jammu & Kashmir"};
+function nice(s){return DISPLAY[s]||s.replace(/-/g," ").replace(/\b\w/g,function(c){return c.toUpperCase();});}
+var missIn=["gujarat","karnataka","maharashtra","rajasthan","telangana","uttar-pradesh","west-bengal"], mrsIn=["delhi","goa","kerala","odisha","poducherry","rajasthan"];
+var sg=document.getElementById("states");
+function d(on,l){return '<span class="dot '+(on?'in':'out')+'" title="'+l+(on?' in sitemap':' missing')+'">'+(on?'IN':'—')+'</span>';}
+states.forEach(function(s){sg.insertAdjacentHTML("beforeend",'<div class="st"><span>'+nice(s)+'</span>'+d(missIn.indexOf(s)>-1,"Miss")+d(mrsIn.indexOf(s)>-1,"Mrs")+'</div>');});
+
+var missing=DATA.missing.filter(function(u){return u!=="miss-universe-registration.php";});
+var other=["business-awards.php","international-award.php","miss-fsia-international-2024.php","mrs-fsia-international-2024.php","news-coverage","star-india-kids-contest.php","termscondition.php"];
+function list(el,arr){document.getElementById(el).innerHTML=arr.map(function(u){return '<li><a href="'+B+esc(u)+'" target="_blank" rel="noopener">'+B+esc(u)+'</a></li>';}).join("");}
+list("missingList",missing); list("otherList",other);
+
+/* copy */
+var COPY={missing:missing,other:other};
+function copyArr(btn,arr,label){
+  var txt=arr.map(function(u){return /^https?:/.test(u)?u:B+u;}).join("\n");
+  function ok(){var o=btn.textContent;btn.textContent="Copied";setTimeout(function(){btn.textContent=o;},1800);}
+  function fb(){var ol=btn.closest(".panelbox").querySelector("ol");var r=document.createRange();r.selectNodeContents(ol);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent="Selected. Press Ctrl+C or ⌘C";}
+  try{navigator.clipboard.writeText(txt).then(ok,fb);}catch(e){fb();}
+}
+document.addEventListener("click",function(e){var b=e.target.closest("button.copy");if(!b)return;var k=b.getAttribute("data-copy");if(COPY[k])copyArr(b,COPY[k]);});
+
+/* broken */
+var CATS=[["500 server error","500 Server Error","var(--warn)","These pages crash. Check the PHP error log for each address, fix the cause, or return 410 if the profile was deleted."],["404 not found","404 Not Found","var(--crit)","Remove from the sitemap. If the content moved, 301 to the new URL and list that URL instead."],["redirects to homepage (soft 404)","302 → homepage","var(--info)","Google treats these as missing pages. Return 404/410, or 301 to the right profile."],["redirects to another page (list the target instead)","302 → another page","var(--accent)","List the target in the sitemap and change the redirect to a 301."],["wrong host/scheme in sitemap","Wrong host","var(--muted)","Rewrite to https://www.fsia.in/…"],["invalid URL (contains space)","Space in URL","var(--ok)","Slugify the URL and 301 the old one."]];
+var st=document.getElementById("stack"), ky=document.getElementById("keys"), tabs=document.getElementById("tabs"), panel=document.getElementById("tabpanel");
+CATS.forEach(function(c,i){
+  var arr=DATA.cat[c[0]]||[]; COPY["cat"+i]=arr.map(function(r){return r[0];});
+  st.insertAdjacentHTML("beforeend",'<div style="flex:'+arr.length+';background:'+c[2]+'" title="'+c[1]+': '+arr.length+'"></div>');
+  ky.insertAdjacentHTML("beforeend",'<div class="key"><span class="sw" style="background:'+c[2]+'"></span><span>'+c[1]+'</span><b>'+arr.length+'</b></div>');
+  tabs.insertAdjacentHTML("beforeend",'<button type="button" role="tab" id="tab'+i+'" aria-selected="'+(i===0)+'">'+c[1]+' ('+arr.length+')</button>');
+});
+function show(i){
+  var c=CATS[i], arr=DATA.cat[c[0]]||[];
+  [].forEach.call(tabs.children,function(b,j){b.setAttribute("aria-selected",String(i===j));});
+  panel.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><b>'+c[1]+' · '+arr.length+' URLs</b><button class="copy" type="button" data-copy="cat'+i+'">Copy '+arr.length+' URLs</button></div><p class="muted" style="font-size:14px">'+c[3]+'</p><ol>'+arr.map(function(r){var u=/^https?:/.test(r[0])?r[0]:B+r[0];return '<li><a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(u)+'</a>'+(r[1]?' <span class="muted">→ '+esc(r[1])+'</span>':'')+'</li>';}).join("")+'</ol>';
+}
+tabs.addEventListener("click",function(e){var b=e.target.closest("button");if(b)show([].indexOf.call(tabs.children,b));});
+show(0);
+
+/* on-page table */
+var rows=DATA.pages.slice().sort(function(a,b){return (b[1]>65)-(a[1]>65)||b[1]-a[1];});
+document.getElementById("pageRows").innerHTML=rows.map(function(p){
+  var m=p[0].match(/^(miss|mrs)-(.+)$/), prop="";
+  if(m&&states.indexOf(m[2])>-1){prop=(m[1]=="miss"?"Miss ":"Mrs ")+nice(m[2])+" 2026 Auditions | Forever Star India";}
+  var tf=p[1]>65?"bad":p[1]>60?"mid":"okc", df=p[2]>160||p[2]<70?"bad":p[2]>155?"mid":"okc", hf=p[3]!==1?"bad":"okc";
+  return '<tr><td><code>'+esc(p[0])+'</code></td><td class="n"><span class="flag '+tf+'">'+p[1]+'</span></td><td class="n"><span class="flag '+df+'">'+p[2]+'</span></td><td class="n"><span class="flag '+hf+'">'+p[3]+'</span></td><td>'+(prop?esc(prop)+' <span class="muted">('+prop.length+')</span>':'<span class="muted">Write by hand</span>')+'</td></tr>';
+}).join("");
+})();
+</script>

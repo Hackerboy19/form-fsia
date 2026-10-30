@@ -1,0 +1,376 @@
+<title>fsia.in Site Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~880px) — verdict first, then sections in fix-priority order; tables scroll inside their own boxes */
+:root{
+  --bg:#f7f6f3; --surface:#ffffff; --ink:#1d1b26; --muted:#5f5b6e; --line:#e3e0e8;
+  --accent:#9a6a12; --accent-soft:#f5ead3;
+  --crit:#b42318; --crit-soft:#fde8e6; --warn:#a35a00; --warn-soft:#fdf0dc; --ok:#1f7a4a; --ok-soft:#e2f4ea; --info:#3d4f8f; --info-soft:#e7eaf7;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px;min-width:0}
+.sec-head{display:grid;gap:4px}
+
+/* header */
+header{display:grid;gap:10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:14px}
+
+/* TL;DR */
+.tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:14px}
+.tldr ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.tldr li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.tldr li p{min-width:0}
+
+/* verdict tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile .k{font-size:13px;color:var(--muted);font-weight:600}
+.tile .v{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .s{font-size:13px;color:var(--muted)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap;text-transform:uppercase}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.crit{color:var(--crit);background:var(--crit-soft)}
+.high{color:var(--warn);background:var(--warn-soft)}
+.med{color:var(--info);background:var(--info-soft)}
+.good{color:var(--ok);background:var(--ok-soft)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.fix{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* fast vs slow */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.panel ul{margin:0;padding-left:18px;display:grid;gap:7px}
+.panel h3{display:flex;align-items:center;gap:8px}
+
+/* bar charts */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 12px;display:grid;gap:10px}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;align-items:center;font-size:14px}
+.bar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:22px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fill.g{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.fill.w{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.fill.c{background:var(--crit-soft);color:var(--crit);box-shadow:inset 0 0 0 1px var(--crit)}
+.mark{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1.5px dashed var(--muted);opacity:.7}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{position:relative;height:16px}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+
+/* stacked bar */
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack div{min-width:3px}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;font-size:14px}
+.key{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px}
+.key b{font-variant-numeric:tabular-nums}
+
+/* state grid */
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.st{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.st span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;font-family:var(--f-mono)}
+.dot.in{color:var(--ok);background:var(--ok-soft)}
+.dot.out{color:var(--crit);background:var(--crit-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+/* details lists */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:13px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"Show";font-size:13px;color:var(--accent);font-weight:600}
+details[open] summary::after{content:"Hide"}
+summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dbody{padding:0 16px 16px;display:grid;gap:14px}
+.dbody ol{margin:0;padding-left:28px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all}
+.grp{display:grid;gap:6px}
+.grp h3{font-size:15px}
+button.copy{font:600 13px var(--f-body);color:var(--accent);background:var(--accent-soft);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;justify-self:start}
+
+/* plan */
+.plan{display:grid;gap:10px}
+.wk{display:grid;grid-template-columns:84px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.wk .w{font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--accent)}
+.wk ul{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:480px){.wk{grid-template-columns:1fr;gap:6px}}
+
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Site audit · 30 Oct 2026</span>
+  <h1>fsia.in: speed, sitemap, SEO and security</h1>
+  <div class="meta">
+    <span>73 registration-form pages in <code>form-fsia</code></span>
+    <span>5,519 live sitemap URLs crawled</span>
+    <span>Real-browser tests on 6 pages</span>
+  </div>
+</header>
+
+<!-- TL;DR -->
+<section class="tldr" aria-labelledby="tldr-h">
+  <h2 id="tldr-h">TL;DR</h2>
+  <ul>
+    <li><span class="pill good">Fast</span><p><b>The server is fast.</b> PHP pages are generated in about 0.02–0.2 s. Speed problems are in what the browser has to download and run.</p></li>
+    <li><span class="pill crit">Slow</span><p><b>Nothing is cached.</b> CSS, JS and images are all sent with <code>no-store</code>, and Tailwind compiles in the browser on every page. Forms take 1.7–2.8 s to show anything. The homepage's largest element appears at 4.1 s, which Google rates "poor".</p></li>
+    <li><span class="pill crit">Sitemap</span><p><b>59 live pages are missing from the sitemap</b>, including 51 of 64 state Miss/Mrs forms. <b>192 sitemap URLs are broken</b>: 80 return 404 and 76 return a 500 server error.</p></li>
+    <li><span class="pill crit">SEO</span><p><b>Bharat Couture Week points Google to a page that redirects to the homepage.</b> Google will likely drop it. Also: 49 titles are too long, 13 pages have two H1s, and 71 pages describe a year-long fake "Event".</p></li>
+    <li><span class="pill high">Security</span><p><b>Any state page can send a WhatsApp OTP to any number</b> via <code>?action=send_otp</code>, with no rate limit. The OTP uses weak randomness, wrong guesses are unlimited, there is no CSRF protection, and a webhook ID is committed to git.</p></li>
+    <li><span class="pill med">Code</span><p><b>The 73 form files are about 95% identical.</b> Every fix has to be made 64–73 times. Header, footer, config and save scripts are not in the repo.</p></li>
+  </ul>
+</section>
+
+<!-- verdict tiles -->
+<section aria-label="Key numbers">
+  <div class="tiles">
+    <div class="tile"><span class="k">Server processing</span><span class="v" style="color:var(--ok)">~0.1 s</span><span class="s">p90 TTFB 0.88 s across 5,325 URLs, mostly network distance</span></div>
+    <div class="tile"><span class="k">Homepage LCP</span><span class="v" style="color:var(--crit)">4.09 s</span><span class="s">1.55 MB, 41 images without dimensions</span></div>
+    <div class="tile"><span class="k">Broken sitemap URLs</span><span class="v" style="color:var(--crit)">192</span><span class="s">of 5,519 (3.5%)</span></div>
+    <div class="tile"><span class="k">Live pages not in sitemap</span><span class="v" style="color:var(--warn)">59</span><span class="s">52 from this repo + 7 elsewhere</span></div>
+  </div>
+</section>
+
+<!-- top fixes -->
+<section aria-labelledby="top-h">
+  <div class="sec-head"><span class="eyebrow">Start here</span><h2 id="top-h">Top 10 fixes</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Severity</th><th>Problem and fix</th><th>Area</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill crit">Critical</span></td><td><b>All assets sent <code>Cache-Control: no-store</code></b><div class="fix">Cache <code>/assets-new/</code>, <code>/static/</code>, <code>/uploads/</code> and <code>/cms/*.js</code> for a year (<code>public, max-age=31536000, immutable</code>).</div></td><td>Server config</td></tr>
+      <tr><td><span class="pill crit">Critical</span></td><td><b>Bharat Couture canonical → <code>register-bharat-couture.php</code> → 302 to <code>/</code></b><div class="fix">Make the canonical the page's own URL and fix the nav link to the redirecting page.</div></td><td>SEO</td></tr>
+      <tr><td><span class="pill crit">Critical</span></td><td><b>59 live pages missing from the sitemap</b><div class="fix">Add them now. Long term, generate the sitemap from the database.</div></td><td>Sitemap</td></tr>
+      <tr><td><span class="pill high">High</span></td><td><b>192 broken sitemap URLs (76 return HTTP 500)</b><div class="fix">Remove them, or fix the profile router. Change the 302s to 301s that point at the real page.</div></td><td>Sitemap / backend</td></tr>
+      <tr><td><span class="pill high">High</span></td><td><b>Public <code>?action=send_otp</code> on 66 state pages, no rate limit</b><div class="fix">Delete the inline handler; the forms already use <code>send_otpnew.php</code>.</div></td><td>Security</td></tr>
+      <tr><td><span class="pill high">High</span></td><td><b>Weak OTP: <code>rand()</code>, unlimited guesses, TLS checks off, webhook ID in git</b><div class="fix">Use <code>random_int</code>, lock after 5 wrong tries, turn TLS checks on, move and rotate the webhook ID.</div></td><td>Security</td></tr>
+      <tr><td><span class="pill high">High</span></td><td><b>Tailwind Play CDN on all 73 pages</b><div class="fix">Build Tailwind once into a static CSS file (about 10–25 KB).</div></td><td>Front-end</td></tr>
+      <tr><td><span class="pill high">High</span></td><td><b>Sitemap frozen in 2023–24: no lastmod, only 3 URLs from 2026</b><div class="fix">Generate the sitemap from the DB with real <code>lastmod</code> dates.</div></td><td>Sitemap</td></tr>
+      <tr><td><span class="pill med">Medium</span></td><td><b>No CSRF tokens on any form</b><div class="fix">Add a token in the shared form helper and check it in every <code>save*.php</code>.</div></td><td>Security</td></tr>
+      <tr><td><span class="pill med">Medium</span></td><td><b>73 near-identical form files</b><div class="fix">Replace them with one template plus a small config per page.</div></td><td>Code</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- speed -->
+<section aria-labelledby="speed-h">
+  <div class="sec-head"><span class="eyebrow">Performance</span><h2 id="speed-h">What's fast and what's slow</h2></div>
+
+  <div class="split">
+    <div class="panel">
+      <h3><span class="pill good">Fast</span> Working well</h3>
+      <ul>
+        <li>PHP generation takes ~20–200 ms. A static <code>robots.txt</code> has nearly the same TTFB (0.77 s) as a form page (0.79–0.98 s).</li>
+        <li>TTFB is steady across 5,325 working URLs: p50 0.84 s, p99 1.06 s.</li>
+        <li>HTTP/2, gzip on HTML and Brotli on CSS/JS are all on.</li>
+        <li>Form pages barely shift while loading (CLS ≤ 0.01) and transfer about 85 KB.</li>
+        <li>http, non-www and trailing-slash URLs 301 correctly. Unknown URLs return a real 404.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3><span class="pill crit">Slow</span> Why pages feel slow</h3>
+      <ul>
+        <li><code>no-store</code> on every file, so assets are re-downloaded on every view.</li>
+        <li>A PHP session cookie is set for every anonymous visitor, so no CDN can cache the HTML.</li>
+        <li>The Tailwind CDN script (126 KB) builds CSS before the first paint.</li>
+        <li>6 stylesheets block rendering: 2 from Google Fonts and 4 from the site.</li>
+        <li><code>calendar.js</code> and <code>promo.js</code> are the slowest requests (1–2 s) on every form.</li>
+        <li>About 95 KB of inline CSS and JS is repeated in every page, so it can't be cached.</li>
+        <li>TLS handshake takes about 0.5 s from outside India; a CDN would fix this.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="chart" role="img" aria-label="Largest Contentful Paint per page, in seconds, measured in headless Chromium at phone width">
+    <h3>Largest Contentful Paint per page</h3>
+    <div class="bars" id="lcp"></div>
+    <div class="axis"><span></span><div class="ticks"><span style="left:0">0 s</span><span style="left:20%">1</span><span style="left:40%">2</span><span style="left:60%">3</span><span style="left:80%">4</span><span style="left:100%">5 s</span></div></div>
+    <div class="legend"><span>Dashed lines: 2.5 s (Google "good") and 4.0 s ("poor")</span><span>Measured at phone width with no throttling. Expect 2–3× slower on a real 4G phone.</span></div>
+  </div>
+</section>
+
+<!-- sitemap -->
+<section aria-labelledby="sm-h">
+  <div class="sec-head"><span class="eyebrow">Sitemap</span><h2 id="sm-h">Pages vs sitemap</h2></div>
+
+  <h3>Registration forms: is each state in the sitemap?</h3>
+  <div class="legend"><span><span class="dot in">IN</span> listed in the sitemap</span><span><span class="dot out">—</span> live but missing</span><span>Columns show Miss, then Mrs</span></div>
+  <div class="states" id="states"></div>
+  <p class="muted" style="font-size:14px">Also missing: <code>india-fashion-week-fashion-show.php</code>. <code>miss-universe-registration.php</code> is in the repo but not deployed (404).</p>
+
+  <h3>Other live pages linked from the site but not in the sitemap</h3>
+  <div class="chips">
+    <span class="chip">business-awards.php</span><span class="chip">international-award.php</span><span class="chip">miss-fsia-international-2024.php</span><span class="chip">mrs-fsia-international-2024.php</span><span class="chip">news-coverage</span><span class="chip">star-india-kids-contest.php</span><span class="chip">termscondition.php</span>
+  </div>
+
+  <h3>Sitemap URLs that don't work: 192 of 5,519</h3>
+  <div class="chart">
+    <div class="stack" id="stack" role="img" aria-label="Broken sitemap URLs by problem: 80 404, 76 500, 22 redirect to homepage, 10 redirect elsewhere, 3 wrong host, 1 invalid"></div>
+    <div class="keys" id="keys"></div>
+  </div>
+
+  <details>
+    <summary>All 76 URLs returning HTTP 500</summary>
+    <div class="dbody">
+      <p class="muted" style="font-size:14px">Each URL failed on the crawl and again on a retry. They are old 2021–22 pages, so the likely cause is a crash in the page that renders profiles. Check the PHP error log for these addresses.</p>
+      <button class="copy" id="copy500" type="button">Copy all 76 URLs</button>
+      <div id="list500"></div>
+    </div>
+  </details>
+
+  <h3>Other sitemap problems</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Problem</th><th class="n">Count</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Child sitemaps with no <code>&lt;lastmod&gt;</code></td><td class="n">25 / 25</td><td>Use real update dates from the DB</td></tr>
+      <tr><td>URLs that mention 2026</td><td class="n">3</td><td>Add the 2026 season's contestants, winners and profiles</td></tr>
+      <tr><td>Duplicate entries</td><td class="n">110</td><td>De-duplicate when generating</td></tr>
+      <tr><td><code>?id=</code> query-string URLs</td><td class="n">123</td><td>Use the clean profile slugs instead</td></tr>
+      <tr><td>URLs with uppercase or spaces</td><td class="n">136 / 65</td><td>Lowercase, hyphenated slugs, with 301s from the old ones</td></tr>
+      <tr><td>Same page at <code>/x</code> and <code>/x.php</code></td><td class="n">4</td><td>Pick one address and 301 the other</td></tr>
+      <tr><td>Form pages that 404 without <code>.php</code></td><td class="n">70 / 72</td><td>Pick one URL style and use it in the sitemap, canonicals and nav</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- SEO -->
+<section aria-labelledby="seo-h">
+  <div class="sec-head"><span class="eyebrow">On-page SEO</span><h2 id="seo-h">Live HTML of 72 form pages</h2></div>
+  <p class="muted">Every page has a title, description, canonical, OG/Twitter tags and valid JSON-LD (Organization, WebSite, WebPage, BreadcrumbList, Event, FAQPage). The problems below are in what those tags contain.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Issue</th><th class="n">Pages</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill crit">Critical</span> Canonical points to a redirect</td><td class="n">1</td><td><code>bharat-couture-week-fashion-week</code></td></tr>
+      <tr><td><span class="pill high">High</span> Event schema isn't a real event</td><td class="n">71</td><td>Jan 1 – Dec 31 at the Jaipur office, even for Miss Delhi and Miss Kerala. The Offer has no price. Use real audition dates and venues, or remove it.</td></tr>
+      <tr><td><span class="pill med">Medium</span> Title over 65 characters</td><td class="n">49</td><td>Worst: <code>miss-bihar</code> 107, <code>mrs-arunachal-pradesh</code> 105, <code>miss-universe-beauty-pageant</code> 99</td></tr>
+      <tr><td><span class="pill med">Medium</span> Description over 160 characters</td><td class="n">49</td><td>Worst: <code>mrs-andhra-pradesh</code> 235, <code>mrs-kerala</code> 229</td></tr>
+      <tr><td><span class="pill med">Medium</span> More than one H1</td><td class="n">13</td><td>The CMS block "Schedule Online Auditions Now" is an H1. Change it to an H2.</td></tr>
+      <tr><td><span class="pill med">Medium</span> Inconsistent brand in titles</td><td class="n">many</td><td>"Forever Miss Delhi" vs "Miss Odisha" vs "Mrs Forever Kerala"</td></tr>
+      <tr><td><span class="pill med">Medium</span> Homepage images</td><td class="n">1</td><td>41 images have no width/height and 10 have no alt text. Partner logos are JPGs.</td></tr>
+      <tr><td><span class="pill med">Medium</span> Typo</td><td class="n">1</td><td><code>miss-delhi</code>: "Auditions Open for for…"</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- security -->
+<section aria-labelledby="sec-h">
+  <div class="sec-head"><span class="eyebrow">Back-end</span><h2 id="sec-h">Security and code</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Issue</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill high">High</span> <b>Inline OTP endpoint is reachable</b> on 66 state pages. <code>?action=verify_otp</code> returns HTTP 500. By the code, <code>send_otp</code> messages any number. Not tested, to avoid sending a real message.</td><td>Delete the inline handler. Keep a single rate-limited OTP endpoint.</td></tr>
+      <tr><td><span class="pill high">High</span> OTP uses <code>rand()</code>, with unlimited guesses over a 10-minute window</td><td>Use <code>random_int</code> and lock after 5 wrong tries per phone/IP</td></tr>
+      <tr><td><span class="pill high">High</span> TLS checks off on the WhatsApp call; webhook ID hard-coded in 67 files</td><td>Turn TLS checks back on, move the ID to config and rotate it</td></tr>
+      <tr><td><span class="pill med">Medium</span> No CSRF tokens (0 of 73 forms)</td><td>Add a per-session token</td></tr>
+      <tr><td><span class="pill med">Medium</span> Hidden <code>category</code> / <code>landing</code> fields come from the browser</td><td>Set them on the server, or check them against an allowlist</td></tr>
+      <tr><td><span class="pill med">Unverified</span> Do the save scripts re-check phone verification on the server?</td><td>Confirm every <code>save*.php</code> requires <code>$_SESSION['otp_verified']</code>. The scripts aren't in the repo, so this couldn't be checked.</td></tr>
+      <tr><td><span class="pill med">Medium</span> 73 files about 95% identical; header, footer, config, save scripts and assets not in git</td><td>One template, and bring the shared code into the repo with secrets in env</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- plan -->
+<section aria-labelledby="plan-h">
+  <div class="sec-head"><span class="eyebrow">Order of work</span><h2 id="plan-h">Four-week plan</h2></div>
+  <div class="plan">
+    <div class="wk"><span class="w">Week 1</span><ul><li>Remove the inline OTP handler, switch to <code>random_int</code>, rate-limit, turn TLS checks on, rotate the webhook ID</li><li>Fix the Bharat Couture canonical, add the 59 missing pages, remove the 192 broken URLs, resubmit in Search Console</li><li>Set cache headers on static files and stop starting sessions on anonymous page views</li></ul></div>
+    <div class="wk"><span class="w">Week 2</span><ul><li>Build Tailwind CSS, merge the stylesheets, defer JS, preconnect fonts, load calendar/promo later</li><li>Titles ≤ 60 characters, descriptions ≤ 155, one H1 per page, fix the Event schema</li></ul></div>
+    <div class="wk"><span class="w">Week 3</span><ul><li>Single form template, shared PHP in git, CSRF tokens</li><li>Database-generated sitemap and one consistent URL style with 301s</li></ul></div>
+    <div class="wk"><span class="w">Week 4</span><ul><li>Homepage images: WebP, dimensions, alt text. Put the site behind a CDN.</li></ul></div>
+  </div>
+</section>
+
+<footer>
+  <span>Full report and data files: <a href="https://github.com/Hackerboy19/form-fsia/pull/10">Hackerboy19/form-fsia#10</a> (<code>audit/AUDIT.md</code>, <code>audit/*.tsv</code>)</span>
+  <span>Method: crawled every sitemap URL, retried failures once, measured pages in headless Chromium, read the 73 form files. Timings were taken from a US datacenter.</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var lcp=[["Homepage /",4.09],["miss-delhi.php",2.75],["forever-miss-india-new.php",2.18],["mrs-kerala.php",2.02],["forever-fashion-week.php",1.92],["makeup-artist.php",1.71]];
+  var el=document.getElementById("lcp");
+  lcp.forEach(function(r){
+    var cls=r[1]>=4?"c":r[1]>2.5?"w":"g";
+    el.insertAdjacentHTML("beforeend",'<div class="bar"><span class="lab" title="'+r[0]+'">'+r[0]+'</span><div class="track"><div class="mark" style="left:50%"></div><div class="mark" style="left:80%"></div><div class="fill '+cls+'" style="width:'+(r[1]/5*100)+'%">'+r[1].toFixed(2)+' s</div></div></div>');
+  });
+
+  var states=["andhra-pradesh","arunachal-pradesh","assam","bihar","chandigarh","chattisgarh","delhi","goa","gujarat","haryana","himachal-pradesh","jammu-kashmir","jharkhand","karnataka","kerala","madhya-pradesh","maharashtra","manipur","meghalaya","mizoram","nagaland","odisha","poducherry","punjab","rajasthan","sikkim","tamil-nadu","telangana","tripura","uttar-pradesh","uttarakhand","west-bengal"];
+  var missIn=["gujarat","karnataka","maharashtra","rajasthan","telangana","uttar-pradesh","west-bengal"];
+  var mrsIn=["delhi","goa","kerala","odisha","poducherry","rajasthan"];
+  var sg=document.getElementById("states");
+  function d(on,lbl){return '<span class="dot '+(on?'in':'out')+'" title="'+lbl+(on?' in sitemap':' missing from sitemap')+'">'+(on?'IN':'—')+'</span>';}
+  states.forEach(function(s){
+    var name=s.replace(/-/g," ").replace(/\b\w/g,function(c){return c.toUpperCase();});
+    sg.insertAdjacentHTML("beforeend",'<div class="st"><span title="'+name+'">'+name+'</span>'+d(missIn.indexOf(s)>-1,"Miss")+d(mrsIn.indexOf(s)>-1,"Mrs")+'</div>');
+  });
+
+  var parts=[["404 Not Found",80,"var(--crit)"],["500 Server Error",76,"var(--warn)"],["302 → homepage (soft 404)",22,"var(--info)"],["302 → another page",10,"var(--accent)"],["Wrong host/scheme",3,"var(--muted)"],["Space in URL",1,"var(--ok)"]];
+  var tot=192, st=document.getElementById("stack"), ky=document.getElementById("keys");
+  parts.forEach(function(p){
+    st.insertAdjacentHTML("beforeend",'<div style="flex:'+p[1]+';background:'+p[2]+'" title="'+p[0]+': '+p[1]+'"></div>');
+    ky.insertAdjacentHTML("beforeend",'<div class="key"><span class="sw" style="background:'+p[2]+'"></span><span>'+p[0]+'</span><b>'+p[1]+'</b></div>');
+  });
+
+  var u500=["aashi-chariya-miss-india-2021", "amrita-shrivastava-is-coming-for-the-grand-finale", "ankana-pal-miss-india-2021", "ankita-shetty-mrs-india-2021", "ankita-toshniwal-miss-india-2021", "bhavya-gaur-miss-india-2021", "dimpy-jain-is-coming-for-the-grand-finale", "dipti-ketan-loat-mrs-india-2021", "dr-ampritpal-kaur-mrs-india-2021", "dr-priyanka-suthariya-mrs-india-2021", "dr-sonali-soner-miss-india-2021", "dr.-rakhi-is-coming-for-the-grand-finale", "dr.-somyashree-patnaik-miss-india-2021", "er-meena-mandal-mrs-india-2021", "forever-miss-india-2021-building-smile,-confidence,-style,-and-personality", "glory-kalai-is-coming-for-the-grand-finale", "gopika-sajikumar-mrs-india-2021", "gundeep-kaur-miss-india-2021", "guneshwari-ghatge-miss-india-2021", "hinal-shah-jain-mrs-india-2021", "how-forever-star-india-transforms-you-and-taking-out-your-inner-beauty", "jasmine-rayat-is-coming-for-the-grand-finale", "jenny-khoshy-miss-india", "jenny-koshy-miss-india-2021", "karishma-kaur-miss-india-2021", "lipi-malakar-is-coming-for-the-grand-finale", "madhuri-danane-is-coming-for-the-grand-finale", "manasmita-palo-mrs-india-2021", "manikanta-jain-mrs-india-2021", "manya-vats-miss-india-2021", "meenakshi-sharma-mrs-india-2021", "miss-india-2021-bhavika-kiran-tilekar", "miss-india-2021-pratima-sarkar", "miss-india-amrita-srivastava", "miss-india-contestant-samprikta-mandal", "miss-india-purva-parate-makeup-and-grooming", "miss-tamil-nadu-2022-nishoja-d-1st-runner-up", "miss-tamil-nadu-2022-rakshya", "multi-talent-candidate-performance-by-mrs-india-participant-piyali-de", "naomi-ribeiro-miss-india-2021", "nayana-basarani-is-coming-for-the-grand-finale", "neena-jose-miss-india-2021", "neha-barwase-miss-india-2021", "neha-yadav-mrs-india-2021", "pardeep-kaur-mrs-india-2021", "performance-of-miss-india-2021-shubhi-bhadauriya", "performance-of-miss-india-participant-namya-shrivastava", "pooja-mishra-miss-india-2021", "prashasti-is-coming-for-the-grand-finale", "pratima-sarkar-miss-india-2021-contestant", "preparing-for-the-ramp-walk-miss-india-contestant-ria-paul", "prerna-nayyar-is-coming-for-the-grand-finale", "priti-pankaj-khandelwal-mrs-india-2021", "priyanka-bharat-shah-mrs-india-2021", "rajlaxmi-chavan-is-coming-for-the-grand-finale", "rajni-yadav-miss-india-2021", "sadhna-singh-is-coming-for-the-grand-finale", "samidha-is-coming-for-the-grand-finale", "sara-rayees-miss-india-2021", "sarita-jadhav-mrs-india-2021", "sasmita-tripathy-mrs-india-2021", "satabdi-roy-debnath-mrs-india-2021", "sheron-kalsi-miss-india-2021", "shobitha-mallepula-miss-india-2021", "smitha-xavier-is-coming-for-the-grand-finale", "sonal-wadhwa-arora-mrs-india-2021", "sonu-khoshya-is-coming-for-the-grand-finale", "suman-mishra-miss-india-2021", "super-model-performance-by-miss-india-participant-purva-parate", "supriya-nayak-miss-india-2021", "surarchi-kumar-miss-india-2021", "sure-movie-performance-by-miss-india-participant-radhika-rane", "tabassum-shaikh-miss-india-2021", "talent-video-of-miss-india-participant-drishti-kohli", "teaser-launch-grand-finale-miss-india-and-mrs-india-2021", "transformation-makes-you-perfect-sara-rayees-miss-india-2021-participant"];
+  var base="https://www.fsia.in/";
+  var A=[],B=[],C=[];
+  u500.forEach(function(u){ if(/-(miss|mrs)-india-2021$/.test(u))A.push(u); else if(u.indexOf("is-coming-for-the-grand-finale")>-1)B.push(u); else C.push(u); });
+  var box=document.getElementById("list500");
+  [["Miss/Mrs India 2021 profiles with no id",A],["“…is coming for the grand finale”",B],["Other profile, video and article pages",C]].forEach(function(g){
+    box.insertAdjacentHTML("beforeend",'<div class="grp"><h3>'+g[0]+' ('+g[1].length+')</h3><ol>'+g[1].map(function(u){return '<li><a href="'+base+u+'" target="_blank" rel="noopener">'+base+u+'</a></li>';}).join("")+'</ol></div>');
+  });
+  var btn=document.getElementById("copy500");
+  btn.addEventListener("click",function(){
+    var txt=u500.map(function(u){return base+u;}).join("\n");
+    function done(){btn.textContent="Copied 76 URLs";setTimeout(function(){btn.textContent="Copy all 76 URLs";},2000);}
+    function fallback(){var r=document.createRange();r.selectNodeContents(box);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent="Selected. Press Ctrl+C or ⌘C";}
+    try{navigator.clipboard.writeText(txt).then(done,fallback);}catch(e){fallback();}
+  });
+})();
+</script>

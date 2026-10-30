@@ -1,0 +1,344 @@
+<title>fsia.in PHP Migration Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~880px) — verdict first, then sections in fix-priority order; tables scroll inside their own boxes */
+:root{
+  --bg:#f7f6f3; --surface:#ffffff; --ink:#1d1b26; --muted:#5f5b6e; --line:#e3e0e8;
+  --accent:#9a6a12; --accent-soft:#f5ead3;
+  --crit:#b42318; --crit-soft:#fde8e6; --warn:#a35a00; --warn-soft:#fdf0dc; --ok:#1f7a4a; --ok-soft:#e2f4ea; --info:#3d4f8f; --info-soft:#e7eaf7;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141b; --surface:#1e1c26; --ink:#ecebf1; --muted:#a6a2b5; --line:#33303f;
+  --accent:#e0ad4f; --accent-soft:#3a2e17;
+  --crit:#ff8a7d; --crit-soft:#3d1c1a; --warn:#f2b45c; --warn-soft:#3a2a14; --ok:#6fd39c; --ok-soft:#163222; --info:#9fb0f0; --info-soft:#222a45;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px;min-width:0}
+.sec-head{display:grid;gap:4px}
+
+/* header */
+header{display:grid;gap:10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:14px}
+
+/* TL;DR */
+.tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:14px}
+.tldr ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.tldr li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.tldr li p{min-width:0}
+
+/* verdict tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile .k{font-size:13px;color:var(--muted);font-weight:600}
+.tile .v{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .s{font-size:13px;color:var(--muted)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap;text-transform:uppercase}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.crit{color:var(--crit);background:var(--crit-soft)}
+.high{color:var(--warn);background:var(--warn-soft)}
+.med{color:var(--info);background:var(--info-soft)}
+.good{color:var(--ok);background:var(--ok-soft)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.fix{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* fast vs slow */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.split{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.panel ul{margin:0;padding-left:18px;display:grid;gap:7px}
+.panel h3{display:flex;align-items:center;gap:8px}
+
+/* bar charts */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 12px;display:grid;gap:10px}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;align-items:center;font-size:14px}
+.bar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:22px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fill.g{background:var(--ok-soft);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.fill.w{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.fill.c{background:var(--crit-soft);color:var(--crit);box-shadow:inset 0 0 0 1px var(--crit)}
+.mark{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1.5px dashed var(--muted);opacity:.7}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{position:relative;height:16px}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+
+/* stacked bar */
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack div{min-width:3px}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;font-size:14px}
+.key{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px}
+.key b{font-variant-numeric:tabular-nums}
+
+/* state grid */
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.st{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.st span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;font-family:var(--f-mono)}
+.dot.in{color:var(--ok);background:var(--ok-soft)}
+.dot.out{color:var(--crit);background:var(--crit-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+/* details lists */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:13px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"Show";font-size:13px;color:var(--accent);font-weight:600}
+details[open] summary::after{content:"Hide"}
+summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dbody{padding:0 16px 16px;display:grid;gap:14px}
+.dbody ol{margin:0;padding-left:28px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all}
+.grp{display:grid;gap:6px}
+.grp h3{font-size:15px}
+button.copy{font:600 13px var(--f-body);color:var(--accent);background:var(--accent-soft);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;justify-self:start}
+
+/* plan */
+.plan{display:grid;gap:10px}
+.wk{display:grid;grid-template-columns:84px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.wk .w{font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--accent)}
+.wk ul{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:480px){.wk{grid-template-columns:1fr;gap:6px}}
+
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* added for the focused reports */
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.toc a{text-decoration:none;border-bottom:1px solid var(--line)}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.task input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent)}
+.task .tb{display:grid;gap:6px;min-width:0}
+.task .th{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.task .th b{font-size:16px}
+.task.done .th b{text-decoration:line-through;color:var(--muted)}
+.task .ac{font-size:14px;color:var(--muted)}
+.task .ac ul{margin:4px 0 0;padding-left:18px;display:grid;gap:2px}
+.tag{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.panelbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:12px}
+.panelbox ol{margin:0;padding-left:30px;font-family:var(--f-mono);font-size:13px;display:grid;gap:3px;word-break:break-all;max-height:420px;overflow:auto}
+pre.code{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow-x:auto;font:400 13px/1.55 var(--f-mono)}
+.flag{font-weight:700}
+.flag.bad{color:var(--crit)} .flag.mid{color:var(--warn)} .flag.okc{color:var(--ok)}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:12px 16px;font-size:15px}
+.phase{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.phase .ph{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.phase .ph .w{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--accent)}
+.phase ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.gantt{display:grid;gap:6px;font-size:13px}
+.grow{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;align-items:center}
+.gtrack{position:relative;height:20px;background:var(--bg);border-radius:4px}
+.gbar{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--accent);opacity:.85}
+.gaxis{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:10px;font-size:12px;color:var(--muted)}
+.gticks{position:relative;height:16px}
+.gticks span{position:absolute;transform:translateX(-50%)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Migration plan · 30 Oct 2026</span>
+  <h1>Moving fsia.in off hand-built PHP</h1>
+  <div class="meta">
+    <span>~5,500 public URLs · 70+ registration forms · custom CMS</span>
+    <span>Gradual, route-by-route migration</span>
+    <span>About 20 weeks with a 2–3 person team</span>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#tldr">TL;DR</a><a href="#why">The real risk</a><a href="#stack">Target stack</a><a href="#approach">Approach</a><a href="#timeline">Timeline</a><a href="#phases">Phases & tasks</a><a href="#seo">Protecting SEO</a><a href="#risks">Risks</a><a href="#cutover">Cutover checklist</a>
+  </nav>
+</header>
+
+<section class="tldr" id="tldr" aria-labelledby="tldr-h">
+  <h2 id="tldr-h">TL;DR</h2>
+  <ul>
+    <li><span class="pill med">Reality</span><p><b>PHP itself isn't the security problem.</b> The site runs PHP 8.3, which gets security fixes until the end of 2027. The risk comes from how the site is built: no framework, 73 copied files, hand-written SQL, secrets in code, public include files, no CSRF tokens or security headers, no tests, and most code outside git.</p></li>
+    <li><span class="pill good">Recommendation</span><p><b>Move to Next.js (TypeScript) behind Cloudflare, keeping the existing MySQL database.</b> CSRF protection, output escaping, typed validation, static pages and image optimisation become defaults. This also fixes most of the speed and sitemap problems.</p></li>
+    <li><span class="pill good">Approach</span><p><b>Migrate route by route, with no big-bang switchover.</b> Cloudflare sits in front and sends one URL group at a time to the new app while PHP keeps serving the rest. Each step can be rolled back by changing a route.</p></li>
+    <li><span class="pill high">First</span><p><b>Phase 0 hardens the current PHP site</b>: the Bharat Couture 404, the OTP endpoint, headers and caching. Those can't wait 20 weeks.</p></li>
+    <li><span class="pill high">SEO</span><p><b>Every existing URL keeps working</b>, either served directly or 301'd. A full crawl comparison gates each cutover.</p></li>
+  </ul>
+</section>
+
+<section id="why" aria-labelledby="why-h">
+  <div class="sec-head"><span class="eyebrow">Why migrate</span><h2 id="why-h">The real risk, and what the new stack fixes</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Risk today (from the tech audit)</th><th>In the target stack</th></tr></thead>
+    <tbody>
+      <tr><td>Hand-written SQL with string escaping</td><td>An ORM with parameterised queries (Drizzle)</td></tr>
+      <tr><td>Unescaped CMS text in every page head</td><td>React escapes output by default</td></tr>
+      <tr><td>No CSRF tokens on any form</td><td>Server Actions check the request origin, plus Turnstile on submit</td></tr>
+      <tr><td>Public, unthrottled OTP sender; weak OTP</td><td>One OTP service with Redis rate limits, attempt lockout and <code>crypto.randomInt</code></td></tr>
+      <tr><td>No security headers; insecure cookie</td><td>Headers set once in <code>next.config</code> and Cloudflare; secure cookies by default</td></tr>
+      <tr><td>Include files and <code>test.php</code> reachable by URL</td><td>Only defined routes are public</td></tr>
+      <tr><td>Secrets in 67 files in git</td><td>Environment variables per environment; secret scanning in CI</td></tr>
+      <tr><td>73 copied forms; code only on the server</td><td>One form component plus config; everything in git with review and CI</td></tr>
+      <tr><td>Validation only in the browser; errors never shown</td><td>One zod schema shared by browser and server, with inline errors</td></tr>
+      <tr><td>Tailwind CDN, no caching, slow profile pages</td><td>Built CSS, static generation with incremental rebuilds for 5,500 pages, CDN caching, image resizing</td></tr>
+      <tr><td>Hand-written, stale sitemap</td><td>Sitemap generated from the DB at build and revalidation time</td></tr>
+      <tr><td>Shared Plesk host; no staging</td><td>Preview deploy per change, a staging environment, instant rollback</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="stack" aria-labelledby="stack-h">
+  <div class="sec-head"><span class="eyebrow">Target</span><h2 id="stack-h">Target stack</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Edge</td><td>Cloudflare (DNS, CDN, WAF, Turnstile, rate limiting)</td><td>Fronts both old and new during migration; Indian edge locations; bot protection on forms</td></tr>
+      <tr><td>Web app</td><td>Next.js (App Router), TypeScript</td><td>Static pages with incremental rebuilds for profiles; Server Actions for forms; built-in sitemap and metadata APIs</td></tr>
+      <tr><td>Hosting</td><td>Vercel (or a Node container on any cloud)</td><td>Preview deploys, rollback, no server patching</td></tr>
+      <tr><td>Database</td><td>Existing MySQL, moved to a managed instance; Drizzle ORM</td><td>No data migration on day one; the back office keeps working</td></tr>
+      <tr><td>Cache and limits</td><td>Redis (e.g. Upstash)</td><td>OTP rate limits, attempt lockout, short-lived tokens</td></tr>
+      <tr><td>Images</td><td>Cloudflare Images or R2 + <code>next/image</code></td><td>Resized WebP/AVIF; removes the 301 hop and 115 KB originals</td></tr>
+      <tr><td>Messaging</td><td>ClickChat (WhatsApp) behind a server-side adapter</td><td>Same provider, a rotated key, and one call site</td></tr>
+      <tr><td>Admin / CMS</td><td>Phase 5 decision: rebuild in Next.js, or adopt a headless CMS</td><td>Keep the current CMS working until public routes are moved</td></tr>
+      <tr><td>Quality</td><td>GitHub Actions, Playwright, Sentry</td><td>Every change tested; errors reported instead of silent 500s</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><b>Alternative: Laravel.</b> If the team will only work in PHP, Laravel gives most of the security defaults (CSRF, escaping, the Eloquent ORM, validation, rate limiting) with less retraining. Pair it with Cloudflare and a Tailwind build. It does less for page speed and static generation, so profile pages would need their own caching layer. Use the same phases either way.</div>
+</section>
+
+<section id="approach" aria-labelledby="ap-h">
+  <div class="sec-head"><span class="eyebrow">Approach</span><h2 id="ap-h">Route-by-route migration</h2></div>
+  <pre class="code">                  ┌───────────────────── Cloudflare ─────────────────────┐
+ visitor ───────► │  route table (changed one URL group at a time)       │
+                  └──────────────┬───────────────────────┬───────────────┘
+                                 │ migrated routes       │ everything else
+                                 ▼                       ▼
+                        Next.js app (new)        PHP on Plesk (old)
+                                 │                       │
+                                 └──────► MySQL ◄────────┘   (shared during migration)</pre>
+  <ul style="margin:0;padding-left:18px;display:grid;gap:6px">
+    <li>Both apps read and write the <b>same database</b>, so the back office and reports don't change while pages move.</li>
+    <li>Each URL group moves only after its <b>parity crawl</b> passes: same status, canonical, title, H1, schema type and indexability.</li>
+    <li>Rollback means pointing the route back to PHP, which takes seconds.</li>
+  </ul>
+</section>
+
+<section id="timeline" aria-labelledby="tl-h">
+  <div class="sec-head"><span class="eyebrow">Timeline</span><h2 id="tl-h">About 20 weeks</h2></div>
+  <div class="chart">
+    <div class="gantt" id="gantt"></div>
+    <div class="gaxis"><span></span><div class="gticks" id="gticks"></div></div>
+  </div>
+  <p class="muted" style="font-size:14px">Assumes 1 senior full-stack developer, 1 front-end developer, part-time QA and a part-time SEO lead. Phases overlap where they don't depend on each other.</p>
+</section>
+
+<section id="phases" aria-labelledby="ph-h">
+  <div class="sec-head"><span class="eyebrow">Work breakdown</span><h2 id="ph-h">Phases and tasks</h2></div>
+  <p class="muted" style="font-size:14px">Estimates are in person-days for planning only; refine them after the phase 0 inventory.</p>
+  <div class="plan" id="phaselist"></div>
+</section>
+
+<section id="seo" aria-labelledby="seo-h">
+  <div class="sec-head"><span class="eyebrow">Search traffic</span><h2 id="seo-h">Protecting SEO through the move</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Rule</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>No URL loses its traffic</td><td>A full URL inventory (sitemap + nav + DB + server logs + Search Console). Every old URL is served or 301'd to its new home; 301s stay in place permanently.</td></tr>
+      <tr><td>Pick the final URL style once</td><td>Extensionless (<code>/miss-delhi</code>). <code>.php</code>, uppercase and <code>?id=</code> variants 301 to it.</td></tr>
+      <tr><td>Parity before every cutover</td><td>Crawl old and new; diff status, canonical, title, description, H1, JSON-LD types, robots and internal links.</td></tr>
+      <tr><td>Sitemap from day one</td><td>Next.js <code>sitemap.ts</code> per section, built from the DB; only canonical 200 URLs.</td></tr>
+      <tr><td>Watch, then continue</td><td>After each cutover, monitor Search Console coverage and clicks for 7 days before moving the next group.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="risks" aria-labelledby="r-h">
+  <div class="sec-head"><span class="eyebrow">Risks</span><h2 id="r-h">Risks and mitigations</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Risk</th><th>Likelihood</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Hidden PHP behaviour (cron jobs, emails, admin side-effects) gets missed</td><td><span class="pill high">High</span></td><td>Phase 0 inventory from server files, crontab, mail logs and DB triggers. Shadow-run forms against staging.</td></tr>
+      <tr><td>Search traffic dips after a cutover</td><td><span class="pill med">Medium</span></td><td>Parity crawl, permanent 301s, one group at a time, 7-day watch</td></tr>
+      <tr><td>Lost registrations during the switch</td><td><span class="pill med">Medium</span></td><td>Same DB tables; compare submission counts per program before and after; alert on drops</td></tr>
+      <tr><td>Data model surprises (e.g. typo'd columns like <code>descritpion</code>)</td><td><span class="pill med">Medium</span></td><td>Generate the schema from the live DB; map old names in the data layer and rename later</td></tr>
+      <tr><td>Team unfamiliar with Next.js</td><td><span class="pill med">Medium</span></td><td>Start with forms (small surface); pair programming; or choose the Laravel alternative</td></tr>
+      <tr><td>Running two stacks for months</td><td><span class="pill low good">Low</span></td><td>Shared DB and edge routing keep this cheap. Set a fixed PHP shutdown date.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="cutover" aria-labelledby="c-h">
+  <div class="sec-head"><span class="eyebrow">Each cutover</span><h2 id="c-h">Cutover checklist per URL group</h2></div>
+  <div class="tasks" id="cutlist"></div>
+</section>
+
+<footer>
+  <span>Based on the findings in the technical audit and the SEO/sitemap report, in <a href="https://github.com/Hackerboy19/form-fsia/pull/10">Hackerboy19/form-fsia#10</a>.</span>
+</footer>
+</div>
+
+<script>
+(function(){
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+/* [name, startWeek, endWeek, goal, [[task, days]], exit criteria] */
+var P=[
+ ["0 · Stabilise and take inventory",0,2,"Make the current site safe and know exactly what exists.",[["Fix Bharat Couture 404, registration types, error display",2],["Remove inline OTP handler; rate-limit OTP; rotate webhook ID",2],["Security headers, cookie flags, hide versions, block include files",1],["Cache headers; sessions only on interaction",1],["Put Cloudflare in front of the current site (DNS, WAF, Turnstile)",2],["Pull all server code, nginx config and crontab into git",2],["Dump the DB schema; list tables used per page and form",2],["URL inventory: sitemap + nav + DB + logs + Search Console export",3]],"Audit P0 items closed; full code in git; URL inventory signed off"],
+ ["1 · Foundations",2,5,"Stand up the new app with everything future phases need.",[["Next.js + TypeScript repo, lint, formatting, CI, preview deploys",2],["Staging environment with a copy of the DB",2],["Drizzle schema generated from MySQL; read-only data layer",4],["Design tokens and base components matching the current look",5],["Security headers, CSP, Sentry, logging",2],["Redirect map service (old URL → new URL) and parity-crawl script",4]],"A staging page renders real DB data; parity script runs"],
+ ["2 · Registration forms",5,9,"Replace the 73 copied form files with one component.",[["Form config for every program (64 states + 9 others)",3],["One form component; zod schema shared by browser and server",5],["OTP service: Redis limits, 5-try lockout, crypto.randomInt, ClickChat adapter",4],["Server Actions writing to the existing tables with correct type and category",4],["Turnstile, inline errors, thank-you page, GA4 conversion event",3],["Playwright tests for every program; shadow-submit to staging",4],["Cutover in groups: Miss states → Mrs states → fashion/partner forms",3]],"Submission counts per program match the previous 2 weeks; zero 5xx"],
+ ["3 · Profiles, winners, contestants",8,13,"Move the ~5,500 content URLs with static generation.",[["Profile, winner and contestant templates with incremental rebuilds",6],["Image pipeline: R2/Cloudflare Images; WebP/AVIF; www-only URLs",3],["Generated sitemaps split by season; lastmod from DB",2],["301 map for .php, ?id=, uppercase and renamed slugs",3],["Fix or 410 the 76 URLs returning 500 and the 80 returning 404 during the move",3],["Parity crawl on all 5,500 URLs; cut over season by season",4]],"Parity diff clean; Search Console coverage stable for 7 days"],
+ ["4 · Homepage and site pages",12,15,"Move the remaining public pages.",[["Homepage with optimised hero; LCP under 2.5 s on 4G",4],["Galleries, news coverage, about, contact, policies",4],["Calendar and promo components (replace calendar.js and promo.js)",3],["Remove duplicate GA config; consent and analytics review",1]],"Every public route served by Next.js"],
+ ["5 · Admin and CMS",14,19,"Replace the PHP back office safely.",[["Map current CMS features and admin users",2],["Decide: rebuild in Next.js, or adopt a headless CMS",1],["Login with 2FA, roles, audit log",4],["Content editing for sections, calendar and promos; profile management",8],["Registration review and export screens",5],["Migrate write APIs; retire /cms/backend",3]],"Staff use only the new admin for 2 weeks"],
+ ["6 · Shut down PHP",19,21,"Remove the old stack.",[["Freeze PHP; final full parity crawl",1],["Remove the Plesk origin from Cloudflare; archive the server image",1],["Keep the permanent 301 map; delete PHP secrets; final security review",2]],"PHP origin off; no traffic to it for 14 days"]
+];
+var MAXW=21, g=document.getElementById("gantt");
+P.forEach(function(p){g.insertAdjacentHTML("beforeend",'<div class="grow"><span>Phase '+esc(p[0])+'</span><div class="gtrack"><div class="gbar" style="left:'+(p[1]/MAXW*100)+'%;width:'+((p[2]-p[1])/MAXW*100)+'%" title="Weeks '+(p[1]+1)+'–'+p[2]+'"></div></div></div>');});
+var gt=document.getElementById("gticks"); [0,4,8,12,16,20].forEach(function(w){gt.insertAdjacentHTML("beforeend",'<span style="left:'+(w/MAXW*100)+'%">'+(w===0?"Wk 1":"Wk "+w)+'</span>');});
+var pl=document.getElementById("phaselist"), total=0;
+P.forEach(function(p){
+  var days=p[4].reduce(function(a,t){return a+t[1];},0); total+=days;
+  pl.insertAdjacentHTML("beforeend",'<div class="phase"><div class="ph"><span class="w">Phase '+esc(p[0])+'</span><span class="tag">Weeks '+(p[1]+1)+'–'+p[2]+'</span><span class="tag">≈ '+days+' person-days</span></div><p>'+esc(p[3])+'</p><div class="tbl"><table><thead><tr><th>Task</th><th class="n">Days</th></tr></thead><tbody>'+p[4].map(function(t){return '<tr><td>'+esc(t[0])+'</td><td class="n">'+t[1]+'</td></tr>';}).join("")+'</tbody></table></div><p class="muted" style="font-size:14px"><b>Exit:</b> '+esc(p[5])+'</p></div>');
+});
+pl.insertAdjacentHTML("beforeend",'<div class="callout"><b>Total ≈ '+total+' person-days</b> of build work, plus QA and SEO time. That fits the ~20-week window with 2 developers working in parallel.</div>');
+
+var CUT=["URL group listed with every legacy variant (.php, ?id=, uppercase)","Parity crawl: status, canonical, title, H1, JSON-LD, robots all match or improve","301 rules deployed for every old variant","Playwright tests pass on staging; Lighthouse mobile LCP < 2.5 s","Cloudflare route switched; rollback route ready","Submission and traffic dashboards watched for 7 days","Sitemap updated and resubmitted in Search Console"];
+var cl=document.getElementById("cutlist"), saved={};
+try{saved=JSON.parse(localStorage.getItem("fsia-cutover")||"{}");}catch(e){}
+CUT.forEach(function(c,i){var id="c"+i,d=!!saved[id];cl.insertAdjacentHTML("beforeend",'<label class="task'+(d?' done':'')+'" for="'+id+'"><input type="checkbox" id="'+id+'"'+(d?' checked':'')+'><div class="tb"><div class="th"><b>'+esc(c)+'</b></div></div></label>');});
+cl.addEventListener("change",function(e){saved[e.target.id]=e.target.checked;e.target.closest(".task").classList.toggle("done",e.target.checked);try{localStorage.setItem("fsia-cutover",JSON.stringify(saved));}catch(err){}});
+})();
+</script>
