@@ -1,11 +1,62 @@
-<?php include("config.php");
+<?php 
+include("config.php");
 $getmeta  = "select * from more_pages where page_name='19'";
 $gmeta    = mysqli_query($connect, $getmeta);
 $meta_tag = mysqli_fetch_assoc($gmeta);
 
-/* Team roster, grouped by department.
-   Each member is [name, role, photo URL, optional phone]. Leadership cards also
-   read a bio from $leadBios, keyed by name. */
+/* Fallback Defaults for Hero, Leadership, CTA */
+$cmsSections = [
+    'hero' => [
+        'eyebrow'      => 'The people behind FSIA',
+        'title'        => 'THE FACES',
+        'title_italic' => 'behind every crown',
+        'intro'        => "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur.",
+        'stat_value'   => '4,000+',
+        'stat_label'   => 'Cities reached',
+        'seal_big'     => 'S·8',
+        'seal_small'   => 'Season',
+        'image_url'    => '',
+        'left_photo'   => ''
+    ],
+    'hero_center' => ['photo' => '', 'image_url' => ''],
+    'hero_right'  => ['photo' => '', 'image_url' => ''],
+    'leadership'  => [
+        'small_label' => 'Official FSIA Board',
+        'heading'     => 'Leadership',
+        'tag'         => 'Forever Star India'
+    ],
+    'team_grid'   => [
+        'small_label' => 'Team FSIA',
+        'heading'     => 'Mentors, Makers & Voices',
+        'line'        => 'The experts who train, film, host and run every Forever Star India season.'
+    ],
+    'cta'         => [
+        'small_label'  => 'Season 2026 is open',
+        'heading'      => 'Your stage is',
+        'heading_gold' => 'waiting',
+        'paragraph'    => 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.',
+        'link1_title'  => 'Quick Apply',
+        'link1_sub'    => 'Register for the 2026 season',
+        'link1_url'    => 'https://www.fsia.in/quickapply',
+        'link2_title'  => 'Become a Channel Partner',
+        'link2_sub'    => 'Bring FSIA to your city',
+        'link2_url'    => 'https://www.fsia.in/channel-partner',
+        'link3_title'  => '+91-99832-86999',
+        'link3_sub'    => 'Call the FSIA helpline',
+        'link3_url'    => 'tel:+919983286999'
+    ]
+];
+
+// Helper: Convert category text into a clean CSS/filter slug
+function fsia_slugify($text) {
+    $text = preg_replace('~[^\pL\d]+~u', '-', (string)$text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = strtolower($text);
+    return empty($text) ? 'other' : $text;
+}
+
 $groups = [
     'leadership' => ['title' => 'Leadership', 'members' => [
         ['Rajesh Agarwal (Astro Raj)', 'CEO & Founder', '/static/media/Rajesh-Agarwal-CEO-FSIA.62467c70a0bb0c9d33a7.jpg'],
@@ -51,9 +102,7 @@ $leadBios = [
     'Jaya Chauhan' => 'Strategic director overseeing operations and growth. Brings expertise in pageant management, contestant grooming, and community building. Passionate about creating opportunities for women.',
 ];
 
-/* Live roster from the CMS (Admin -> Team Directory): active members only, in
-   the admin's order. If the CMS database can't be reached, the list above is
-   used instead, so the page always renders. */
+// Predefined 5 Default Categories with display names
 $fsiaTeamCats = [
     'Leadership' => ['leadership', 'Leadership'],
     'Core Team'  => ['core-team', 'Core Team'],
@@ -62,22 +111,7 @@ $fsiaTeamCats = [
     'Media'      => ['photo-video', 'Photography & Video'],
 ];
 $fsiaPhones = ['Jaya Chauhan' => '9983599666'];
-$fsiaPage = [];
-/** A text from Admin -> Our Team page, or $default when empty. Escape when printing. */
-$pt = function (string $section, string $field, string $default) use (&$fsiaPage): string {
-    $v = $fsiaPage[$section]['content'][$field] ?? '';
-    return is_string($v) && trim($v) !== '' ? trim($v) : $default;
-};
-/** A link from the admin, limited to http(s), /path, tel: and mailto:. */
-$pl = function (string $section, string $field, string $default) use ($pt): string {
-    $v = $pt($section, $field, $default);
-    return preg_match('~^(https?://|/(?!/)|tel:|mailto:)~i', $v) ? $v : $default;
-};
-/** A section photo from the admin, or $default. */
-$pi = function (string $section, string $default) use (&$fsiaPage): string {
-    $v = $fsiaPage[$section]['image'] ?? '';
-    return $v !== '' && preg_match('~^(https?://|/(?!/))~i', $v) ? $v : $default;
-};
+
 try {
     $cmsCfgFile = __DIR__ . '/cms/backend/config.php';
     if (is_file($cmsCfgFile)) {
@@ -87,36 +121,71 @@ try {
             $pdo = new PDO(
                 sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $c['host'], (int) ($c['port'] ?? 3306), $c['name']),
                 $c['user'], $c['password'],
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]
             );
+
+            // 1. Fetch Dynamic Page Sections
+            try {
+                $secStmt = $pdo->prepare("SELECT section_key, content, image_url FROM page_sections WHERE page_slug = 'our-teams'");
+                $secStmt->execute();
+                while ($sRow = $secStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $cData = json_decode((string)$sRow['content'], true) ?: [];
+                    if (!empty($sRow['image_url'])) { 
+                        $cData['image_url'] = $sRow['image_url']; 
+                    }
+                    $k = $sRow['section_key'];
+                    $cmsSections[$k] = array_merge($cmsSections[$k] ?? [], $cData);
+                }
+            } catch (Throwable $se) {
+                error_log('our-teams.php CMS sections fetch error: ' . $se->getMessage());
+            }
+
+            // 2. Fetch Team Roster (Supports Multiple Categories & Dynamic Other Categories)
             $rows = $pdo->query(
-                "SELECT * FROM team_members
+                "SELECT name, designation, category, image_url, bio, quote, social_links FROM team_members
                  WHERE is_active = 1
                  ORDER BY FIELD(category, 'Leadership','Core Team','Mentors','Anchors','Media'), display_order, name"
             )->fetchAll(PDO::FETCH_ASSOC);
+
             if ($rows) {
                 $fromDb = [];
+                // Pre-populate core 5 groups
                 foreach ($fsiaTeamCats as [$slug, $title]) {
                     $fromDb[$slug] = ['title' => $title, 'members' => []];
                 }
+
                 foreach ($rows as $r) {
-                    if (!isset($fsiaTeamCats[$r['category']])) continue;
+                    $rawCat = trim((string)$r['category']);
+                    if ($rawCat === '') { $rawCat = 'Mentors'; }
+
+                    // Support multiple categories separated by comma e.g. "Mentors, Core Team"
+                    $catList = array_map('trim', explode(',', $rawCat));
+
                     $links = json_decode((string) $r['social_links'], true) ?: [];
-                    $phone = preg_replace('/[^\d+]/', '', (string) (($r['phone'] ?? '') ?: ($links['phone'] ?? $fsiaPhones[$r['name']] ?? '')));
-                    // [name, role, photo, phone, bio, quote]; bio/quote come from the admin (empty = built-in text).
-                    $fromDb[$fsiaTeamCats[$r['category']][0]]['members'][] = [$r['name'], $r['designation'], $r['image_url'], $phone, trim((string) ($r['bio'] ?? '')), trim((string) ($r['quote'] ?? ''))];
+                    $phone = preg_replace('/\D+/', '', (string) ($links['phone'] ?? $fsiaPhones[$r['name']] ?? ''));
+                    $bio   = trim((string)($r['bio'] ?? ''));
+                    if (!empty($bio)) { $leadBios[$r['name']] = $bio; }
+
+                    $memberItem = [ $r['name'], $r['designation'], $r['image_url'], $phone, $links ];
+
+                    foreach ($catList as $catName) {
+                        if ($catName === '') continue;
+
+                        if (isset($fsiaTeamCats[$catName])) {
+                            $catSlug  = $fsiaTeamCats[$catName][0];
+                            $catTitle = $fsiaTeamCats[$catName][1];
+                        } else {
+                            $catSlug  = fsia_slugify($catName);
+                            $catTitle = ucfirst($catName);
+                            if (!isset($fromDb[$catSlug])) {
+                                $fromDb[$catSlug] = ['title' => $catTitle, 'members' => []];
+                            }
+                        }
+                        $fromDb[$catSlug]['members'][] = $memberItem;
+                    }
                 }
-                // Keep departments that have people (Leadership always, it heads the page).
-                $groups = array_filter($fromDb, fn ($g, $k) => $k === 'leadership' || $g['members'], ARRAY_FILTER_USE_BOTH);
-            }
-            // Page texts and hero photos (Admin -> Our Team page).
-            $st = $pdo->prepare("SELECT section_key, content, image_url FROM page_sections WHERE page_slug = 'our-teams'");
-            $st->execute();
-            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $sec) {
-                $fsiaPage[$sec['section_key']] = [
-                    'content' => json_decode((string) $sec['content'], true) ?: [],
-                    'image'   => (string) $sec['image_url'],
-                ];
+
+                $groups = array_filter($fromDb, fn ($g, $k) => $k === 'leadership' || !empty($g['members']), ARRAY_FILTER_USE_BOTH);
             }
             $pdo = null;
         }
@@ -141,7 +210,7 @@ if (!function_exists('fsia_attr')) {
     <meta charset="utf-8" />
     <link rel="icon" href="favicon.ico" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#0C1322" />
     <?php
       $fsiaTitle = $fsiaMeta('meta_title', 'Our Team | Forever Star India');
       $fsiaDesc  = $fsiaMeta('descritpion', "Meet the team behind Forever Star India — organisers of India's biggest beauty pageants and award shows.");
@@ -161,21 +230,16 @@ if (!function_exists('fsia_attr')) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,900;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="assets/css/jquery.fancybox.min.css" />
     <link href="static/css/main.784a6568.css" rel="stylesheet" />
     <?php include('scripts.php'); ?>
 <style>
-/* main.784a6568.css reserves body padding-top for the OLD fixed header; header1806.php sits in
-   normal flow. It also paints a dark scrim over footer1806 and capitalises links. */
 body { padding-top: 0 !important; }
 footer.fsia-ft::after { content: none !important; }
 .fx a, .fsia-ft a { text-transform: none; }
 .fx a.fx-chip, .fx .fx-crumb a { text-transform: uppercase; }
 
-/* "Editorial stage" layout in the homepage palette (fsia-home.css): navy #0C1322,
-   gold #D4AF37, cream #FAF7F0, Cinzel / Playfair Display / Plus Jakarta Sans.
-   Arched frames echo a stage proscenium. Everything is scoped under .fx. */
 .fx{--navy:#0C1322;--navy-2:#1A253E;--gold:#D4AF37;--gold-2:#E5C158;--gold-d:#B8860B;--bronze:#7E591B;--cream:#FAF7F0;--cream-2:#F6F2E8;
     --line:#EADBAC;--sand:#EDE8DC;--slate:#526077;
     font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--navy);background:var(--cream)}
@@ -188,7 +252,6 @@ footer.fsia-ft::after { content: none !important; }
 .fx-eyebrow::before{content:"";width:32px;height:1px;background:currentColor}
 .fx-serif{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500}
 
-/* Hero: copy left, arched photo collage right */
 .fx-hero{position:relative;overflow:hidden;padding:72px 0 88px;
     background:radial-gradient(900px 500px at 85% 20%,rgba(212,175,55,.16),transparent 60%),var(--cream)}
 .fx-hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
@@ -217,14 +280,12 @@ footer.fsia-ft::after { content: none !important; }
 .fx-seal b{font-family:'Cinzel',serif;font-size:1.6rem;line-height:1}
 .fx-seal span{display:block;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--line);margin-top:4px}
 
-/* Name ticker */
 .fx-ticker{background:var(--navy);border-block:1px solid rgba(212,175,55,.45);overflow:hidden;padding:18px 0}
 .fx-track{display:flex;width:max-content;animation:fx-scroll 60s linear infinite}
 .fx-track span{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--line);white-space:nowrap;padding:0 22px;display:inline-flex;align-items:center;gap:44px}
 .fx-track span::after{content:"✦";color:var(--gold);font-size:.8rem}
 @keyframes fx-scroll{to{transform:translateX(-50%)}}
 
-/* Leader spotlights */
 .fx-lead{padding:104px 0 40px}
 .fx-sec-head{text-align:center;margin:0 auto 64px;max-width:720px}
 .fx-sec-head h2{font-size:clamp(1.9rem,4vw,3rem);text-transform:uppercase;margin-top:16px}
@@ -244,7 +305,6 @@ footer.fsia-ft::after { content: none !important; }
 .fx-chip{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);transition:border-color .2s,background .2s,color .2s}
 a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy)}
 
-/* Team gallery with filter tabs */
 .fx-team{background:#fff;padding:104px 0;border-top:1px solid var(--line)}
 .fx-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:-24px 0 48px}
 .fx-tabs button{font:inherit;cursor:pointer;padding:11px 18px;background:transparent;border:1px solid var(--line);color:var(--navy);
@@ -265,7 +325,6 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
 .fx-card h3{font-size:1.1rem;margin-top:16px}
 .fx-card p{margin:4px 0 0;font-size:.85rem;color:var(--slate)}
 
-/* Join CTA */
 .fx-join{position:relative;overflow:hidden;background:var(--navy);color:#fff;padding:96px 0}
 .fx-join::before{content:"";position:absolute;inset:0;opacity:.12;background:url('/uploads/Forever-Star-India-Pageant.webp') center/cover}
 .fx-join-in{position:relative;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center}
@@ -281,7 +340,6 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
 .fx-join-links small{display:block;margin-top:3px;color:#9aa3b2;font-size:12px}
 .fx-join-links i{font-style:normal;color:var(--gold);font-size:1.3rem}
 
-/* Clickable photos */
 .fx-open{display:block;width:100%;padding:0;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .fx-open:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
 .fx-hint{position:absolute;right:12px;bottom:12px;padding:6px 10px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;
@@ -292,7 +350,6 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
 .fx-spot-img .fx-hint{right:50%;transform:translate(50%,6px);bottom:20px}
 .fx-spot-img .fx-open:hover .fx-hint,.fx-spot-img .fx-open:focus-visible .fx-hint{transform:translate(50%,0)}
 
-/* Profile pop-up */
 .fx-modal{position:fixed;inset:0;margin:auto;height:fit-content;padding:0;border:0;overflow:auto;max-width:920px;width:calc(100% - 32px);max-height:calc(100% - 32px);background:var(--cream);color:var(--navy);
     box-shadow:0 40px 90px -30px rgba(0,0,0,.6);outline:1px solid var(--gold);outline-offset:-10px}
 .fx-modal::backdrop{background:rgba(12,19,34,.82);backdrop-filter:blur(3px)}
@@ -311,6 +368,9 @@ a.fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy
 .fx-m-facts dt{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-d)}
 .fx-m-facts dd{margin:0;font-size:.9rem;font-weight:600;text-align:right}
 .fx-m-facts a{color:var(--bronze)}
+.fx-soc-row { display: flex; gap: 12px; justify-content: flex-end; align-items: center; font-size: 1.25rem; }
+.fx-soc-row a { color: var(--gold-d); transition: color .2s, transform .2s; }
+.fx-soc-row a:hover { color: var(--navy); transform: scale(1.15); }
 .fx-m-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:28px}
 .fx-m-nav .fx-chip{cursor:pointer;font-family:inherit}
 .fx-m-nav .fx-chip:hover{background:var(--navy);color:var(--line);border-color:var(--navy)}
@@ -354,50 +414,60 @@ html.fx-lock{overflow:hidden}
 <?php include('header1806.php'); ?>
 
 <?php
-$lead  = $groups['leadership']['members'];
+$lead  = $groups['leadership']['members'] ?? [];
 $crew  = array_diff_key($groups, ['leadership' => 1]);
 $total = 0;
 foreach ($groups as $g) { $total += count($g['members']); }
 $names = [];
 foreach ($groups as $g) { foreach ($g['members'] as $m) { $names[] = $m[0]; } }
 
-/* Everyone in page order, for the profile pop-up. $pid maps a name to its index. */
 $people = [];
 $pid = [];
 foreach ($groups as $g) {
     foreach ($g['members'] as $m) {
         $pid[$m[0]] = count($people);
         $people[] = [
-            'name'  => $m[0],
-            'role'  => $m[1],
-            'team'  => $g['title'],
-            'img'   => $m[2],
-            'phone' => $m[3] ?? '',
-            'bio'   => ($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''),
+            'name'   => $m[0],
+            'role'   => $m[1],
+            'team'   => $g['title'],
+            'img'    => $m[2],
+            'phone'  => $m[3] ?? '',
+            'bio'    => $leadBios[$m[0]] ?? '',
+            'social' => $m[4] ?? [],
         ];
     }
 }
+
+$hero = $cmsSections['hero'];
+$leadSec = $cmsSections['leadership'];
+$teamSec = $cmsSections['team_grid'];
+$cta = $cmsSections['cta'];
+
+$imgLeft = !empty($hero['image_url']) ? $hero['image_url'] : (!empty($hero['left_photo']) ? $hero['left_photo'] : ($groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? ''));
+$imgCenter = !empty($cmsSections['hero_center']['image_url']) ? $cmsSections['hero_center']['image_url'] : (!empty($cmsSections['hero_center']['photo']) ? $cmsSections['hero_center']['photo'] : ($lead[0][2] ?? ''));
+$imgRight = !empty($cmsSections['hero_right']['image_url']) ? $cmsSections['hero_right']['image_url'] : (!empty($cmsSections['hero_right']['photo']) ? $cmsSections['hero_right']['photo'] : ($lead[1][2] ?? $lead[0][2] ?? ''));
 ?>
 <main class="fx">
 
+  <!-- HERO SECTION -->
   <section class="fx-hero">
     <div class="fx-wrap fx-hero-in">
       <div>
         <span class="fx-crumb"><a href="/">Home</a> &nbsp;/&nbsp; Our Team</span>
-        <span class="fx-eyebrow" data-cms="hero.eyebrow"><?php echo fsia_attr($pt('hero', 'eyebrow', 'The people behind FSIA')); ?></span>
-        <h1><span data-cms="hero.title"><?php echo fsia_attr($pt('hero', 'title', 'The Faces')); ?></span> <span class="fx-serif" data-cms="hero.title_italic"><?php echo fsia_attr($pt('hero', 'title_italic', 'behind every crown')); ?></span></h1>
-        <p data-cms="hero.intro"><?php echo nl2br(fsia_attr($pt('hero', 'intro', "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur."))); ?></p>
+        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($hero['eyebrow']) ? $hero['eyebrow'] : (!empty($hero['small_label']) ? $hero['small_label'] : 'The people behind FSIA')); ?></span>
+        <h1><?php echo fsia_attr(!empty($hero['title']) ? $hero['title'] : (!empty($hero['heading']) ? $hero['heading'] : 'THE FACES')); ?> <span class="fx-serif"><?php echo fsia_attr(!empty($hero['title_italic']) ? $hero['title_italic'] : (!empty($hero['heading_gold']) ? $hero['heading_gold'] : 'behind every crown')); ?></span></h1>
+        <p><?php echo nl2br(fsia_attr(!empty($hero['intro']) ? $hero['intro'] : (!empty($hero['paragraph']) ? $hero['paragraph'] : "Founders, mentors, choreographers, anchors and storytellers. Together they guide Forever Star India's contestants from the first city audition to the grand coronation at Zee Studio Jaipur."))); ?></p>
         <div class="fx-stats">
           <div><b><?php echo $total; ?></b><span>Team members</span></div>
           <div><b><?php echo count($groups); ?></b><span>Departments</span></div>
-          <div><b data-cms="hero.stat_value"><?php echo fsia_attr($pt('hero', 'stat_value', '4,000+')); ?></b><span data-cms="hero.stat_label"><?php echo fsia_attr($pt('hero', 'stat_label', 'Cities reached')); ?></span></div>
+          <div><b><?php echo fsia_attr(!empty($hero['stat_value']) ? $hero['stat_value'] : (!empty($hero['third_num']) ? $hero['third_num'] : '4,000+')); ?></b><span><?php echo fsia_attr(!empty($hero['stat_label']) ? $hero['stat_label'] : (!empty($hero['third_label']) ? $hero['third_label'] : 'Cities reached')); ?></span></div>
         </div>
       </div>
       <div class="fx-collage" aria-hidden="true">
-        <div class="fx-arch a2"><img data-cms-img="hero" src="<?php echo fsia_attr($pi('hero', $groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-arch a1"><img data-cms-img="hero_center" src="<?php echo fsia_attr($pi('hero_center', $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-arch a3"><img data-cms-img="hero_right" src="<?php echo fsia_attr($pi('hero_right', $lead[1][2] ?? $lead[0][2] ?? '')); ?>" alt=""></div>
-        <div class="fx-seal"><div><b data-cms="hero.seal_big"><?php echo fsia_attr($pt('hero', 'seal_big', 'S·8')); ?></b><span data-cms="hero.seal_small"><?php echo fsia_attr($pt('hero', 'seal_small', 'Season')); ?></span></div></div>
+        <div class="fx-arch a2"><img src="<?php echo fsia_attr($imgLeft); ?>" alt=""></div>
+        <div class="fx-arch a1"><img src="<?php echo fsia_attr($imgCenter); ?>" alt=""></div>
+        <div class="fx-arch a3"><img src="<?php echo fsia_attr($imgRight); ?>" alt=""></div>
+        <div class="fx-seal"><div><b><?php echo fsia_attr(!empty($hero['seal_big']) ? $hero['seal_big'] : (!empty($hero['badge_big']) ? $hero['badge_big'] : 'S·8')); ?></b><span><?php echo fsia_attr(!empty($hero['seal_small']) ? $hero['seal_small'] : (!empty($hero['badge_small']) ? $hero['badge_small'] : 'Season')); ?></span></div></div>
       </div>
     </div>
   </section>
@@ -408,11 +478,12 @@ foreach ($groups as $g) {
     </div>
   </div>
 
+  <!-- LEADERSHIP SECTION -->
   <section class="fx-lead" id="leadership">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow" data-cms="leadership.eyebrow"><?php echo fsia_attr($pt('leadership', 'eyebrow', 'Official FSIA Board')); ?></span>
-        <h2 data-cms="leadership.heading"><?php echo fsia_attr($pt('leadership', 'heading', 'Leadership')); ?></h2>
+        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($leadSec['small_label']) ? $leadSec['small_label'] : 'Official FSIA Board'); ?></span>
+        <h2><?php echo fsia_attr(!empty($leadSec['heading']) ? $leadSec['heading'] : 'Leadership'); ?></h2>
       </div>
 
       <?php
@@ -436,12 +507,12 @@ foreach ($groups as $g) {
           <span class="fx-role"><?php echo fsia_attr($m[1]); ?></span>
           <h3><?php echo fsia_attr($name); ?></h3>
           <?php if ($alias): ?><span class="fx-serif fx-alias"><?php echo fsia_attr($alias); ?></span><?php endif; ?>
-          <?php $quote = ($m[5] ?? '') ?: ($lines[$k] ?? ''); if ($quote !== ''): ?><p class="fx-serif fx-line"><?php echo fsia_attr($quote); ?></p><?php endif; ?>
-          <p><?php echo nl2br(fsia_attr(($m[4] ?? '') ?: ($leadBios[$m[0]] ?? ''))); ?></p>
+          <p class="fx-serif fx-line"><?php echo fsia_attr($lines[$k] ?? ''); ?></p>
+          <p><?php echo fsia_attr($leadBios[$m[0]] ?? ''); ?></p>
           <div class="fx-spot-foot">
-            <span class="fx-chip" data-cms="leadership.chip"><?php echo fsia_attr($pt('leadership', 'chip', 'Forever Star India')); ?></span>
+            <span class="fx-chip"><?php echo fsia_attr(!empty($leadSec['tag']) ? $leadSec['tag'] : 'Forever Star India'); ?></span>
             <?php if (!empty($m[3])): ?>
-            <a class="fx-chip" href="tel:<?php echo fsia_attr(str_starts_with($m[3], '+') ? $m[3] : '+91' . $m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
+            <a class="fx-chip" href="tel:+91<?php echo fsia_attr($m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
           </div>
         </div>
@@ -450,12 +521,13 @@ foreach ($groups as $g) {
     </div>
   </section>
 
+  <!-- TEAM GALLERY (Dynamic Filter Tabs) -->
   <section class="fx-team" id="team">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow" data-cms="team_grid.eyebrow"><?php echo fsia_attr($pt('team_grid', 'eyebrow', 'Team FSIA')); ?></span>
-        <h2 data-cms="team_grid.heading"><?php echo fsia_attr($pt('team_grid', 'heading', 'Mentors, Makers & Voices')); ?></h2>
-        <p data-cms="team_grid.subtitle"><?php echo fsia_attr($pt('team_grid', 'subtitle', 'The experts who train, film, host and run every Forever Star India season.')); ?></p>
+        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($teamSec['small_label']) ? $teamSec['small_label'] : 'Team FSIA'); ?></span>
+        <h2><?php echo fsia_attr(!empty($teamSec['heading']) ? $teamSec['heading'] : 'Mentors, Makers & Voices'); ?></h2>
+        <p><?php echo fsia_attr(!empty($teamSec['line']) ? $teamSec['line'] : 'The experts who train, film, host and run every Forever Star India season.'); ?></p>
       </div>
 
       <div class="fx-tabs" role="group" aria-label="Filter team">
@@ -481,25 +553,23 @@ foreach ($groups as $g) {
     </div>
   </section>
 
+  <!-- CTA SECTION -->
   <section class="fx-join">
     <div class="fx-wrap fx-join-in">
       <div>
-        <span class="fx-eyebrow" data-cms="cta.eyebrow"><?php echo fsia_attr($pt('cta', 'eyebrow', 'Season 2026 is open')); ?></span>
-        <h2><span data-cms="cta.heading"><?php echo fsia_attr($pt('cta', 'heading', 'Your stage is')); ?></span> <span class="fx-serif" data-cms="cta.heading_italic"><?php echo fsia_attr($pt('cta', 'heading_italic', 'waiting')); ?></span></h2>
-        <p data-cms="cta.text"><?php echo nl2br(fsia_attr($pt('cta', 'text', 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.'))); ?></p>
+        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($cta['small_label']) ? $cta['small_label'] : 'Season 2026 is open'); ?></span>
+        <h2><?php echo fsia_attr(!empty($cta['heading']) ? $cta['heading'] : 'Your stage is'); ?> <span class="fx-serif"><?php echo fsia_attr(!empty($cta['heading_gold']) ? $cta['heading_gold'] : 'waiting'); ?></span></h2>
+        <p><?php echo nl2br(fsia_attr(!empty($cta['paragraph']) ? $cta['paragraph'] : 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.')); ?></p>
       </div>
       <div class="fx-join-links">
-        <?php foreach ([
-            [1, 'Quick Apply', 'Register for the 2026 season', 'https://www.fsia.in/quickapply'],
-            [2, 'Become a Channel Partner', 'Bring FSIA to your city', 'https://www.fsia.in/channel-partner'],
-            [3, '+91-99832-86999', 'Call the FSIA helpline', 'tel:+919983286999'],
-        ] as [$n, $dt, $ds, $du]): ?>
-        <a data-cms-href="cta.link<?php echo $n; ?>_url" href="<?php echo fsia_attr($pl('cta', "link{$n}_url", $du)); ?>"><span><b data-cms="cta.link<?php echo $n; ?>_title"><?php echo fsia_attr($pt('cta', "link{$n}_title", $dt)); ?></b><small data-cms="cta.link<?php echo $n; ?>_sub"><?php echo fsia_attr($pt('cta', "link{$n}_sub", $ds)); ?></small></span><i>→</i></a>
-        <?php endforeach; ?>
+        <a href="<?php echo fsia_attr(!empty($cta['link1_url']) ? $cta['link1_url'] : 'https://www.fsia.in/quickapply'); ?>"><span><b><?php echo fsia_attr(!empty($cta['link1_title']) ? $cta['link1_title'] : 'Quick Apply'); ?></b><small><?php echo fsia_attr(!empty($cta['link1_sub']) ? $cta['link1_sub'] : 'Register for the 2026 season'); ?></small></span><i>→</i></a>
+        <a href="<?php echo fsia_attr(!empty($cta['link2_url']) ? $cta['link2_url'] : 'https://www.fsia.in/channel-partner'); ?>"><span><b><?php echo fsia_attr(!empty($cta['link2_title']) ? $cta['link2_title'] : 'Become a Channel Partner'); ?></b><small><?php echo fsia_attr(!empty($cta['link2_sub']) ? $cta['link2_sub'] : 'Bring FSIA to your city'); ?></small></span><i>→</i></a>
+        <a href="<?php echo fsia_attr(!empty($cta['link3_url']) ? $cta['link3_url'] : 'tel:+919983286999'); ?>"><span><b><?php echo fsia_attr(!empty($cta['link3_title']) ? $cta['link3_title'] : '+91-99832-86999'); ?></b><small><?php echo fsia_attr(!empty($cta['link3_sub']) ? $cta['link3_sub'] : 'Call the FSIA helpline'); ?></small></span><i>→</i></a>
       </div>
     </div>
   </section>
 
+  <!-- MODAL POPUP (Includes Social Icons & Details) -->
   <dialog class="fx-modal" id="fx-modal" aria-labelledby="fx-m-name">
     <div class="fx-m-in">
       <div class="fx-m-photo"><img id="fx-m-img" alt=""></div>
@@ -507,11 +577,12 @@ foreach ($groups as $g) {
         <span class="fx-eyebrow" id="fx-m-team"></span>
         <h2 id="fx-m-name"></h2>
         <span class="fx-role" id="fx-m-role"></span>
-        <p id="fx-m-bio" style="white-space:pre-line"></p>
+        <p id="fx-m-bio"></p>
         <dl class="fx-m-facts">
           <div><dt>Team</dt><dd id="fx-m-team2"></dd></div>
           <div><dt>Role</dt><dd id="fx-m-role2"></dd></div>
           <div id="fx-m-phone-row"><dt>Contact</dt><dd><a id="fx-m-phone" href="#"></a></dd></div>
+          <div id="fx-m-social-row"><dt>Social</dt><dd id="fx-m-socials" class="fx-soc-row"></dd></div>
         </dl>
         <div class="fx-m-nav">
           <button type="button" class="fx-chip" data-step="-1" aria-label="Previous person">← Prev</button>
@@ -540,8 +611,6 @@ foreach ($groups as $g) {
     });
   });
 
-  /* Profile pop-up: clicking a photo opens that person; Prev/Next and the arrow
-     keys walk through the photos currently visible (so they respect the filter). */
   var people = <?php echo json_encode($people, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
   var modal = document.getElementById('fx-modal');
   if (!modal || typeof modal.showModal !== 'function') { return; }
@@ -549,7 +618,6 @@ foreach ($groups as $g) {
   var current = 0, opener = null;
 
   function visibleIds() {
-    /* Opened from the gallery: step through the gallery only, so a filter is respected. */
     var inGrid = opener && opener.closest('.fx-grid');
     return Array.prototype.filter.call(document.querySelectorAll(inGrid ? '.fx-grid .fx-open' : '.fx-open'), function (b) {
       var card = b.closest('.fx-card');
@@ -570,7 +638,37 @@ foreach ($groups as $g) {
     $('fx-m-role2').textContent = p.role;
     $('fx-m-bio').textContent = p.bio || (p.name + ' works with Forever Star India as ' + p.role + ', in the ' + p.team + ' group.');
     $('fx-m-phone-row').hidden = !p.phone;
-    if (p.phone) { $('fx-m-phone').textContent = p.phone; $('fx-m-phone').href = 'tel:' + (p.phone.charAt(0) === '+' ? p.phone : '+91' + p.phone); }
+    if (p.phone) { $('fx-m-phone').textContent = p.phone; $('fx-m-phone').href = 'tel:+91' + p.phone; }
+
+    // Render Social Icons dynamically
+    var sBox = $('fx-m-socials');
+    if (sBox) {
+      sBox.innerHTML = '';
+      var soc = p.social || {};
+      var icons = {
+        instagram: 'fab fa-instagram',
+        facebook:  'fab fa-facebook-f',
+        twitter:   'fab fa-x-twitter',
+        linkedin:  'fab fa-linkedin-in',
+        youtube:   'fab fa-youtube',
+        website:   'fas fa-globe'
+      };
+      var hasSoc = false;
+      Object.keys(icons).forEach(function(k) {
+        if (soc[k] && soc[k].trim()) {
+          hasSoc = true;
+          var a = document.createElement('a');
+          a.href = soc[k].trim();
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.setAttribute('aria-label', k);
+          a.innerHTML = '<i class="' + icons[k] + '"></i>';
+          sBox.appendChild(a);
+        }
+      });
+      $('fx-m-social-row').hidden = !hasSoc;
+    }
+
     var ids = visibleIds();
     $('fx-m-count').textContent = (ids.indexOf(i) + 1) + ' / ' + ids.length;
   }
