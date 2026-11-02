@@ -251,6 +251,25 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(wrap);
   }
+  /* Category-wise calendar: the first rule whose pages match this page decides which types show. null = all. */
+  function typesForPage(rules) {
+    if (!Array.isArray(rules)) return null;
+    var path = (location.pathname.replace(/\/+$/, '') || '/').toLowerCase();
+    var bare = path.replace(/\.php$/, '');
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i] || {};
+      var pats = String(r.pages || '').split(',');
+      for (var j = 0; j < pats.length; j++) {
+        var p = pats[j].trim().toLowerCase();
+        if (!p) continue;
+        if (p.charAt(0) !== '/') p = '/' + p;
+        p = p.replace(/\.php$/, '');
+        var re = new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+        if (re.test(bare)) return Array.isArray(r.types) ? r.types : [];
+      }
+    }
+    return null;
+  }
   function isDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || ''); }
 
   /* Dates an event is drawn on: every day of a short event (up to a week), otherwise its first and last day. */
@@ -608,6 +627,8 @@
         if (opt.enabled === false) return; // switched off in the CMS
         addCustomTypes(c.types);
         var events = normalize(c.items);
+        var allowed = typesForPage(opt.rules);
+        if (allowed) events = events.filter(function (e) { return allowed.indexOf(e.type) >= 0; });
         if (!events.length) return;
         var today = todayIST();
         var anyLeft = events.some(function (e) { return e.status !== 'concluded' && e.last >= today; });

@@ -205,7 +205,11 @@ const VALIDATORS = {
       s.startDate && s.endDate && s.startDate > s.endDate && `Slide ${named(s, i)}: the end date is before the start date.`,
     ]).filter(Boolean),
   ],
-  calendar_events: ({ items, types }) => [
+  calendar_events: ({ items, types, formPages }) => [
+    ...(Array.isArray(formPages?.rules) ? formPages.rules : []).flatMap((r, i) => [
+      !String(r.pages || '').trim() && `Category-wise calendar, rule ${i + 1}: enter the pages it is for.`,
+      !(r.types || []).length && `Category-wise calendar, rule ${i + 1}: tick at least one category.`,
+    ]),
     ...(Array.isArray(types) ? types : []).map((t, i) => !t.label?.trim() && `Your own event type ${i + 1} needs a name.`),
     ...items.flatMap((e, i) => [
       !e.title?.trim() && `Event ${i + 1} needs a title.`,
@@ -376,6 +380,61 @@ const EVENT_STATUS = [
 const allTypes = (custom) => [...EVENT_TYPES, ...(Array.isArray(custom) ? custom : []).filter((t) => t && t.value)];
 const typeColor = (t, custom) => allTypes(custom).find((x) => x.value === t)?.color || '#94a3b8';
 
+// Which event categories each group of form pages shows. First matching rule wins;
+// pages no rule matches show every category.
+const RULE_PRESETS = [
+  { label: 'Pageant pages', pages: '/miss-*, /mrs-*, /teen-*', types: ['audition', 'pageant', 'ceremony', 'workshop'] },
+  { label: 'Award pages', pages: '/*award*', types: ['award'] },
+];
+
+function CategoryRules({ content, setContent }) {
+  const fp = content.formPages || {};
+  const rules = Array.isArray(fp.rules) ? fp.rules : [];
+  const types = allTypes(content.types);
+  const setRules = (next) => setContent({ ...content, formPages: { ...fp, rules: next } });
+  const add = (preset) => setRules([...rules, { id: newId('rule'), pages: preset?.pages || '', types: preset?.types || [] }]);
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4">
+      <p className="text-sm font-semibold">Category-wise calendar</p>
+      <p className="mb-3 text-xs text-slate-500">
+        Choose which categories each group of form pages shows. Page names can use * (e.g. <code>/miss-*</code> = every Miss state page). The first rule that matches a page is used; pages no rule matches show all categories.
+      </p>
+      <div className="space-y-3">
+        {rules.map((r, i) => {
+          const patch = (p) => setRules(rules.map((x, j) => (j === i ? { ...x, ...p } : x)));
+          const on = (v) => (r.types || []).includes(v);
+          return (
+            <div key={r.id || i} className="rounded-lg border border-slate-200 bg-cream/50 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Rule {i + 1} · Pages</span>
+                <input className="input min-w-[220px] flex-1" placeholder="/miss-*, /mrs-*" value={r.pages || ''} onChange={(e) => patch({ pages: e.target.value })} />
+                <button type="button" className="text-xs font-semibold text-red-600" onClick={() => setRules(rules.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="self-center text-xs font-bold text-slate-500">Show:</span>
+                {types.map((t) => (
+                  <label key={t.value} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${on(t.value) ? 'border-gold bg-white font-semibold' : 'border-slate-200 text-slate-500'}`}>
+                    <input type="checkbox" className="h-3.5 w-3.5" checked={on(t.value)}
+                      onChange={(e) => patch({ types: e.target.checked ? [...(r.types || []), t.value] : (r.types || []).filter((x) => x !== t.value) })} />
+                    <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />{t.label || '(unnamed)'}
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {RULE_PRESETS.map((p) => (
+          <button key={p.label} type="button" className="rounded-lg border border-dashed border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-cream" onClick={() => add(p)}>+ {p.label}</button>
+        ))}
+        <button type="button" className="rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-cream" onClick={() => add()}>+ Custom rule</button>
+      </div>
+    </div>
+  );
+}
+
 function EventTypesCard({ content, setContent }) {
   const custom = Array.isArray(content.types) ? content.types : [];
   const usedBy = (v) => content.items.filter((e) => e.type === v).length;
@@ -451,6 +510,7 @@ function CalendarEditor({ content, setContent }) {
           label="Hide automatically when every event has ended"
           description="Once the last event's date (or end date) is past, or all are marked Concluded, the calendar disappears from the form pages by itself."
         />
+        <CategoryRules content={content} setContent={setContent} />
       </div>
       <EventTypesCard content={content} setContent={setContent} />
       <div className="card mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-xs">
