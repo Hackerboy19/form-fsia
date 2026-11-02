@@ -11,6 +11,9 @@ export const PAGES = [
   { slug: 'special-news-coverage', label: 'Special Coverage', file: 'special-news-coverage.php' },
 ];
 
+// Icons for the About page cards.
+const ICONS = [{ value: '💪', label: '💪 Strength' }, { value: '🏆', label: '🏆 Trophy' }, { value: '🌟', label: '🌟 Star' }, { value: '⭐', label: '⭐ Star 2' }, { value: '👑', label: '👑 Crown' }, { value: '🎯', label: '🎯 Target' }, { value: '🚀', label: '🚀 Rocket' }, { value: '💡', label: '💡 Idea' }, { value: '🤝', label: '🤝 Handshake' }, { value: '❤️', label: '❤️ Heart' }, { value: '🎖️', label: '🎖️ Medal' }, { value: '🌍', label: '🌍 World' }, { value: '🇮🇳', label: '🇮🇳 India' }, { value: '✨', label: '✨ Sparkle' }, { value: '📣', label: '📣 Announce' }, { value: '🎓', label: '🎓 Education' }];
+
 export const SECTION_SCHEMAS = {
   index: [
     {
@@ -53,55 +56,58 @@ export const SECTION_SCHEMAS = {
       key: 'hero',
       title: '1. Page header',
       fields: [
-        { name: 'eyebrow', label: 'Badge label', max: 80, placeholder: 'About' },
-        { name: 'title', label: 'Main title', max: 140, placeholder: 'Forever Star India' },
-        { name: 'subtitle', label: 'Line under the title', max: 200, placeholder: 'Beauty Pageants & Awards' },
+        { name: 'eyebrow', label: 'Badge label', max: 80, def: 'About' },
+        { name: 'title', label: 'Main title', max: 140, def: 'Forever Star India' },
+        { name: 'subtitle', label: 'Line under the title', max: 200, def: 'Beauty Pageants & Awards' },
       ],
     },
     {
       key: 'intro',
       title: '2. About Forever Star India',
       fields: [
-        { name: 'heading', label: 'Heading', max: 120, placeholder: 'About Forever Star India' },
+        { name: 'heading', label: 'Heading', max: 120, def: 'About Forever Star India' },
         { name: 'body', label: 'Text', type: 'textarea', max: 4000, rows: 10, hint: 'Blank line = new paragraph. **word** = bold.',
-          placeholder: "**Forever Star India** is a National and International Brand represented by its Star Logo, a trademark registered under **Class 41** with the Government of India. The brand brings together individuals from different backgrounds through beauty pageants, international pageants, sports, education, kids' competitions, awards, and various talent recognition initiatives.\n\nForever Star India was founded with the belief that talent should never remain unnoticed because of a lack of opportunity. India has talent in every city, every town, and every community. The responsibility of the brand is to create platforms where deserving individuals can present their abilities, earn recognition on merit, and move forward with confidence.\n\nEvery initiative undertaken by Forever Star India is guided by this purpose." },
+          def: "**Forever Star India** is a National and International Brand represented by its Star Logo, a trademark registered under **Class 41** with the Government of India. The brand brings together individuals from different backgrounds through beauty pageants, international pageants, sports, education, kids' competitions, awards, and various talent recognition initiatives.\n\nForever Star India was founded with the belief that talent should never remain unnoticed because of a lack of opportunity. India has talent in every city, every town, and every community. The responsibility of the brand is to create platforms where deserving individuals can present their abilities, earn recognition on merit, and move forward with confidence.\n\nEvery initiative undertaken by Forever Star India is guided by this purpose." },
       ],
     },
     {
       key: 'story',
       title: '3. The Purpose Behind Forever Star India',
       fields: [
-        { name: 'heading', label: 'Heading', max: 120, placeholder: 'The Purpose Behind Forever Star India' },
-        { name: 'lead', label: 'Bold first line', type: 'textarea', rows: 2, max: 400, placeholder: 'The purpose of Forever Star India is to ensure that talent receives an opportunity before it is judged.' },
+        { name: 'heading', label: 'Heading', max: 120, def: 'The Purpose Behind Forever Star India' },
+        { name: 'lead', label: 'Bold first line', type: 'textarea', rows: 2, max: 400, def: 'The purpose of Forever Star India is to ensure that talent receives an opportunity before it is judged.' },
         { name: 'text', label: 'Paragraph', type: 'textarea', rows: 6, max: 3000, hint: '**word** = bold.',
-          placeholder: 'The brand believes that recognition is not reserved for a select few. Every individual deserves a fair platform to participate, perform, and be recognised for dedication, ability, and effort. By creating opportunities across multiple categories, Forever Star India encourages individuals to discover their potential, strengthen their confidence, and contribute through their talent for their own growth as well as for society and the nation.' },
+          def: 'The brand believes that recognition is not reserved for a select few. Every individual deserves a fair platform to participate, perform, and be recognised for dedication, ability, and effort. By creating opportunities across multiple categories, Forever Star India encourages individuals to discover their potential, strengthen their confidence, and contribute through their talent for their own growth as well as for society and the nation.' },
       ],
     },
     {
       key: 'mission',
       title: '4. Mission, Goals & Vision cards',
       fields: [
-        { name: 'mission_title', label: 'Card 1 title', max: 60, placeholder: 'Our Mission' },
+        { name: 'mission_icon', label: 'Card 1 icon', type: 'select', def: '💪', options: ICONS },
+        { name: 'mission_title', label: 'Card 1 title', max: 60, def: 'Our Mission' },
         { name: 'mission', label: 'Card 1 points (one per line)', type: 'textarea', max: 1500, rows: 6,
-          placeholder: "To provide fair and accessible opportunities for individuals across India.\nTo identify and recognize talent through transparent and merit-based platforms.\nTo encourage people to participate with confidence and determination.\nTo promote talent across beauty pageants, sports, education, awards, kids' competitions, and other recognition initiatives.\nTo uphold values of merit, discipline, integrity, and equal opportunity." },
-        { name: 'goals_title', label: 'Card 2 title', max: 60, placeholder: 'Our Goals' },
+          def: "To provide fair and accessible opportunities for individuals across India.\nTo identify and recognize talent through transparent and merit-based platforms.\nTo encourage people to participate with confidence and determination.\nTo promote talent across beauty pageants, sports, education, awards, kids' competitions, and other recognition initiatives.\nTo uphold values of merit, discipline, integrity, and equal opportunity." },
+        { name: 'goals_icon', label: 'Card 2 icon', type: 'select', def: '🏆', options: ICONS },
+        { name: 'goals_title', label: 'Card 2 title', max: 60, def: 'Our Goals' },
         { name: 'goals', label: 'Card 2 points (one per line)', type: 'textarea', max: 1500, rows: 6,
-          placeholder: "To reach talented individuals from every state, district, and community of India.\nTo increase awareness about the importance of talent recognition.\nTo expand opportunities through national and international initiatives.\nTo encourage participation without barriers of age, profession, or background.\nTo contribute towards strengthening India's culture of talent, achievement, and recognition." },
-        { name: 'vision_title', label: 'Card 3 title', max: 60, placeholder: 'Our Vision' },
+          def: "To reach talented individuals from every state, district, and community of India.\nTo increase awareness about the importance of talent recognition.\nTo expand opportunities through national and international initiatives.\nTo encourage participation without barriers of age, profession, or background.\nTo contribute towards strengthening India's culture of talent, achievement, and recognition." },
+        { name: 'vision_icon', label: 'Card 3 icon', type: 'select', def: '🌟', options: ICONS },
+        { name: 'vision_title', label: 'Card 3 title', max: 60, def: 'Our Vision' },
         { name: 'vision', label: 'Card 3 points (one per line)', type: 'textarea', max: 1500, rows: 6,
-          placeholder: "To build a future where every deserving individual has access to an opportunity.\nTo create a culture where talent is recognised with fairness and respect.\nTo strengthen India's identity by promoting talent across diverse fields.\nTo encourage future generations to believe in their abilities and pursue excellence.\nTo continue building platforms that inspire participation, recognition, and responsible growth." },
+          def: "To build a future where every deserving individual has access to an opportunity.\nTo create a culture where talent is recognised with fairness and respect.\nTo strengthen India's identity by promoting talent across diverse fields.\nTo encourage future generations to believe in their abilities and pursue excellence.\nTo continue building platforms that inspire participation, recognition, and responsible growth." },
       ],
     },
     {
       key: 'cta',
       title: '5. Your Story Begins Here (bottom box)',
       fields: [
-        { name: 'heading', label: 'Heading', max: 120, placeholder: 'Your Story Begins Here' },
+        { name: 'heading', label: 'Heading', max: 120, def: 'Your Story Begins Here' },
         { name: 'text', label: 'Text', type: 'textarea', rows: 4, max: 800, hint: '**word** = gold bold.',
-          placeholder: "Join **1,00,000+ dreamers** who trusted Forever Star India as their stage. Whether you're aiming for Miss Universe, Miss India, Mrs India, Super Woman, or Super Hero Awards — your story begins here." },
-        { name: 'note', label: 'Gold line', max: 200, placeholder: 'Auditions & Registrations are now open for the 2026 season.' },
-        { name: 'button_label', label: 'Button text', max: 40, placeholder: 'Register Now →' },
-        { name: 'button_url', label: 'Button link', type: 'url', max: 300, placeholder: '/quickapply' },
+          def: "Join **1,00,000+ dreamers** who trusted Forever Star India as their stage. Whether you're aiming for Miss Universe, Miss India, Mrs India, Super Woman, or Super Hero Awards — your story begins here." },
+        { name: 'note', label: 'Gold line', max: 200, def: 'Auditions & Registrations are now open for the 2026 season.' },
+        { name: 'button_label', label: 'Button text', max: 40, def: 'Register Now →' },
+        { name: 'button_url', label: 'Button link', type: 'url', max: 300, def: '/quickapply' },
       ],
     },
   ],

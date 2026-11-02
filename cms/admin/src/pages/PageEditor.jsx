@@ -10,9 +10,14 @@ import { useToast } from '../lib/toast';
 
 /** One editable block (hero, story ...) with its own Save button. */
 function SectionCard({ page, schema, initial, onDraft, onFocus, onSaved }) {
-  const blank = { content: Object.fromEntries(schema.fields.map((f) => [f.name, ''])), image_url: '' };
+  // A field with `def` starts filled with the page's built-in text when nothing is saved.
+  const fill = (content) => Object.fromEntries(schema.fields.map((f) => {
+    const v = content?.[f.name];
+    return [f.name, typeof v === 'string' && v.trim() !== '' ? v : (f.def ?? (typeof v === 'string' ? v : ''))];
+  }));
+  const blank = { content: fill({}), image_url: '' };
   const start = initial
-    ? { content: { ...blank.content, ...initial.content }, image_url: initial.image_url || '' }
+    ? { content: { ...initial.content, ...fill(initial.content) }, image_url: initial.image_url || '' }
     : blank;
 
   const [form, setForm] = useState(start);
@@ -42,7 +47,7 @@ function SectionCard({ page, schema, initial, onDraft, onFocus, onSaved }) {
     setErrors({});
     try {
       const res = await api.saveSection(page, schema.key, form);
-      const next = { content: { ...blank.content, ...res.content }, image_url: res.image_url || '' };
+      const next = { content: { ...res.content, ...fill(res.content) }, image_url: res.image_url || '' };
       setForm(next);
       setSaved(next);
       onSaved?.(schema.key, res);
@@ -118,7 +123,7 @@ export default function PageEditor() {
   // What the page shows now for each field: the saved text, or the page's default (the placeholder).
   const baseline = Object.fromEntries(schemas.map((s) => [s.key, Object.fromEntries(s.fields
     .filter((f) => !['select', 'number', 'url'].includes(f.type))
-    .map((f) => [f.name, String(sections?.[s.key]?.content?.[f.name] || '').trim() || f.placeholder || ''])) ]));
+    .map((f) => [f.name, String(sections?.[s.key]?.content?.[f.name] || '').trim() || f.def || f.placeholder || ''])) ]));
 
   useEffect(() => {
     let cancelled = false;
@@ -133,7 +138,7 @@ export default function PageEditor() {
 
   return (
     <>
-      <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own. Grey text in an empty box is what the page shows now; type to replace it, clear the box to go back to it.`} />
+      <PageHeader title={`${page.label} page`} description={`Text and images for ${page.file}. Each section saves on its own. The boxes show what the page shows now (grey text = the built-in text); change it and press Save.`} />
       {error && <p className="card mb-4 p-4 text-sm text-red-600">{error}</p>}
       <div className={page.preview ? 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}>
         <div className="min-w-0 space-y-6">

@@ -134,7 +134,7 @@ $aboutCtaText = "Join **1,00,000+ dreamers** who trusted Forever Star India as t
   <div class="cards">
 <?php foreach ($aboutCards as [$key, $icon, $title, $items]): ?>
     <div class="card">
-      <div class="chip"><?= $icon ?></div>
+      <div class="chip" data-cms="mission.<?= $key ?>_icon"><?= $ae('mission', $key . '_icon', $icon) ?></div>
       <h3 data-cms="mission.<?= $key ?>_title"><?= $ae('mission', $key . '_title', $title) ?></h3>
       <ul data-cms="mission.<?= $key ?>" data-cms-rich>
 <?php foreach ($alines($at('mission', $key, $items)) as $li): ?>
