@@ -11,6 +11,8 @@ const LEVELS = {
   warn: { label: 'Warning', cls: 'bg-amber-100 text-amber-800' },
   info: { label: 'Note', cls: 'bg-slate-100 text-slate-600' },
 };
+// Address on the site ("/about.php") for API calls.
+const pathOf = (u) => u.replace(/^https?:\/\/[^/]+/i, '') || '/';
 const short = (u) => u.replace(/^https?:\/\/(www\.)?fsia\.in/i, '') || '/';
 const pick = (list, n) => {
   const a = [...list];
@@ -107,6 +109,70 @@ export default function SiteCheck() {
     };
     await Promise.all([worker(), worker()]);
     setProgress((p) => (p ? { ...p, finished: true, stopped: stop.current } : p));
+  }
+
+  // Put a fresh result in place of the old one for the same page.
+  const replaceResult = (r) => setResults((prev) => prev.map((x) => (x.url === r.url ? r : x)));
+  const [busyUrls, setBusyUrls] = useState({});
+  const [undo, setUndo] = useState([]); // [{ backup, url, message }]
+  const busy = (url, on) => setBusyUrls((b) => { const n = { ...b }; if (on) n[url] = true; else delete n[url]; return n; });
+
+  async function recheck(url) {
+    busy(url, true);
+    try {
+      replaceResult(await api.siteCheck(pathOf(url)));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      busy(url, false);
+    }
+  }
+
+  async function recheckProblems() {
+    const urls = rows.filter((r) => worst(r) !== 'ok' && worst(r) !== 'info').map((r) => r.url);
+    setMsg(`Checking ${urls.length} page${urls.length === 1 ? '' : 's'} again…`);
+    for (const u of urls) await recheck(u); // one at a time: gentle on the server
+    setMsg(`Checked ${urls.length} page${urls.length === 1 ? '' : 's'} again.`);
+  }
+
+  /** Applies one fix; the server checks the page again and we show the new result. */
+  async function applyFix(r, f, value) {
+    busy(r.url, true);
+    setError('');
+    try {
+      const res = await api.siteCheckFix(pathOf(r.url), f.type, value ?? f.value);
+      replaceResult(res.result);
+      setMsg(`✓ ${res.message}. Page checked again.`);
+      if (res.backup) setUndo((u) => [{ backup: res.backup, url: r.url, message: res.message }, ...u].slice(0, 20));
+      return true;
+    } catch (e) {
+      setError(`${short(r.url)}: ${e.message}`);
+      return false;
+    } finally {
+      busy(r.url, false);
+    }
+  }
+
+  async function undoFix(item) {
+    try {
+      const res = await api.siteCheckUndo(item.backup);
+      setUndo((u) => u.filter((x) => x.backup !== item.backup));
+      setMsg(`↶ ${res.message}.`);
+      await recheck(item.url);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function fixAll() {
+    const todo = rows.flatMap((r) => (r.fixes || []).map((f) => [r, f]));
+    if (!todo.length) return;
+    const list = todo.map(([r, f]) => `• ${short(r.url)}: ${f.label}${f.editable ? ` → "${f.value}"` : ''}`).join('\n');
+    if (!window.confirm(`Apply ${todo.length} fix${todo.length === 1 ? '' : 'es'}? Each file is backed up first and can be undone.\n\n${list}`)) return;
+    let ok = 0;
+    // One page at a time, fixes of the same page one after another.
+    for (const [r, f] of todo) if (await applyFix(r, f)) ok++;
+    setMsg(`✓ ${ok} of ${todo.length} fixes applied and the pages checked again.`);
   }
 
   // Same title on several pages hurts SEO: flag it across this run.
@@ -265,6 +331,36 @@ export default function SiteCheck() {
             })}
           </div>
 
+          {!running && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {(() => {
+                const n = rows.reduce((k, r) => k + (r.fixes?.length || 0), 0);
+                return n > 0 && (
+                  <button type="button" className="btn-gold !py-2" onClick={fixAll} disabled={Object.keys(busyUrls).length > 0}>
+                    ⚡ Auto fix all ({n})
+                  </button>
+                );
+              })()}
+              <button type="button" className="btn-ghost !py-2" onClick={recheckProblems} disabled={Object.keys(busyUrls).length > 0}>
+                ↻ Check pages with problems again
+              </button>
+              <span className="text-xs text-slate-500">Auto fix changes the page file on the server (a backup is kept; Undo puts it back). Other problems show what to change by hand.</span>
+            </div>
+          )}
+          {undo.length > 0 && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+              <p className="mb-1 font-bold">Fixes made in this session</p>
+              <ul className="space-y-1">
+                {undo.map((u) => (
+                  <li key={u.backup} className="flex flex-wrap items-center gap-2">
+                    <span>{short(u.url)}: {u.message}</span>
+                    <button type="button" className="rounded bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200" onClick={() => undoFix(u)}>↶ Undo</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="mt-3 space-y-2">
             {shown.map((r) => {
               const w = worst(r);
@@ -284,6 +380,10 @@ export default function SiteCheck() {
                         🖼 {r.images.total - r.images.broken.length}/{r.images.total}
                       </span>
                     )}
+                    {busyUrls[r.url] && <span className="text-[11px] font-semibold text-slate-500">working…</span>}
+                    {r.fixes?.length > 0 && (
+                      <span className="rounded-full bg-gold/20 px-2.5 py-0.5 text-[11px] font-bold text-[#7E591B]">⚡ {r.fixes.length} auto fix</span>
+                    )}
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${w === 'ok' ? 'bg-emerald-100 text-emerald-800' : LEVELS[w].cls}`}>
                       {w === 'ok' ? '✓ OK' : `${r.issues.filter((i) => i.level !== 'info').length || r.issues.length} ${LEVELS[w].label.toLowerCase()}`}
                     </span>
@@ -291,7 +391,7 @@ export default function SiteCheck() {
                   {r.issues.length > 0 && !isOpen && (
                     <p className="-mt-2 truncate px-4 pb-3 text-xs text-slate-600">{r.issues.filter((i) => i.level !== 'info').map((i) => i.text).join(' · ')}</p>
                   )}
-                  {isOpen && <Details r={r} />}
+                  {isOpen && <Details r={r} busy={!!busyUrls[r.url]} onFix={(f, v) => applyFix(r, f, v)} onRecheck={() => recheck(r.url)} />}
                 </div>
               );
             })}
@@ -302,7 +402,30 @@ export default function SiteCheck() {
   );
 }
 
-function Details({ r }) {
+/** One auto fix: a button, or an editable suggestion for a title / description. */
+function FixRow({ f, busy, onFix }) {
+  const [value, setValue] = useState(f.value || '');
+  return (
+    <div className="rounded-xl border border-gold/40 bg-white p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold">⚡ {f.label}</span>
+        <span className="text-[11px] text-slate-500">changes {f.file}</span>
+      </div>
+      {f.editable && (
+        <div className="mt-2">
+          <textarea className="input min-h-16 text-sm" value={value} onChange={(e) => setValue(e.target.value)} />
+          <p className={`mt-0.5 text-[11px] ${value.length > (f.max || 999) ? 'text-red-600' : 'text-slate-500'}`}>{value.length} characters (best up to {f.type === 'title' ? 60 : 160}). Suggested; change it if you like.</p>
+        </div>
+      )}
+      {!f.editable && f.value && <p className="mt-1 break-all text-xs text-slate-600">{f.value}</p>}
+      <button type="button" className="btn-primary mt-2 !py-1.5 text-sm" disabled={busy} onClick={() => onFix(f, f.editable ? value : undefined)}>
+        {busy ? 'Working…' : f.editable ? 'Apply fix & check again' : 'Fix & check again'}
+      </button>
+    </div>
+  );
+}
+
+function Details({ r, busy, onFix, onRecheck }) {
   const s = r.seo;
   const field = (label, value, max) => (
     <div className="grid gap-1 sm:grid-cols-[120px_1fr]">
@@ -315,7 +438,16 @@ function Details({ r }) {
   );
   return (
     <div className="space-y-4 border-t border-slate-100 bg-cream/40 p-4">
-      <a href={r.url} target="_blank" rel="noreferrer" className="text-sm font-semibold text-gold-dark underline">Open page ↗</a>
+      <div className="flex flex-wrap items-center gap-3">
+        <a href={r.url} target="_blank" rel="noreferrer" className="text-sm font-semibold text-gold-dark underline">Open page ↗</a>
+        <button type="button" className="btn-ghost !py-1.5 text-sm" disabled={busy} onClick={onRecheck}>{busy ? 'Checking…' : '↻ Check again'}</button>
+      </div>
+      {r.fixes?.length > 0 && (
+        <div className="space-y-2">
+          <p className="label">Auto fix</p>
+          {r.fixes.map((f) => <FixRow key={f.type + f.value} f={f} busy={busy} onFix={onFix} />)}
+        </div>
+      )}
       {r.issues.length > 0 && (
         <ul className="space-y-1.5">
           {r.issues.map((i, k) => (

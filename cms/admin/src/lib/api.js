@@ -63,9 +63,6 @@ export const api = {
   setRole: (username, role) => request('users.php', { method: 'POST', query: { action: 'set_role' }, body: { username, role } }),
   auditList: (params) => request('audit.php', { query: { action: 'list', ...params } }),
 
-  listSeo: () => request('seo.php'),
-  getSeo: (page) => request('seo.php', { query: { page } }),
-  saveSeo: (page, body) => request('seo.php', { method: 'PUT', query: { page }, body }),
 
   getSections: (page) => request('sections.php', { query: { page } }),
   saveSection: (page, key, body) => request('sections.php', { method: 'PUT', query: { page, key }, body }),
@@ -84,6 +81,14 @@ export const api = {
   siteCheckUrls: (q) => request('sitecheck.php', { query: { action: 'urls', q } }),
   siteCheck: (url) => request('sitecheck.php', { query: { action: 'check', url } }),
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
+  siteCheckFix: (url, type, value) => request('sitecheck.php', { method: 'POST', query: { action: 'fix' }, body: { url, type, value } }),
+  siteCheckUndo: (backup) => request('sitecheck.php', { method: 'POST', query: { action: 'undo' }, body: { backup } }),
+  profileRecheck: (ids) => request('sitecheck.php', { query: { action: 'profile_recheck', ids: ids.join(',') } }),
+  profileFix: (ids, batch) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_fix' }, body: { ids, batch } }),
+  profileUndo: (batch) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_undo' }, body: { batch } }),
+  profileGet: (id) => request('sitecheck.php', { query: { action: 'profile_get', id } }),
+  profileSave: (body) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_save' }, body }),
+  profileFixes: () => request('sitecheck.php', { query: { action: 'profile_fixes' } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
   listEvents: () => request('events.php'),

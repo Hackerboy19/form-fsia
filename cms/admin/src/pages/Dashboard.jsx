@@ -9,12 +9,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.listSeo(), api.listTeam(), api.listNews({ limit: 1 })])
-      .then(([seo, team, news]) => {
+    Promise.all([api.listTeam(), api.listNews({ limit: 1 })])
+      .then(([team, news]) => {
         if (cancelled) return;
         setStats({
-          seoMissing: seo.filter((p) => !p.meta_description || !p.og_image_url).length,
-          pages: seo.length,
           team: team.length,
           hidden: team.filter((m) => !m.is_active).length,
           news: news.total,
@@ -25,17 +23,16 @@ export default function Dashboard() {
   }, []);
 
   const tiles = stats && [
-    { label: 'Managed pages', value: stats.pages, note: stats.seoMissing ? `${stats.seoMissing} missing description or share image` : 'SEO complete', to: '/seo' },
     { label: 'Team members', value: stats.team, note: stats.hidden ? `${stats.hidden} hidden from the site` : 'All visible', to: '/team' },
     { label: 'News articles', value: stats.news, note: 'Standard, Special & Top 10', to: '/news' },
   ];
 
   return (
     <>
-      <PageHeader title="Dashboard" description="Manage content, images and SEO for the FSIA website." />
+      <PageHeader title="Dashboard" description="Manage content and images for the FSIA website." />
       {error && <p className="card p-4 text-sm text-red-600">{error}</p>}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {(tiles || [1, 2, 3]).map((t, i) =>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(tiles || [1, 2]).map((t, i) =>
           t.label ? (
             <Link key={t.label} to={t.to} className="card p-5 transition hover:border-gold">
               <p className="text-xs font-bold uppercase tracking-wider text-gold-dark">{t.label}</p>

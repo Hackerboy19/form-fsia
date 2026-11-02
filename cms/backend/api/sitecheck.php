@@ -3,7 +3,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
 require_once __DIR__ . '/../lib/site_db.php';
 require_once __DIR__ . '/../lib/profile_report.php';
+require_once __DIR__ . '/../lib/profilefix.php';
+require_once __DIR__ . '/../lib/profileedit.php';
 require_once __DIR__ . '/../lib/starindia.php';
+require_once __DIR__ . '/../lib/sitefix.php';
 
 /*
  * Site Check (admin only): opens pages of the live site the way a visitor does
@@ -15,6 +18,14 @@ require_once __DIR__ . '/../lib/starindia.php';
  * GET  /api/sitecheck.php?action=profiles&category=&year=&month=&status=&problem=bio,banner,image,seo&page=
  *                                               -> profiles from the database with missing bio/banner/photos/SEO
  * POST /api/sitecheck.php?action=baseline       -> body {pages:[{url,title,description,keywords,canonical,h1}]}
+ * POST /api/sitecheck.php?action=fix            -> body {url, type, value}: auto fix (lib/sitefix.php), then checks the page again
+ * POST /api/sitecheck.php?action=undo           -> body {backup}: puts the file back
+ * GET  /api/sitecheck.php?action=profile_recheck&ids=1,2 -> the same profile rows, read again
+ * POST /api/sitecheck.php?action=profile_fix    -> body {ids[, batch]}: fills / shortens SEO fields (lib/profilefix.php)
+ * POST /api/sitecheck.php?action=profile_undo   -> body {batch}: puts those SEO fields back
+ * GET  /api/sitecheck.php?action=profile_fixes  -> recent profile fix batches
+ * GET  /api/sitecheck.php?action=profile_get&id= -> one profile's bio, photos, banners and SEO (Edit here)
+ * POST /api/sitecheck.php?action=profile_save   -> body {id, bio?, photos?, add_photos?, desktop?, mobile?, meta_*?, h1?}
  */
 
 const SC_MAIN_PAGES = [
@@ -65,7 +76,7 @@ function sc_curl(string $url, bool $range)
         CURLOPT_TIMEOUT        => $range ? 20 : 40,
         CURLOPT_USERAGENT      => 'FSIA-SiteCheck/1.0 (+admin)',
         CURLOPT_ENCODING       => '',
-        CURLOPT_HTTPHEADER     => $range ? ['Range: bytes=0-2047'] : ['Accept: text/html'],
+        CURLOPT_HTTPHEADER     => $range ? ['Range: bytes=0-2047'] : ['Accept: text/html', 'Cache-Control: no-cache'],
     ]);
     return $ch;
 }
@@ -368,6 +379,49 @@ function sc_profile_urls(): array
 // --- Profile data (from the site's registration table) -----------------------
 
 /* Category filter -> regtype values, labels as the site shows them. */
+/** Latest change of each profile from the change log (Tools -> Profile Changes), when it is on. */
+function sc_latest_changes(?array $ids = null): array
+{
+    $latest = [];
+    if (!site_db_has_table('fsia_profile_changes')) return $latest;
+    $in = $ids === null ? '' : ' WHERE profile_id IN (' . (implode(',', array_map('intval', $ids)) ?: '0') . ')';
+    foreach (site_db_rows("SELECT c.profile_id, c.changed_at, c.actor, c.db_user, c.action FROM fsia_profile_changes c
+            JOIN (SELECT profile_id, MAX(id) AS mid FROM fsia_profile_changes$in GROUP BY profile_id) m ON m.mid = c.id") as $c) {
+        $latest[(int) $c['profile_id']] = $c;
+    }
+    return $latest;
+}
+
+/** One report row as the Profiles list shows it, plus which SEO fields the auto fix can fill. */
+function sc_report_row(array $r, ?array $si, array $latest): array
+{
+    $rep = sc_profile_report($r, $si);
+    if (isset($latest[$rep['id']]) && (string) $latest[$rep['id']]['changed_at'] >= (string) $rep['last_changed']) {
+        $rep['last_changed'] = (string) $latest[$rep['id']]['changed_at'];
+        $rep['changed_by'] = site_change_who($latest[$rep['id']]['actor'], $latest[$rep['id']]['db_user']);
+    }
+    $rep['auto_fix'] = array_keys(pf_suggest($r));
+    return $rep;
+}
+
+/** Report rows for these ids, read fresh (starindia data too). */
+function sc_reports_for(array $ids): array
+{
+    $rows = sc_profile_rows_by_ids($ids);
+    $siIds = array_map(fn ($r) => (int) $r['id'], array_filter($rows, fn ($r) => ($r['starindia_action'] ?? '') === 'edited'));
+    $si = $siIds ? starindia_profiles($siIds, true) : [];
+    $latest = sc_latest_changes(array_map(fn ($r) => (int) $r['id'], $rows));
+    return array_map(fn ($r) => sc_report_row($r, $si[(int) $r['id']] ?? null, $latest), $rows);
+}
+
+/** Profile ids from a request: list or "1,2,3", at most 500. */
+function sc_ids($v): array
+{
+    if (is_string($v)) $v = explode(',', $v);
+    if (!is_array($v)) return [];
+    return array_slice(array_values(array_unique(array_filter(array_map('intval', $v), fn ($i) => $i > 0))), 0, 500);
+}
+
 respond(function () {
     require_admin();
     $action = query_param('action') ?? '';
@@ -405,14 +459,7 @@ respond(function () {
         // Profiles edited in the starindia admin are checked from that admin's data.
         $siIds = array_map(fn ($r) => (int) $r['id'], array_filter($rows, fn ($r) => ($r['starindia_action'] ?? '') === 'edited'));
         $si = $siIds ? starindia_profiles($siIds, query_param('fresh') === '1') : [];
-        // Latest change of each profile from the change log (Tools -> Profile Changes), when it is on.
-        $latest = [];
-        if (site_db_has_table('fsia_profile_changes')) {
-            foreach (site_db_rows('SELECT c.profile_id, c.changed_at, c.actor, c.db_user, c.action FROM fsia_profile_changes c
-                    JOIN (SELECT profile_id, MAX(id) AS mid FROM fsia_profile_changes GROUP BY profile_id) m ON m.mid = c.id') as $c) {
-                $latest[(int) $c['profile_id']] = $c;
-            }
-        }
+        $latest = sc_latest_changes();
         $changedDays = (int) query_param('changed_days');
         $since = $changedDays > 0 ? date('Y-m-d H:i:s', time() - $changedDays * 86400) : null;
         $counts = ['bio' => 0, 'banner' => 0, 'image' => 0, 'seo' => 0, 'ok' => 0];
@@ -421,11 +468,7 @@ respond(function () {
         $scored = 0;
         $out = [];
         foreach ($rows as $r) {
-            $rep = sc_profile_report($r, $si[(int) $r['id']] ?? null);
-            if (isset($latest[$rep['id']]) && (string) $latest[$rep['id']]['changed_at'] >= (string) $rep['last_changed']) {
-                $rep['last_changed'] = (string) $latest[$rep['id']]['changed_at'];
-                $rep['changed_by'] = site_change_who($latest[$rep['id']]['actor'], $latest[$rep['id']]['db_user']);
-            }
+            $rep = sc_report_row($r, $si[(int) $r['id']] ?? null, $latest);
             if ($since !== null && ($rep['last_changed'] === null || $rep['last_changed'] < $since)) continue;
             foreach (array_keys($rep['problems']) as $k) $counts[$k]++;
             if (!$rep['problems'] && $rep['unchecked'] === null) $counts['ok']++;
@@ -466,6 +509,7 @@ respond(function () {
             'page_size'  => SC_PAGE_SIZE,
             'rows'       => query_param('all') === '1' ? $out : array_slice($out, ($page - 1) * SC_PAGE_SIZE, SC_PAGE_SIZE),
             'paths'      => array_values(array_filter(array_column($out, 'path'))),
+            'fix_ids'    => array_values(array_map(fn ($x) => $x['id'], array_filter($out, fn ($x) => $x['auto_fix']))),
             'years'      => array_values(array_filter($years, fn ($y) => $y > 2000)),
             'categories' => [...array_map(fn ($k, $c) => ['key' => $k, 'label' => $c[0]], array_keys(SC_CATEGORIES), SC_CATEGORIES), ['key' => 'other', 'label' => 'Other']],
         ];
@@ -473,7 +517,63 @@ respond(function () {
 
     if (request_method() === 'GET' && $action === 'check') {
         @set_time_limit(120);
-        return sc_check(sc_url(query_param('url')));
+        $res = sc_check(sc_url(query_param('url')));
+        try {
+            $res['fixes'] = sf_fixes_for($res);
+        } catch (Throwable $e) {
+            $res['fixes'] = [];
+        }
+        return $res;
+    }
+
+    if (request_method() === 'POST' && $action === 'fix') {
+        @set_time_limit(120);
+        $b = json_body();
+        $url = sc_url(is_string($b['url'] ?? null) ? $b['url'] : '');
+        $done = sf_apply($url, (string) ($b['type'] ?? ''), is_string($b['value'] ?? null) ? $b['value'] : '');
+        // Check again so the admin sees the result straight away.
+        $res = sc_check($url);
+        $res['fixes'] = sf_fixes_for($res);
+        return $done + ['result' => $res];
+    }
+
+    if (request_method() === 'POST' && $action === 'undo') {
+        return sf_undo((string) (json_body()['backup'] ?? ''));
+    }
+
+    if (request_method() === 'GET' && $action === 'profile_recheck') {
+        @set_time_limit(120);
+        return ['rows' => sc_reports_for(sc_ids(query_param('ids')))];
+    }
+
+    if (request_method() === 'GET' && $action === 'profile_fixes') {
+        return ['batches' => pf_batches()];
+    }
+
+    if (request_method() === 'POST' && $action === 'profile_fix') {
+        @set_time_limit(300);
+        $b = json_body();
+        $ids = sc_ids($b['ids'] ?? null);
+        if (!$ids) throw new ApiError('No profiles to fix', 422);
+        $done = pf_apply($ids, is_string($b['batch'] ?? null) ? $b['batch'] : '');
+        return $done + ['rows' => sc_reports_for($ids)];
+    }
+
+    if (request_method() === 'GET' && $action === 'profile_get') {
+        return pe_get((int) query_param('id'));
+    }
+
+    if (request_method() === 'POST' && $action === 'profile_save') {
+        $b = json_body();
+        $id = (int) ($b['id'] ?? 0);
+        $done = pe_save($id, $b);
+        return $done + ['rows' => sc_reports_for([$id])];
+    }
+
+    if (request_method() === 'POST' && $action === 'profile_undo') {
+        @set_time_limit(300);
+        $done = pf_undo((string) (json_body()['batch'] ?? ''));
+        return $done + ['rows' => sc_reports_for(array_slice($done['ids'], 0, 500))];
     }
 
     if (request_method() === 'POST' && $action === 'baseline') {
