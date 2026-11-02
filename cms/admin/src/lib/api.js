@@ -91,6 +91,7 @@ export const api = {
   updateEvent: (id, body) => request('events.php', { method: 'PUT', query: { id }, body }),
   duplicateEvent: (id) => request('events.php', { method: 'POST', query: { action: 'duplicate', id }, body: {} }),
   deleteEvent: (id) => request('events.php', { method: 'DELETE', query: { id } }),
+  resetEventStats: (id) => request('events.php', { method: 'DELETE', query: { action: 'stats', id } }),
   matchPromotion: (path) => request('events.php', { query: { action: 'match', path } }),
 
   changelogStatus: () => request('changelog.php', { query: { action: 'status' } }),

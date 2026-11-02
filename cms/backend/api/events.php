@@ -12,7 +12,8 @@ require_once __DIR__ . '/../lib/events.php';
  * POST   /api/events.php                    -> create (saved as draft unless status given)
  * POST   /api/events.php?action=duplicate&id=5 -> copy as a new draft
  * PUT    /api/events.php?id=5               -> update (send the whole event)
- * DELETE /api/events.php?id=5               -> delete
+ * DELETE /api/events.php?id=5               -> delete (and its views / clicks)
+ * DELETE /api/events.php?action=stats&id=5  -> set its views / clicks back to 0
  */
 
 function event_dt(Validator $v, array $in, string $key, bool $required): ?string
@@ -65,7 +66,17 @@ function event_validate(array $in): array
         'cta_label'      => $v->string('cta_label', 40, false, 'Register now') ?: 'Register now',
         'cta_url'        => $v->url('cta_url'),
         'priority'       => $v->int('priority', 0, 0, 100),
+        'theme'          => $v->enum('theme', EVENT_THEMES, 'gold'),
+        'badge'          => $v->string('badge', 40),
+        'whatsapp_text'  => $v->string('whatsapp_text', 200),
+        'popup'          => $v->bool('popup') ? 1 : 0,
+        'solo'           => $v->bool('solo') ? 1 : 0,
     ];
+    // WhatsApp number: digits only; a 10-digit Indian mobile gets 91 in front.
+    $wa = preg_replace('/\D+/', '', (string) ($in['whatsapp'] ?? ''));
+    if (strlen($wa) === 10) $wa = '91' . $wa;
+    if ($wa !== '' && (strlen($wa) < 11 || strlen($wa) > 15)) $v->addError('whatsapp', 'Use a mobile number like 98290 12345 or +91 98290 12345');
+    $row['whatsapp'] = $wa;
     $row['starts_at'] = event_dt($v, $in, 'starts_at', true);
     $row['ends_at'] = event_dt($v, $in, 'ends_at', true);
     $row['promo_start'] = event_dt($v, $in, 'promo_start', false) ?? events_now()->format('Y-m-d H:i:s');
@@ -133,11 +144,16 @@ respond(function () {
     if ($method === 'GET') {
         if (isset($_GET['id'])) return event_get(query_id());
         $rows = array_map('events_row', db()->query('SELECT * FROM cms_events ORDER BY starts_at DESC, id DESC')->fetchAll());
-        return ['events' => $rows, 'groups' => EVENT_GROUPS, 'now' => events_now()->format('Y-m-d H:i:s'), 'timezone' => EVENT_TZ];
+        $stats = events_stats();
+        foreach ($rows as &$r) $r['stats'] = $stats[$r['id']] ?? null;
+        unset($r);
+        return ['events' => $rows, 'groups' => EVENT_GROUPS, 'themes' => EVENT_THEMES, 'now' => events_now()->format('Y-m-d H:i:s'), 'timezone' => EVENT_TZ];
     }
     if ($method === 'POST' && $action === 'duplicate') {
         $e = event_get(query_id());
-        $copy = array_intersect_key($e, array_flip(['title', 'venue', 'city', 'summary', 'description', 'banner_desktop', 'banner_mobile', 'cta_label', 'cta_url', 'priority', 'starts_at', 'ends_at', 'promo_start', 'promo_end']));
+        $copy = array_intersect_key($e, array_flip(['title', 'venue', 'city', 'summary', 'description', 'banner_desktop', 'banner_mobile', 'cta_label', 'cta_url', 'priority', 'starts_at', 'ends_at', 'promo_start', 'promo_end', 'theme', 'badge', 'whatsapp', 'whatsapp_text']));
+        $copy['popup'] = $e['popup'] ? 1 : 0;
+        $copy['solo'] = $e['solo'] ? 1 : 0;
         $copy['title'] = mb_substr('Copy of ' . $e['title'], 0, 150);
         $copy['status'] = 'draft';
         foreach (['guests', 'targets', 'excludes'] as $k) $copy[$k] = json_encode($e[$k], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -151,10 +167,17 @@ respond(function () {
         event_get($id);
         return event_save($id, event_validate(json_body()));
     }
+    if ($method === 'DELETE' && $action === 'stats') {
+        $id = query_id();
+        event_get($id);
+        db()->prepare('DELETE FROM cms_event_stats WHERE event_id = ?')->execute([$id]);
+        return ['reset' => $id];
+    }
     if ($method === 'DELETE') {
         $id = query_id();
         event_get($id);
         db()->prepare('DELETE FROM cms_events WHERE id = ?')->execute([$id]);
+        db()->prepare('DELETE FROM cms_event_stats WHERE event_id = ?')->execute([$id]);
         return ['deleted' => $id];
     }
     throw new ApiError('Method not allowed', 405);
