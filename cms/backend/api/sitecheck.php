@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/bootstrap.php';
 require_once __DIR__ . '/../lib/site_db.php';
 require_once __DIR__ . '/../lib/profile_report.php';
 require_once __DIR__ . '/../lib/starindia.php';
+require_once __DIR__ . '/../lib/sitefix.php';
 
 /*
  * Site Check (admin only): opens pages of the live site the way a visitor does
@@ -15,6 +16,8 @@ require_once __DIR__ . '/../lib/starindia.php';
  * GET  /api/sitecheck.php?action=profiles&category=&year=&month=&status=&problem=bio,banner,image,seo&page=
  *                                               -> profiles from the database with missing bio/banner/photos/SEO
  * POST /api/sitecheck.php?action=baseline       -> body {pages:[{url,title,description,keywords,canonical,h1}]}
+ * POST /api/sitecheck.php?action=fix            -> body {url, type, value}: auto fix (lib/sitefix.php), then checks the page again
+ * POST /api/sitecheck.php?action=undo           -> body {backup}: puts the file back
  */
 
 const SC_MAIN_PAGES = [
@@ -65,7 +68,7 @@ function sc_curl(string $url, bool $range)
         CURLOPT_TIMEOUT        => $range ? 20 : 40,
         CURLOPT_USERAGENT      => 'FSIA-SiteCheck/1.0 (+admin)',
         CURLOPT_ENCODING       => '',
-        CURLOPT_HTTPHEADER     => $range ? ['Range: bytes=0-2047'] : ['Accept: text/html'],
+        CURLOPT_HTTPHEADER     => $range ? ['Range: bytes=0-2047'] : ['Accept: text/html', 'Cache-Control: no-cache'],
     ]);
     return $ch;
 }
@@ -473,7 +476,28 @@ respond(function () {
 
     if (request_method() === 'GET' && $action === 'check') {
         @set_time_limit(120);
-        return sc_check(sc_url(query_param('url')));
+        $res = sc_check(sc_url(query_param('url')));
+        try {
+            $res['fixes'] = sf_fixes_for($res);
+        } catch (Throwable $e) {
+            $res['fixes'] = [];
+        }
+        return $res;
+    }
+
+    if (request_method() === 'POST' && $action === 'fix') {
+        @set_time_limit(120);
+        $b = json_body();
+        $url = sc_url(is_string($b['url'] ?? null) ? $b['url'] : '');
+        $done = sf_apply($url, (string) ($b['type'] ?? ''), is_string($b['value'] ?? null) ? $b['value'] : '');
+        // Check again so the admin sees the result straight away.
+        $res = sc_check($url);
+        $res['fixes'] = sf_fixes_for($res);
+        return $done + ['result' => $res];
+    }
+
+    if (request_method() === 'POST' && $action === 'undo') {
+        return sf_undo((string) (json_body()['backup'] ?? ''));
     }
 
     if (request_method() === 'POST' && $action === 'baseline') {

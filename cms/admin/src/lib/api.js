@@ -81,6 +81,8 @@ export const api = {
   siteCheckUrls: (q) => request('sitecheck.php', { query: { action: 'urls', q } }),
   siteCheck: (url) => request('sitecheck.php', { query: { action: 'check', url } }),
   siteCheckProfiles: (params) => request('sitecheck.php', { query: { action: 'profiles', ...params } }),
+  siteCheckFix: (url, type, value) => request('sitecheck.php', { method: 'POST', query: { action: 'fix' }, body: { url, type, value } }),
+  siteCheckUndo: (backup) => request('sitecheck.php', { method: 'POST', query: { action: 'undo' }, body: { backup } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 
   listEvents: () => request('events.php'),
