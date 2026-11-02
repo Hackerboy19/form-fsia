@@ -218,6 +218,7 @@ const VALIDATORS = {
       !isUrl(e.ctaUrl) && `Event ${named(e, i)}: the button link must start with https:// or /.`,
       e.pdfUrl && !isUrl(e.pdfUrl) && `Event ${named(e, i)}: the PDF link must start with https:// or /.`,
       e.pptUrl && !isUrl(e.pptUrl) && `Event ${named(e, i)}: the PPT link must start with https:// or /.`,
+      e.videoUrl && !isUrl(e.videoUrl) && `Event ${named(e, i)}: the video link must start with https:// or /.`,
     ]),
   ].filter(Boolean),
   advertisement: ({ items }) =>
@@ -586,11 +587,14 @@ function EventForm({ ev: e, set, types }) {
       <ImageUpload label="Event image (optional)" value={e.image} onChange={(image) => set({ image })} size={{ w: 1600, h: 900, fit: 'cover' }} />
 
       <div className="rounded-xl border border-gold-light bg-cream/60 p-4">
-        <h3 className="mb-1 font-display text-base font-bold">Downloads (optional)</h3>
-        <p className="mb-3 text-xs text-slate-500">Brochure, schedule or rules for this event. Visitors get a “View PDF” / “View PPT” button on the calendar; the file opens right on the page.</p>
+        <h3 className="mb-1 font-display text-base font-bold">PDF, PPT &amp; Video (optional)</h3>
+        <p className="mb-3 text-xs text-slate-500">Brochure, schedule, rules or a promo video for this event. Visitors get a “View PDF” / “View PPT” / “Watch Video” button on the calendar; it opens right on the page.</p>
         <div className="space-y-4">
           <DocUpload label="PDF file" kind="pdf" value={e.pdfUrl} onChange={(pdfUrl) => set({ pdfUrl })} />
           <DocUpload label="PPT file" kind="ppt" value={e.pptUrl} onChange={(pptUrl) => set({ pptUrl })} hint="PowerPoint (.ppt or .pptx)" />
+          <DocUpload label="Video" kind="video" value={e.videoUrl} onChange={(videoUrl) => set({ videoUrl })}
+            linkPlaceholder="…or paste a YouTube / Instagram / Google Drive / MP4 link"
+            hint="Upload an MP4 (up to 100 MB) or paste a YouTube link. YouTube is best for big videos." />
         </div>
       </div>
     </div>

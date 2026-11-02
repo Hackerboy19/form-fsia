@@ -4,13 +4,19 @@ import { api, assetUrl } from '../lib/api';
 /**
  * Uploads a PDF or PowerPoint through /api/upload-doc.php and reports the
  * stored URL via onChange. A link can also be pasted (e.g. Google Drive).
- * kind = 'pdf' | 'ppt' only changes which files the picker offers.
+ * kind = 'pdf' | 'ppt' | 'video' only changes which files the picker offers.
  */
-export default function DocUpload({ label, kind = 'pdf', value, onChange, hint }) {
+const KINDS = {
+  pdf: { tag: 'PDF', bg: 'bg-red-600', accept: '.pdf,application/pdf' },
+  ppt: { tag: 'PPT', bg: 'bg-orange-500', accept: '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation' },
+  video: { tag: 'VIDEO', bg: 'bg-violet-600', accept: '.mp4,.m4v,.mov,.webm,video/mp4,video/webm,video/quicktime' },
+};
+export default function DocUpload({ label, kind = 'pdf', value, onChange, hint, linkPlaceholder }) {
+  const k = KINDS[kind] || KINDS.pdf;
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const accept = kind === 'pdf' ? '.pdf,application/pdf' : '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const accept = k.accept;
   const name = value ? value.split('?')[0].split('/').pop() || '' : '';
 
   async function handleFile(file) {
@@ -34,8 +40,8 @@ export default function DocUpload({ label, kind = 'pdf', value, onChange, hint }
       <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-cream p-3"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}>
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg text-[11px] font-bold text-white ${kind === 'pdf' ? 'bg-red-600' : 'bg-orange-500'}`}>
-          {kind === 'pdf' ? 'PDF' : 'PPT'}
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg font-bold text-white ${k.tag.length > 3 ? 'text-[9px]' : 'text-[11px]'} ${k.bg}`}>
+          {k.tag}
         </span>
         <div className="min-w-0 flex-1 text-sm">
           {busy ? <span className="font-semibold">Uploading…</span>
@@ -51,7 +57,7 @@ export default function DocUpload({ label, kind = 'pdf', value, onChange, hint }
         {value && <button type="button" className="text-xs font-semibold text-red-600" onClick={() => onChange('')}>Remove</button>}
         <input ref={input} type="file" accept={accept} className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
       </div>
-      <input className="input mt-2 text-xs" placeholder="…or paste a link (https://)" value={value || ''} onChange={(e) => onChange(e.target.value.trim())} />
+      <input className="input mt-2 text-xs" placeholder={linkPlaceholder || '…or paste a link (https://)'} value={value || ''} onChange={(e) => onChange(e.target.value.trim())} />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       {hint && <p className="mt-1 text-[11px] text-slate-500">{hint}</p>}
     </div>

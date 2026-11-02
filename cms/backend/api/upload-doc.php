@@ -6,29 +6,40 @@ require_once __DIR__ . '/../lib/bootstrap.php';
  * POST /api/upload-doc.php  (admin, multipart/form-data, field "file")
  * -> 201 { "url": "https://www.fsia.in/uploads/cms/docs/2026/10/<random>.pdf", "type": "pdf", "bytes": 123456 }
  *
- * Event brochures / schedules for the calendar: PDF, PPT or PPTX only.
+ * Event brochures / schedules / videos for the calendar: PDF, PPT, PPTX, MP4 or WebM only.
  *  - the type is decided from the file's bytes, never the client's name or Content-Type;
  *  - PPTX must be a real PowerPoint package (zip with ppt/presentation.xml);
  *  - the stored name is random; uploads/cms/.htaccess turns off script execution.
- * Size limit: 'doc_max_bytes' in config uploads (default 20 MB), and PHP's upload_max_filesize.
+ * Size limit: 'doc_max_bytes' (default 20 MB) or for videos 'video_max_bytes' (default 100 MB)
+ * in config uploads, and PHP's upload_max_filesize / post_max_size.
  */
 
 const DOC_TYPES = [
     'pdf'  => 'application/pdf',
     'ppt'  => 'application/vnd.ms-powerpoint',
     'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'mp4'  => 'video/mp4',
+    'webm' => 'video/webm',
 ];
 
 function doc_kind(string $path): ?string
 {
     $fh = fopen($path, 'rb');
-    $head = $fh ? (string) fread($fh, 8) : '';
+    $head = $fh ? (string) fread($fh, 12) : '';
     if ($fh) {
         fclose($fh);
     }
     if (str_starts_with($head, '%PDF-')) {
         return 'pdf';
     }
+    // MP4 / MOV / M4V: an ISO media file starts with an "ftyp" box.
+    if (substr($head, 4, 4) === 'ftyp') {
+        return 'mp4';
+    }
+    if (str_starts_with($head, "\x1A\x45\xDF\xA3")) {
+        return 'webm';
+    }
+    $head = substr($head, 0, 8);
     // Old PowerPoint: an OLE2 compound file that holds a "PowerPoint Document" stream.
     if ($head === "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1") {
         $raw = (string) file_get_contents($path);
@@ -54,6 +65,9 @@ respond(function () {
     $cfg = cms_config()['uploads'];
     $max = (int) ($cfg['doc_max_bytes'] ?? 20 * 1024 * 1024);
     $file = $_FILES['file'] ?? null;
+    if ($file === null && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+        throw new ApiError('File is larger than the server allows (' . ini_get('post_max_size') . ')', 413);
+    }
     if (!is_array($file) || !isset($file['error']) || is_array($file['error'])) {
         throw new ApiError('Send one file in the "file" field');
     }
@@ -63,12 +77,15 @@ respond(function () {
     if ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
         throw new ApiError('Upload failed (code ' . (int) $file['error'] . ')');
     }
-    if ($file['size'] > $max) {
-        throw new ApiError('File is larger than ' . round($max / 1048576) . ' MB', 413);
-    }
     $kind = doc_kind($file['tmp_name']);
     if ($kind === null) {
-        throw new ApiError('Only PDF, PPT or PPTX files are accepted', 415);
+        throw new ApiError('Only PDF, PPT, PPTX, MP4 or WebM files are accepted', 415);
+    }
+    if ($kind === 'mp4' || $kind === 'webm') {
+        $max = (int) ($cfg['video_max_bytes'] ?? 100 * 1024 * 1024);
+    }
+    if ($file['size'] > $max) {
+        throw new ApiError('File is larger than ' . round($max / 1048576) . ' MB', 413);
     }
 
     $sub = 'docs/' . date('Y/m');

@@ -122,6 +122,11 @@
     '.fcal-dv iframe{flex:1;width:100%;border:0;background:#F5F5F4}',
     '.fcal-dv-pages{flex:1;overflow:auto;background:#E7E5E4;padding:12px;text-align:center}',
     '.fcal-dv-pages canvas{display:block;max-width:100%;height:auto !important;margin:0 auto 12px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15)}',
+    '.fcal-dv-box.fcal-dv-vbox{height:auto;max-height:92vh;max-width:960px;background:#000}',
+    '.fcal-dv-vbox .fcal-dv-head{background:#fff}',
+    '.fcal-dv-media{position:relative;width:100%;aspect-ratio:16/9;max-height:calc(92vh - 50px);background:#000}',
+    '.fcal-dv-media.fcal-tall{aspect-ratio:auto;height:calc(92vh - 50px)}',
+    '.fcal-dv-media iframe,.fcal-dv-media video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}',
     '.fcal-dv-msg{padding:40px 16px;color:#57534E;font:500 14px/1.5 system-ui,sans-serif}',
     '.fcal-empty{padding:28px 10px;text-align:center;color:var(--mut);font-size:13.5px}',
     '.fcal-empty button{margin-top:12px;border:1px solid #EADBAC;background:#FFFDF7;color:var(--gd);padding:8px 14px;border-radius:8px;font-size:13px}',
@@ -221,6 +226,22 @@
       msg.textContent = 'This file could not be shown here. Use Download to open it.';
     });
   }
+  /* Turns a YouTube / Vimeo / Instagram / Google Drive link into its embed player. null = a plain video file. */
+  function videoEmbed(url) {
+    var m;
+    if ((m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i))) {
+      return { src: 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1&rel=0&playsinline=1', tall: /shorts\//i.test(url) };
+    }
+    if ((m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i))) return { src: 'https://player.vimeo.com/video/' + m[1] + '?autoplay=1' };
+    if ((m = url.match(/instagram\.com\/(?:[\w.]+\/)?(p|reel|reels|tv)\/([\w-]+)/i))) {
+      return { src: 'https://www.instagram.com/' + (m[1] === 'reels' ? 'reel' : m[1]) + '/' + m[2] + '/embed', tall: true };
+    }
+    if ((m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/i))) return { src: 'https://drive.google.com/file/d/' + m[1] + '/preview' };
+    if ((m = url.match(/facebook\.com\/.+\/videos\/|fb\.watch\//i))) {
+      return { src: 'https://www.facebook.com/plugins/video.php?show_text=false&href=' + encodeURIComponent(url) };
+    }
+    return null;
+  }
   function openDoc(kind, url, title, color) {
     var abs = new URL(url, location.href).href;
     var open = true;
@@ -233,7 +254,23 @@
     var x = el('button', '', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
     head.appendChild(dl); head.appendChild(x);
     box.appendChild(head);
-    if (kind === 'PPT') {
+    if (kind === 'VIDEO') {
+      box.className += ' fcal-dv-vbox'; dl.textContent = 'Open';
+      dl.removeAttribute('download');
+      var emb = videoEmbed(abs);
+      var media = el('div', 'fcal-dv-media' + (emb && emb.tall ? ' fcal-tall' : ''));
+      if (emb) {
+        var vf = el('iframe'); vf.title = 'Video: ' + title; vf.src = emb.src;
+        vf.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+        vf.setAttribute('allowfullscreen', '');
+        media.appendChild(vf);
+      } else {
+        var v = el('video'); v.src = abs; v.controls = true; v.autoplay = true; v.setAttribute('playsinline', '');
+        v.setAttribute('preload', 'metadata');
+        media.appendChild(v);
+      }
+      box.appendChild(media);
+    } else if (kind === 'PPT') {
       // PowerPoint has no viewer in the browser: Microsoft's free Office viewer shows it (the file must be public).
       var frame = el('iframe'); frame.title = kind + ': ' + title;
       frame.src = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(abs);
@@ -295,7 +332,7 @@
         highlights: Array.isArray(r.highlights) ? r.highlights.map(str).filter(Boolean) : [],
         status: str(r.status) || 'upcoming',
         ctaText: str(r.ctaText), ctaUrl: safeUrl(r.ctaUrl), image: safeUrl(r.image),
-        pdfUrl: safeUrl(r.pdfUrl), pptUrl: safeUrl(r.pptUrl),
+        pdfUrl: safeUrl(r.pdfUrl), pptUrl: safeUrl(r.pptUrl), videoUrl: safeUrl(r.videoUrl),
         keywords: Array.isArray(r.keywords) ? r.keywords.map(str).filter(Boolean) : [],
         star: !!r.highlight,
       };
@@ -411,11 +448,11 @@
     function actions(e) {
       var row = el('div', 'fcal-acts');
       var b = cta(e); if (b) row.appendChild(b);
-      [['PDF', e.pdfUrl, '#DC2626'], ['PPT', e.pptUrl, '#EA580C']].forEach(function (d) {
+      [['PDF', e.pdfUrl, '#DC2626'], ['PPT', e.pptUrl, '#EA580C'], ['VIDEO', e.videoUrl, '#7C3AED']].forEach(function (d) {
         if (!d[1]) return;
         var a = el('button', 'fcal-doc'); a.type = 'button';
-        var tag = el('i', '', d[0]); tag.style.background = d[2];
-        a.appendChild(tag); a.appendChild(document.createTextNode('View ' + d[0]));
+        var tag = el('i', '', d[0] === 'VIDEO' ? '▶' : d[0]); tag.style.background = d[2];
+        a.appendChild(tag); a.appendChild(document.createTextNode(d[0] === 'VIDEO' ? 'Watch Video' : 'View ' + d[0]));
         a.addEventListener('click', function () { openDoc(d[0], d[1], e.title, d[2]); });
         row.appendChild(a);
       });
