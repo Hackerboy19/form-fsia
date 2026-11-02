@@ -63,9 +63,6 @@ export const api = {
   setRole: (username, role) => request('users.php', { method: 'POST', query: { action: 'set_role' }, body: { username, role } }),
   auditList: (params) => request('audit.php', { query: { action: 'list', ...params } }),
 
-  listSeo: () => request('seo.php'),
-  getSeo: (page) => request('seo.php', { query: { page } }),
-  saveSeo: (page, body) => request('seo.php', { method: 'PUT', query: { page }, body }),
 
   getSections: (page) => request('sections.php', { query: { page } }),
   saveSection: (page, key, body) => request('sections.php', { method: 'PUT', query: { page, key }, body }),

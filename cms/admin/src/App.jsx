@@ -4,7 +4,6 @@ import { useAuth } from './lib/auth';
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
-import SeoManager from './pages/SeoManager';
 import PageEditor from './pages/PageEditor';
 import TeamDirectory from './pages/TeamDirectory';
 // The news screens carry the rich text editor (most of the bundle): load on demand.
@@ -28,7 +27,8 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="seo" element={<SeoManager />} />
+        {/* Global SEO tab was removed: old links go to the dashboard. */}
+        <Route path="seo" element={<Navigate to="/" replace />} />
         <Route path="events" element={<Suspense fallback={loading}><Events /></Suspense>} />
         <Route path="profiles" element={<Suspense fallback={loading}><Profiles /></Suspense>} />
         <Route path="site-check" element={<Suspense fallback={loading}><SiteCheck /></Suspense>} />
