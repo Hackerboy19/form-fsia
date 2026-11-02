@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/bootstrap.php';
 require_once __DIR__ . '/../lib/site_db.php';
 require_once __DIR__ . '/../lib/profile_report.php';
 require_once __DIR__ . '/../lib/profilefix.php';
+require_once __DIR__ . '/../lib/profileedit.php';
 require_once __DIR__ . '/../lib/starindia.php';
 require_once __DIR__ . '/../lib/sitefix.php';
 
@@ -23,6 +24,8 @@ require_once __DIR__ . '/../lib/sitefix.php';
  * POST /api/sitecheck.php?action=profile_fix    -> body {ids[, batch]}: fills / shortens SEO fields (lib/profilefix.php)
  * POST /api/sitecheck.php?action=profile_undo   -> body {batch}: puts those SEO fields back
  * GET  /api/sitecheck.php?action=profile_fixes  -> recent profile fix batches
+ * GET  /api/sitecheck.php?action=profile_get&id= -> one profile's bio, photos, banners and SEO (Edit here)
+ * POST /api/sitecheck.php?action=profile_save   -> body {id, bio?, photos?, add_photos?, desktop?, mobile?, meta_*?, h1?}
  */
 
 const SC_MAIN_PAGES = [
@@ -554,6 +557,17 @@ respond(function () {
         if (!$ids) throw new ApiError('No profiles to fix', 422);
         $done = pf_apply($ids, is_string($b['batch'] ?? null) ? $b['batch'] : '');
         return $done + ['rows' => sc_reports_for($ids)];
+    }
+
+    if (request_method() === 'GET' && $action === 'profile_get') {
+        return pe_get((int) query_param('id'));
+    }
+
+    if (request_method() === 'POST' && $action === 'profile_save') {
+        $b = json_body();
+        $id = (int) ($b['id'] ?? 0);
+        $done = pe_save($id, $b);
+        return $done + ['rows' => sc_reports_for([$id])];
     }
 
     if (request_method() === 'POST' && $action === 'profile_undo') {

@@ -86,6 +86,8 @@ export const api = {
   profileRecheck: (ids) => request('sitecheck.php', { query: { action: 'profile_recheck', ids: ids.join(',') } }),
   profileFix: (ids, batch) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_fix' }, body: { ids, batch } }),
   profileUndo: (batch) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_undo' }, body: { batch } }),
+  profileGet: (id) => request('sitecheck.php', { query: { action: 'profile_get', id } }),
+  profileSave: (body) => request('sitecheck.php', { method: 'POST', query: { action: 'profile_save' }, body }),
   profileFixes: () => request('sitecheck.php', { query: { action: 'profile_fixes' } }),
   siteCheckBaseline: (pages) => request('sitecheck.php', { method: 'POST', query: { action: 'baseline' }, body: { pages } }),
 

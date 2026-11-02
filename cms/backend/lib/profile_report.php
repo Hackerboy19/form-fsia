@@ -157,6 +157,7 @@ function sc_profile_columns(): array
     $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
         'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
         'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1',
+        'city', 'state', 'ptitle', 'ptitle1', 'ptitle2',
         ...SC_UPDATED_COLUMNS, ...SC_VERIFIED_DATE_COLUMNS];
     $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
     return [array_values(array_intersect($want, $have)), $have];

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import ProfileEditor from '../components/ProfileEditor';
 
 const PROBLEMS = [
   ['bio', 'Bio missing', 'bg-orange-100 text-orange-800'],
@@ -85,6 +86,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
   const [bulk, setBulk] = useState(null);        // {done, total} while auto fixing many
   const [batches, setBatches] = useState([]);    // recent auto fixes, for Undo
   const [note, setNote] = useState('');
+  const [editing, setEditing] = useState(null);  // profile row open in "Edit here"
 
   const params = { ...f, problem: problems.join(','), match, band: bands.join(',') };
   const key = JSON.stringify(params);
@@ -128,6 +130,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
     replaceRows(d.rows);
     setNote(d.fields ? `${r.name}: ${d.fields} SEO field${d.fields === 1 ? '' : 's'} filled in, then checked again.` : `${r.name}: nothing to fix.`);
     loadBatches();
+    setReload((n) => n + 1);
   });
 
   async function fixAll() {
@@ -158,7 +161,7 @@ export default function ProfileData({ onCheckLive, disabled }) {
   }
 
   async function undo(b) {
-    if (!window.confirm(`Undo this auto fix (${b.profiles.toLocaleString()} profile${b.profiles === 1 ? '' : 's'})? The old SEO text is put back.`)) return;
+    if (!window.confirm(`Undo this change (${b.profiles.toLocaleString()} profile${b.profiles === 1 ? "" : "s"})? The old text and images are put back.`)) return;
     try {
       const d = await api.profileUndo(b.batch);
       replaceRows(d.rows);
@@ -315,12 +318,12 @@ export default function ProfileData({ onCheckLive, disabled }) {
       )}
       {batches.length > 0 && (
         <details className="mt-3 rounded-xl border border-slate-100 p-3 text-sm">
-          <summary className="cursor-pointer font-semibold">Auto fixes made ({batches.length}) <span className="font-normal text-slate-500">· undo any of them</span></summary>
+          <summary className="cursor-pointer font-semibold">Fixes and edits made here ({batches.length}) <span className="font-normal text-slate-500">· undo any of them</span></summary>
           <ul className="mt-2 divide-y divide-slate-100">
             {batches.map((b) => (
               <li key={b.batch} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
                 <span>
-                  <b>{b.at.slice(0, 16)}</b> · {b.profiles.toLocaleString()} profile{b.profiles === 1 ? '' : 's'}, {b.fields.toLocaleString()} SEO field{b.fields === 1 ? '' : 's'}
+                  <b>{b.at.slice(0, 16)}</b> · {b.profiles.toLocaleString()} profile{b.profiles === 1 ? '' : 's'}, {b.fields.toLocaleString()} field{b.fields === 1 ? "" : "s"}
                   {b.by && <span className="text-slate-500"> · by {b.by}</span>}
                 </span>
                 {b.undone
@@ -388,6 +391,12 @@ export default function ProfileData({ onCheckLive, disabled }) {
                     )}
                     {r.suspended && <span className="ml-1 mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Suspended</span>}
                     <span className="mt-1 block text-[10px] text-slate-400">Checked from: {r.source === 'starindia' ? 'starindia admin data' : 'www database'}</span>
+                    {r.source !== 'starindia' && (
+                      <button type="button" onClick={() => setEditing(r)} disabled={!!bulk}
+                        className="mt-1.5 block rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold text-navy hover:bg-gold/80">
+                        ✎ Edit here
+                      </button>
+                    )}
                     <FixLink r={r} />
                     <button type="button" disabled={isBusy(r.id) || !!bulk} onClick={() => recheck([r.id])}
                       className="mt-1.5 block text-[11px] font-semibold text-gold-dark underline disabled:opacity-50">
@@ -439,6 +448,17 @@ export default function ProfileData({ onCheckLive, disabled }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {editing && (
+        <ProfileEditor id={editing.id} onClose={() => setEditing(null)}
+          onSaved={(d) => {
+            replaceRows(d.rows);
+            setNote(d.fields ? `${editing.name}: saved ${d.fields} field${d.fields === 1 ? '' : 's'} and checked again.` : `${editing.name}: nothing was changed.`);
+            setEditing(null);
+            loadBatches();
+            setReload((n) => n + 1); // counts and score bar at the top
+          }} />
       )}
 
       {pages > 1 && (

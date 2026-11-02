@@ -20,6 +20,9 @@ require_once __DIR__ . '/sitefix.php';
 
 const PF_TABLE = 'fsia_cms_profile_fixes';
 const PF_FIELDS = ['meta_title', 'meta_desc', 'meta_keyword'];
+/* Fields an Undo may put back: the auto fix ones plus what "Edit here" saves. */
+const PF_UNDO_FIELDS = ['meta_title', 'meta_desc', 'meta_keyword', 'h1', 'fullbio', 'shortbio', 'newbio', 'bio', 'comment',
+    'image', 'setdefault', 'nimage2', 'simage2', 'image2', 'nimage1', 'simage1', 'image1'];
 const PF_TITLE_MAX = 70;     // same limits as the profile check
 const PF_DESC_MAX = 170;
 const PF_TITLE_AIM = 60;
@@ -66,11 +69,60 @@ function pf_fit(string $text, int $max): string
     return sf_shorten($text, $max);
 }
 
+/** City and state names: the registration table keeps city/state ids from the city table (or plain text on old rows). */
+function pf_place(array $r): array
+{
+    static $cities = null;
+    $city = trim((string) ($r['city'] ?? ''));
+    $state = trim((string) ($r['state'] ?? ''));
+    if ($city !== '' && ctype_digit($city)) {
+        if ($cities === null) {
+            $cities = [];
+            try {
+                if (site_db_has_table('city')) {
+                    foreach (site_db_rows('SELECT city_id, city_name, state_names FROM city') as $c) {
+                        $cities[(int) $c['city_id']] = [trim((string) $c['city_name']), trim((string) $c['state_names'])];
+                    }
+                }
+            } catch (Throwable $e) {
+                $cities = [];
+            }
+        }
+        [$city, $st] = $cities[(int) $city] ?? ['', ''];
+        $state = $st;
+    } elseif (ctype_digit($state)) {
+        $state = '';
+    }
+    return [$city, $state];
+}
+
+/** The title the profile page shows under the name (e.g. "Miss Deoghar 2025", "Best Economics Teacher in Mumbai"). */
+function pf_label(array $r): string
+{
+    foreach (['ptitle2', 'ptitle', 'ptitle1'] as $k) {
+        $t = trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($r[$k] ?? ''))));
+        if ($t !== '') return $t;
+    }
+    return '';
+}
+
+/** First of the texts that fits in $max characters. */
+function pf_first_fit(array $opts, int $max): string
+{
+    foreach ($opts as $o) {
+        $o = trim($o);
+        if ($o !== '' && mb_strlen($o) <= $max) return $o;
+    }
+    return pf_fit((string) end($opts), $max);
+}
+
 /**
- * What the auto fix would write for one registration row: [field => new value].
- * Empty when there is nothing it can fix.
+ * What the auto fix would write for one registration row: [field => new value],
+ * built only from that profile's own data: name, its title (ptitle2), category,
+ * city / state and biography. Empty when there is nothing it can fix.
+ * $all = suggest every field (the Edit box offers them), not only the empty / too long ones.
  */
-function pf_suggest(array $r): array
+function pf_suggest(array $r, bool $all = false): array
 {
     if (($r['starindia_action'] ?? '') === 'edited') return [];
     $name = pf_name($r);
@@ -79,29 +131,30 @@ function pf_suggest(array $r): array
     $catLabel = $cat === 'other' ? '' : SC_CATEGORIES[$cat][0];
     $year = substr((string) ($r['date_of_reg'] ?? ''), 0, 4);
     $year = preg_match('/^20\d\d$/', $year) ? $year : '';
-    $catYear = trim("$catLabel $year");
+    $label = pf_label($r);
+    [$city, $state] = pf_place($r);
+    // Pageants are named with their year ("Miss India 2026"); awards by their category ("Makeup Artist").
+    $pageant = in_array($cat, ['miss-india', 'mrs-india', 'miss-teen', 'miss-universe', 'mrs-universe'], true);
+    // Without a title of their own, pageant members are contestants (not winners).
+    $what = $label !== '' ? $label : ($pageant ? trim("$catLabel $year") . ' Contestant' : $catLabel);
+    $from = $city !== '' ? ($state !== '' && mb_strtolower($state) !== mb_strtolower($city) ? "$city, $state" : $city) : '';
 
+    $want = fn (string $k, int $max) => array_key_exists($k, $r)
+        && ($all || trim((string) ($r[$k] ?? '')) === '' || mb_strlen(trim((string) $r[$k])) > $max);
     $out = [];
-    $title = trim((string) ($r['meta_title'] ?? ''));
-    if (array_key_exists('meta_title', $r)) {
-        if ($title === '') {
-            $opts = [
-                $catYear !== '' ? "$name | $catYear | FSIA" : "$name | Forever Star India Awards",
-                $catLabel !== '' ? "$name | $catLabel | FSIA" : "$name | FSIA",
-                "$name | FSIA",
-            ];
-            foreach ($opts as $o) {
-                if (mb_strlen($o) <= PF_TITLE_AIM) { $out['meta_title'] = $o; break; }
-            }
-            $out['meta_title'] ??= pf_fit($name, PF_TITLE_AIM);
-        } elseif (mb_strlen($title) > PF_TITLE_MAX) {
-            $out['meta_title'] = pf_fit($title, PF_TITLE_AIM);
-        }
+
+    if ($want('meta_title', PF_TITLE_MAX)) {
+        $cur = trim((string) ($r['meta_title'] ?? ''));
+        $out['meta_title'] = $cur !== '' && !$all
+            ? pf_fit($cur, PF_TITLE_AIM)
+            : pf_first_fit(pf_title_options($name, $what, $label !== '', $pageant, $city), PF_TITLE_AIM);
     }
 
-    $desc = trim((string) ($r['meta_desc'] ?? ''));
-    if (array_key_exists('meta_desc', $r)) {
-        if ($desc === '') {
+    if ($want('meta_desc', PF_DESC_MAX)) {
+        $cur = trim((string) ($r['meta_desc'] ?? ''));
+        if ($cur !== '' && !$all) {
+            $out['meta_desc'] = pf_fit($cur, PF_DESC_AIM);
+        } else {
             $bio = '';
             foreach (['shortbio', 'fullbio', 'newbio', 'bio', 'comment', 'fullbio_2', 'fullbio_3'] as $k) {
                 $t = pf_plain((string) ($r[$k] ?? ''));
@@ -110,22 +163,40 @@ function pf_suggest(array $r): array
             if ($bio !== '') {
                 $out['meta_desc'] = pf_fit($bio, PF_DESC_AIM);
             } else {
-                $what = $catYear !== '' ? "$name, $catYear at Forever Star India Awards (FSIA)." : "$name at Forever Star India Awards (FSIA).";
-                $out['meta_desc'] = pf_fit("$what See the profile, photos and journey of $name.", PF_DESC_AIM);
+                $who = $name . ($from !== '' ? " from $from" : '');
+                $is = $what !== '' ? " – $what" : '';
+                $out['meta_desc'] = pf_fit("$who$is at Forever Star India Awards (FSIA). See $name's profile, photos and journey.", PF_DESC_AIM);
             }
-        } elseif (mb_strlen($desc) > PF_DESC_MAX) {
-            $out['meta_desc'] = pf_fit($desc, PF_DESC_AIM);
         }
     }
 
-    if (array_key_exists('meta_keyword', $r) && trim((string) ($r['meta_keyword'] ?? '')) === '') {
+    if ($want('meta_keyword', 1000000)) {
         $k = [$name];
-        if ($catLabel !== '') $k[] = $catLabel;
-        if ($catLabel !== '' && $year !== '') $k[] = "$catLabel $year";
-        array_push($k, 'FSIA', 'Forever Star India Awards');
-        $out['meta_keyword'] = implode(', ', array_unique($k));
+        if ($label !== '') $k[] = $label;
+        if ($catLabel !== '' && mb_stripos($label, $catLabel) === false) $k[] = $pageant && $year !== '' ? "$catLabel $year contestant" : $catLabel;
+        if ($city !== '') {
+            $k[] = $city;
+            if ($catLabel !== '') $k[] = $pageant ? "$catLabel $city" : "$catLabel in $city";
+        }
+        $k[] = 'forever star india awards';
+        $out['meta_keyword'] = implode(', ', array_values(array_unique(array_map('mb_strtolower', $k))));
+    }
+
+    if ($all && array_key_exists('h1', $r)) {
+        $out['h1'] = $what !== '' ? "$what | $name" : $name;
     }
     return $out;
+}
+
+/** Title options, best first: "Miss Deoghar 2025 | Nidhi Netra", "Miss India 2026 | Kumkum Chauhan, Jaipur", "Makeup Artist in Delhi | Piyush". */
+function pf_title_options(string $name, string $what, bool $isTitle, bool $pageant, string $city): array
+{
+    if ($what === '') return [$name . ($city !== '' ? ", $city" : '') . ' | FSIA', "$name | FSIA", $name];
+    $inCity = $city !== '' && mb_stripos($what, $city) === false;
+    $opts = [];
+    if ($inCity) $opts[] = $isTitle || $pageant ? "$what | $name, $city" : "$what in $city | $name";
+    array_push($opts, "$what | $name", "$name | $what", $name);
+    return $opts;
 }
 
 /** Registration rows by id, with the columns the report and the fix need. */
@@ -181,7 +252,7 @@ function pf_undo(string $batch): array
     $kept = 0;
     $ids = [];
     foreach ($rows as $x) {
-        if (!in_array($x['field'], PF_FIELDS, true)) continue;
+        if (!in_array($x['field'], PF_UNDO_FIELDS, true)) continue;
         $cur = site_db_rows("SELECT `{$x['field']}` AS v FROM registration WHERE id = ?", [(int) $x['profile_id']])[0]['v'] ?? null;
         if ((string) $cur === (string) $x['new_value']) {
             site_db_rows("UPDATE registration SET `{$x['field']}` = ? WHERE id = ?", [(string) $x['old_value'], (int) $x['profile_id']]);
