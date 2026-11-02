@@ -72,6 +72,21 @@ function applyBound(bindings, drafts) {
   });
 }
 
+/* Writes a field into its element. A list (<ul>) gets one item per line;
+ * data-cms-rich elements show **word** in bold and blank lines as paragraphs. */
+function render(el, v) {
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rich = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  if (!el.hasAttribute('data-cms-rich')) { el.innerText = v; return; }
+  if (el.tagName === 'UL') {
+    el.innerHTML = v.split(/\n/).map((l) => l.trim()).filter(Boolean).map((l) => `<li>${rich(l)}</li>`).join('');
+  } else if (/^(DIV|SECTION)$/.test(el.tagName)) {
+    el.innerHTML = v.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((p) => `<p class="text-slate-600 leading-relaxed mb-4">${rich(p)}</p>`).join('');
+  } else {
+    el.innerHTML = rich(v);
+  }
+}
+
 function apply(doc, drafts) {
   if (!doc) return;
   doc.querySelectorAll('[data-cms]').forEach((el) => {
@@ -80,7 +95,7 @@ function apply(doc, drafts) {
     const [key, field] = el.dataset.cms.split('.');
     const v = drafts[key]?.content?.[field];
     if (typeof v === 'string' && v.trim() !== '') {
-      if (el.dataset.cmsShown !== v) { el.innerText = v.trim(); el.dataset.cmsShown = v; }
+      if (el.dataset.cmsShown !== v) { render(el, v.trim()); el.dataset.cmsShown = v; }
     } else if (el.dataset.cmsShown !== undefined) {
       el.innerHTML = el.dataset.cmsOrig;
       delete el.dataset.cmsShown;
