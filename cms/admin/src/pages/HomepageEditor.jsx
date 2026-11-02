@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, assetUrl } from '../lib/api';
 import { PageHeader } from '../components/Layout';
 import { Field, SelectField, Toggle } from '../components/Field';
@@ -383,10 +383,121 @@ const typeColor = (t, custom) => allTypes(custom).find((x) => x.value === t)?.co
 
 // Which event categories each group of form pages shows. First matching rule wins;
 // pages no rule matches show every category.
-const RULE_PRESETS = [
-  { label: 'Pageant pages', pages: '/miss-*, /mrs-*, /teen-*', types: ['audition', 'pageant', 'ceremony', 'workshop'] },
-  { label: 'Award pages', pages: '/*award*', types: ['award'] },
+// Pages of the site's Registration menu (header1806.php), for the page dropdown in each rule.
+const REGISTRATION_PAGES = [
+  { group: 'Pageants', items: [
+    ['/forever-miss-india-new.php', 'Forever Miss India'],
+    ['/forever-mrs-india-new.php', 'Forever Mrs India'],
+    ['/forever-miss-teen-india-new.php', 'Forever Miss Teen India'],
+    ['/miss-fsia-international-2024.php', 'Miss FSIA International'],
+    ['/mrs-fsia-international-2024.php', 'Mrs FSIA International'],
+    ['/miss-world-beauty-pageant.php', 'Miss World'],
+    ['/mrs-world-beauty-pageant.php', 'Mrs World'],
+    ['/miss-universe-beauty-pageant.php', 'Miss Universe'],
+    ['/mrs-universe-beauty-pageant.php', 'Mrs Universe'],
+    ['/miss-*', 'All Miss state pages (Miss Rajasthan, Miss Delhi…)'],
+    ['/mrs-*', 'All Mrs state pages (Mrs Rajasthan, Mrs Delhi…)'],
+  ] },
+  { group: 'Awards', items: [
+    ['/super-hero-award.php', 'Super Hero Award'],
+    ['/super-woman-award.php', 'Super Woman Award'],
+    ['/business-awards.php', 'Business Awards'],
+    ['/bharat-national-awards.php', 'Bharat National Awards'],
+    ['/international-award.php', 'International Award'],
+    ['/infinity-achievers', 'Infinity Achievers'],
+    ['/forever-achievers', 'Forever Achievers'],
+    ['/nominate-yourself', 'Nominate Yourself'],
+  ] },
+  { group: 'Others', items: [
+    ['/star-india-kids-contest.php', 'Forever Star Kids'],
+    ['/fashion-designer.php', 'Fashion Designers'],
+    ['/makeup-artist.php', 'Makeup Artists'],
+    ['/bharat-couture-week-fashion-week.php', 'Bharat Couture Week'],
+    ['/channel-partner', 'Channel Partner'],
+  ] },
 ];
+const PAGE_LABEL = Object.fromEntries(REGISTRATION_PAGES.flatMap((g) => g.items));
+const splitPages = (str) => String(str || '').split(',').map((x) => x.trim()).filter(Boolean);
+const groupPages = (name) => REGISTRATION_PAGES.find((g) => g.group === name).items.map(([v]) => v);
+
+const RULE_PRESETS = [
+  { label: 'Pageant pages', pages: groupPages('Pageants').join(', '), types: ['audition', 'pageant', 'ceremony', 'workshop'] },
+  { label: 'Award pages', pages: groupPages('Awards').join(', '), types: ['award'] },
+];
+
+/** Multi-select dropdown of the Registration pages; the value stays a comma-separated list. */
+function PagePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [other, setOther] = useState('');
+  const box = useRef(null);
+  const sel = splitPages(value);
+  const set = (list) => onChange([...new Set(list)].join(', '));
+  const toggle = (v) => set(sel.includes(v) ? sel.filter((x) => x !== v) : [...sel, v]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+  const match = (v, l) => !q || (l + ' ' + v).toLowerCase().includes(q.toLowerCase());
+  const addOther = () => {
+    let v = other.trim();
+    if (!v) return;
+    if (!v.startsWith('/')) v = '/' + v.replace(/^https?:\/\/[^/]+\/?/i, '');
+    set([...sel, v]);
+    setOther('');
+  };
+
+  return (
+    <div ref={box} className="relative min-w-[240px] flex-1">
+      <button type="button" onClick={() => setOpen(!open)}
+        className="input flex min-h-[42px] w-full flex-wrap items-center gap-1.5 text-left">
+        {sel.length === 0 && <span className="text-slate-400">Select registration pages…</span>}
+        {sel.map((v) => (
+          <span key={v} className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-semibold text-slate-700">
+            {PAGE_LABEL[v] ? PAGE_LABEL[v].replace(/ \(.*\)$/, '') : v}
+            <span role="button" tabIndex={-1} className="text-slate-400 hover:text-red-600" onClick={(e) => { e.stopPropagation(); toggle(v); }}>×</span>
+          </span>
+        ))}
+        <span className="ml-auto pl-1 text-slate-400">▾</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 z-30 mt-1 max-h-[380px] overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+          <input className="input mb-2 text-sm" placeholder="Search pages…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+          {REGISTRATION_PAGES.map((g) => {
+            const items = g.items.filter(([v, l]) => match(v, l));
+            if (!items.length) return null;
+            const all = items.every(([v]) => sel.includes(v));
+            return (
+              <div key={g.group} className="mb-2">
+                <div className="flex items-center justify-between px-2 py-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{g.group}</span>
+                  <button type="button" className="text-[11px] font-semibold text-gold-dark hover:underline"
+                    onClick={() => set(all ? sel.filter((x) => !items.some(([v]) => v === x)) : [...sel, ...items.map(([v]) => v)])}>
+                    {all ? 'Clear all' : 'Select all'}
+                  </button>
+                </div>
+                {items.map(([v, l]) => (
+                  <label key={v} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-cream">
+                    <input type="checkbox" className="h-4 w-4" checked={sel.includes(v)} onChange={() => toggle(v)} />
+                    <span className="flex-1">{l}</span>
+                    <span className="text-[10px] text-slate-400">{v}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+          <div className="mt-1 flex gap-2 border-t border-slate-100 px-1 pt-2">
+            <input className="input flex-1 text-xs" placeholder="Other page, e.g. /quickapply" value={other}
+              onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOther(); } }} />
+            <button type="button" className="btn-ghost text-xs" onClick={addOther}>Add</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CategoryRules({ content, setContent }) {
   const fp = content.formPages || {};
@@ -399,7 +510,7 @@ function CategoryRules({ content, setContent }) {
     <div className="rounded-xl border border-slate-200 p-4">
       <p className="text-sm font-semibold">Category-wise calendar</p>
       <p className="mb-3 text-xs text-slate-500">
-        Choose which categories each group of form pages shows. Page names can use * (e.g. <code>/miss-*</code> = every Miss state page). The first rule that matches a page is used; pages no rule matches show all categories.
+        Pick registration pages from the dropdown, then tick the categories their calendar shows. The first rule that matches a page is used; pages no rule matches show all categories.
       </p>
       <div className="space-y-3">
         {rules.map((r, i) => {
@@ -409,7 +520,7 @@ function CategoryRules({ content, setContent }) {
             <div key={r.id || i} className="rounded-lg border border-slate-200 bg-cream/50 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold text-slate-500">Rule {i + 1} · Pages</span>
-                <input className="input min-w-[220px] flex-1" placeholder="/miss-*, /mrs-*" value={r.pages || ''} onChange={(e) => patch({ pages: e.target.value })} />
+                <PagePicker value={r.pages} onChange={(pages) => patch({ pages })} />
                 <button type="button" className="text-xs font-semibold text-red-600" onClick={() => setRules(rules.filter((_, j) => j !== i))}>Remove</button>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
