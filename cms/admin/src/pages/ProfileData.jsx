@@ -80,6 +80,11 @@ export default function ProfileData({ onCheckLive, disabled }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
+  const [busy, setBusy] = useState([]);          // profile ids being fixed / checked
+  const [bulk, setBulk] = useState(null);        // {done, total} while auto fixing many
+  const [batches, setBatches] = useState([]);    // recent auto fixes, for Undo
+  const [note, setNote] = useState('');
 
   const params = { ...f, problem: problems.join(','), match, band: bands.join(',') };
   const key = JSON.stringify(params);
@@ -96,7 +101,71 @@ export default function ProfileData({ onCheckLive, disabled }) {
     }, f.q ? 400 : 0);
     return () => { alive = false; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, page]);
+  }, [key, page, reload]);
+
+  const loadBatches = () => api.profileFixes().then((d) => setBatches(d.batches || [])).catch(() => {});
+  useEffect(() => { loadBatches(); }, []);
+
+  /** Puts freshly read rows in place of the old ones (same position in the list). */
+  function replaceRows(rows) {
+    const byId = new Map((rows || []).map((r) => [r.id, r]));
+    setData((d) => (d ? { ...d, rows: d.rows.map((r) => byId.get(r.id) || r) } : d));
+  }
+  const isBusy = (id) => busy.includes(id);
+  async function withBusy(ids, fn) {
+    setBusy((b) => [...b, ...ids]);
+    try { await fn(); } catch (e) { setError(e.message); } finally { setBusy((b) => b.filter((x) => !ids.includes(x))); }
+  }
+
+  const recheck = (ids) => withBusy(ids, async () => {
+    const d = await api.profileRecheck(ids);
+    replaceRows(d.rows);
+    setNote(`Checked ${ids.length === 1 ? 'the profile' : `${ids.length} profiles`} again.`);
+  });
+
+  const fixOne = (r) => withBusy([r.id], async () => {
+    const d = await api.profileFix([r.id]);
+    replaceRows(d.rows);
+    setNote(d.fields ? `${r.name}: ${d.fields} SEO field${d.fields === 1 ? '' : 's'} filled in, then checked again.` : `${r.name}: nothing to fix.`);
+    loadBatches();
+  });
+
+  async function fixAll() {
+    const ids = data?.fix_ids || [];
+    if (!ids.length) return;
+    if (!window.confirm(`Fill in the missing meta title, description and keywords for ${ids.length.toLocaleString()} profile${ids.length === 1 ? '' : 's'} in this list (and shorten ones that are too long)?\n\nBio, photos, banners and profile links are not touched. You can undo this afterwards.`)) return;
+    setError('');
+    let profiles = 0;
+    let fields = 0;
+    setBulk({ done: 0, total: ids.length });
+    try {
+      let batch;
+      for (let i = 0; i < ids.length; i += 250) {
+        const d = await api.profileFix(ids.slice(i, i + 250), batch);
+        batch = d.batch;
+        profiles += d.profiles;
+        fields += d.fields;
+        setBulk({ done: Math.min(i + 250, ids.length), total: ids.length });
+      }
+      setNote(`Auto fix done: ${fields.toLocaleString()} SEO fields filled in on ${profiles.toLocaleString()} profiles. The list below is checked again.`);
+    } catch (e) {
+      setError(`Stopped: ${e.message} (${profiles.toLocaleString()} profiles were fixed before that; they can be undone below).`);
+    } finally {
+      setBulk(null);
+      loadBatches();
+      setReload((n) => n + 1);
+    }
+  }
+
+  async function undo(b) {
+    if (!window.confirm(`Undo this auto fix (${b.profiles.toLocaleString()} profile${b.profiles === 1 ? '' : 's'})? The old SEO text is put back.`)) return;
+    try {
+      const d = await api.profileUndo(b.batch);
+      replaceRows(d.rows);
+      setNote(`Undone: ${d.restored.toLocaleString()} field${d.restored === 1 ? '' : 's'} put back${d.kept ? `, ${d.kept} left as they were changed again after the fix` : ''}.`);
+      loadBatches();
+    } catch (e) { setError(e.message); }
+  }
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const toggle = (k) => setProblems((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
@@ -232,6 +301,36 @@ export default function ProfileData({ onCheckLive, disabled }) {
       </div>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {note && !error && (
+        <p className="mt-3 flex items-start justify-between gap-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+          <span>✓ {note}</span>
+          <button type="button" className="text-xs font-semibold underline" onClick={() => setNote('')}>Close</button>
+        </p>
+      )}
+      {bulk && (
+        <div className="mt-3 rounded-xl bg-cream/60 p-3 text-sm">
+          <p className="font-semibold">⚡ Auto fixing… {bulk.done.toLocaleString()} of {bulk.total.toLocaleString()} profiles</p>
+          <div className="mt-2 h-2 rounded-full bg-white"><div className="h-2 rounded-full bg-gold" style={{ width: `${(bulk.done / bulk.total) * 100}%` }} /></div>
+        </div>
+      )}
+      {batches.length > 0 && (
+        <details className="mt-3 rounded-xl border border-slate-100 p-3 text-sm">
+          <summary className="cursor-pointer font-semibold">Auto fixes made ({batches.length}) <span className="font-normal text-slate-500">· undo any of them</span></summary>
+          <ul className="mt-2 divide-y divide-slate-100">
+            {batches.map((b) => (
+              <li key={b.batch} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
+                <span>
+                  <b>{b.at.slice(0, 16)}</b> · {b.profiles.toLocaleString()} profile{b.profiles === 1 ? '' : 's'}, {b.fields.toLocaleString()} SEO field{b.fields === 1 ? '' : 's'}
+                  {b.by && <span className="text-slate-500"> · by {b.by}</span>}
+                </span>
+                {b.undone
+                  ? <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-500">Undone</span>
+                  : <button type="button" className="btn-ghost !py-1 text-xs" onClick={() => undo(b)}>↶ Undo</button>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {data && !data.change_log && (f.sort === 'changed' || f.changed_days) && (
         <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
           Change dates come from <b>Tools → Profile Changes</b>. Turn it on there; from then on every profile edit is recorded with its date and who made it.
@@ -252,6 +351,15 @@ export default function ProfileData({ onCheckLive, disabled }) {
         {data?.total > 0 && (
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost !py-1.5" onClick={downloadCsv}>⤓ Download list</button>
+            <button type="button" className="btn-ghost !py-1.5" disabled={!!bulk || !data.rows.length || data.rows.some((r) => isBusy(r.id))}
+              onClick={() => recheck(data.rows.map((r) => r.id))}
+              title="Read the profiles on this page from the database again">
+              ↻ Check this page again
+            </button>
+            <button type="button" className="btn-gold !py-1.5" disabled={!!bulk || !data.fix_ids?.length} onClick={fixAll}
+              title="Fill in missing meta title, description and keywords (and shorten ones that are too long) for every profile in this list">
+              ⚡ Auto fix SEO ({(data.fix_ids?.length || 0).toLocaleString()})
+            </button>
             <button type="button" className="btn-gold !py-1.5" disabled={disabled || !data.paths.length}
               onClick={() => onCheckLive(data.paths.slice(0, LIVE_LIMIT))}
               title="Open these pages on the live site and check status, images and SEO tags">
@@ -281,6 +389,10 @@ export default function ProfileData({ onCheckLive, disabled }) {
                     {r.suspended && <span className="ml-1 mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Suspended</span>}
                     <span className="mt-1 block text-[10px] text-slate-400">Checked from: {r.source === 'starindia' ? 'starindia admin data' : 'www database'}</span>
                     <FixLink r={r} />
+                    <button type="button" disabled={isBusy(r.id) || !!bulk} onClick={() => recheck([r.id])}
+                      className="mt-1.5 block text-[11px] font-semibold text-gold-dark underline disabled:opacity-50">
+                      {isBusy(r.id) ? 'Checking…' : '↻ Check again'}
+                    </button>
                   </td>
                   <td className="p-3"><ScoreCell r={r} /></td>
                   <td className="p-3 text-slate-600">{r.category}</td>
@@ -307,6 +419,13 @@ export default function ProfileData({ onCheckLive, disabled }) {
                               const tab = k === 'image' && r.problems[k].some((t) => /logo/i.test(t)) ? 'identity' : FIX_TAB[k];
                               return <a href={starindiaUrl(r, tab)} target="_blank" rel="noreferrer" className="ml-1.5 whitespace-nowrap font-semibold text-gold-dark underline" title={`Open the ${TAB_LABEL[tab]} section of this profile in the starindia admin`}>Fix ↗</a>;
                             })()}
+                            {k === 'seo' && r.auto_fix?.length > 0 && (
+                              <button type="button" disabled={isBusy(r.id) || !!bulk} onClick={() => fixOne(r)}
+                                title={`Fills in: ${r.auto_fix.map((x) => ({ meta_title: 'meta title', meta_desc: 'meta description', meta_keyword: 'meta keywords' }[x] || x)).join(', ')}`}
+                                className="ml-1.5 whitespace-nowrap rounded bg-gold/20 px-1.5 py-0.5 text-[11px] font-bold text-gold-dark hover:bg-gold/40 disabled:opacity-50">
+                                {isBusy(r.id) ? 'Fixing…' : '⚡ Auto fix'}
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>

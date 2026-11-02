@@ -152,19 +152,33 @@ function sc_verification_counts(array $f): ?array
     return ['verified' => (int) ($r['v'] ?? 0), 'pending' => (int) ($r['p'] ?? 0)];
 }
 
-function sc_profile_rows(array $f): array
+function sc_profile_columns(): array
 {
     $want = ['id', 'first_name', 'last_name', 'regtype', 'status', 'verification', 'suspended', 'date_of_reg', 'url',
         'starindia_action', 'setdefault', 'image', 'nimage1', 'simage1', 'image1', 'nimage2', 'simage2', 'image2',
         'fullbio', 'fullbio_2', 'fullbio_3', 'shortbio', 'newbio', 'bio', 'comment', 'meta_title', 'meta_desc', 'meta_keyword', 'h1',
         ...SC_UPDATED_COLUMNS, ...SC_VERIFIED_DATE_COLUMNS];
     $have = array_column(site_db_rows('SHOW COLUMNS FROM registration'), 'Field');
-    $cols = array_values(array_intersect($want, $have));
+    return [array_values(array_intersect($want, $have)), $have];
+}
 
+function sc_profile_rows(array $f): array
+{
+    [$cols, $have] = sc_profile_columns();
     [$where, $params] = sc_profile_where($f, $have, true);
     $sql = 'SELECT ' . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ' FROM registration WHERE ' . implode(' AND ', $where)
         . ' ORDER BY date_of_reg DESC, id DESC LIMIT ' . SC_PROFILE_LIMIT;
     return site_db_rows($sql, $params);
+}
+
+/** The same columns for a list of profile ids (re-check after a fix). */
+function sc_profile_rows_by_ids(array $ids): array
+{
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if (!$ids) return [];
+    [$cols] = sc_profile_columns();
+    return site_db_rows('SELECT ' . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ' FROM registration WHERE id IN ('
+        . implode(',', array_fill(0, count($ids), '?')) . ')', $ids);
 }
 
 /*
