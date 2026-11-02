@@ -20,7 +20,7 @@ const withRatio = (w, h) => (ratioLabel(w, h) ? ` (${ratioLabel(w, h)})` : '');
  * chosen image. fit 'cover' = the site fills its box (a different shape gets
  * cut); 'contain' = shown whole (a different shape gets empty bands).
  */
-export default function ImageUpload({ label = 'Image', value, onChange, hint, aspect, size }) {
+export default function ImageUpload({ label = 'Image', value, onChange, hint, aspect, size, fallback }) {
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -102,6 +102,12 @@ export default function ImageUpload({ label = 'Image', value, onChange, hint, as
       >
         {value && !natural?.broken ? (
           <img src={assetUrl(value)} alt="" className={`h-full w-full ${size?.fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+        ) : !value && fallback ? (
+          // Nothing uploaded: show the photo the website uses instead.
+          <>
+            <img src={assetUrl(fallback)} alt="" className={`h-full w-full ${size?.fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+            <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-[11px] font-semibold text-white">Shown on the site now</span>
+          </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center p-4 text-center text-sm text-slate-500">
             <span className="text-2xl" aria-hidden="true">🖼</span>

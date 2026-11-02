@@ -119,7 +119,7 @@ SECTION_SCHEMAS['our-teams'] = [
   {
     key: 'hero',
     title: 'Top section: text, numbers & Season badge',
-    image: { label: 'Left photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the 5th Mentor’s photo.' },
+    image: { label: 'Left photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the 5th Mentor’s photo.', fallback: 'mentor5' },
     fields: [
       { name: 'eyebrow', label: 'Small label', max: 60, def: 'The people behind FSIA' },
       { name: 'title', label: 'Heading', max: 60, def: 'THE FACES' },
@@ -134,13 +134,13 @@ SECTION_SCHEMAS['our-teams'] = [
   {
     key: 'hero_center',
     title: 'Top section: big centre photo',
-    image: { label: 'Centre photo (big)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the first Leadership member’s photo.' },
+    image: { label: 'Centre photo (big)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the first Leadership member’s photo.', fallback: 'lead1' },
     fields: [],
   },
   {
     key: 'hero_right',
     title: 'Top section: right photo',
-    image: { label: 'Right photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the second Leadership member’s photo.' },
+    image: { label: 'Right photo (small)', size: { w: 800, h: 1200, fit: 'cover' }, hint: 'Empty = the second Leadership member’s photo.', fallback: 'lead2' },
     fields: [],
   },
   {
