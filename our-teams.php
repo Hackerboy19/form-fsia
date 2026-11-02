@@ -442,6 +442,16 @@ $hero = $cmsSections['hero'];
 $leadSec = $cmsSections['leadership'];
 $teamSec = $cmsSections['team_grid'];
 $cta = $cmsSections['cta'];
+/* The CMS editor saves eyebrow / heading_italic / text / chip / subtitle; older
+   copies of this page used small_label / heading_gold / paragraph / tag / line.
+   Take the first non-empty one, else the built-in text. */
+$cv = function (array $sec, array $names, string $default): string {
+    foreach ($names as $n) {
+        $v = $sec[$n] ?? '';
+        if (is_string($v) && trim($v) !== '') return trim($v);
+    }
+    return $default;
+};
 
 $imgLeft = !empty($hero['image_url']) ? $hero['image_url'] : (!empty($hero['left_photo']) ? $hero['left_photo'] : ($groups['mentors']['members'][4][2] ?? $groups['mentors']['members'][0][2] ?? $lead[0][2] ?? ''));
 $imgCenter = !empty($cmsSections['hero_center']['image_url']) ? $cmsSections['hero_center']['image_url'] : (!empty($cmsSections['hero_center']['photo']) ? $cmsSections['hero_center']['photo'] : ($lead[0][2] ?? ''));
@@ -482,7 +492,7 @@ $imgRight = !empty($cmsSections['hero_right']['image_url']) ? $cmsSections['hero
   <section class="fx-lead" id="leadership">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($leadSec['small_label']) ? $leadSec['small_label'] : 'Official FSIA Board'); ?></span>
+        <span class="fx-eyebrow"><?php echo fsia_attr($cv($leadSec, ['eyebrow', 'small_label'], 'Official FSIA Board')); ?></span>
         <h2><?php echo fsia_attr(!empty($leadSec['heading']) ? $leadSec['heading'] : 'Leadership'); ?></h2>
       </div>
 
@@ -510,7 +520,7 @@ $imgRight = !empty($cmsSections['hero_right']['image_url']) ? $cmsSections['hero
           <p class="fx-serif fx-line"><?php echo fsia_attr($lines[$k] ?? ''); ?></p>
           <p><?php echo fsia_attr($leadBios[$m[0]] ?? ''); ?></p>
           <div class="fx-spot-foot">
-            <span class="fx-chip"><?php echo fsia_attr(!empty($leadSec['tag']) ? $leadSec['tag'] : 'Forever Star India'); ?></span>
+            <span class="fx-chip"><?php echo fsia_attr($cv($leadSec, ['chip', 'tag'], 'Forever Star India')); ?></span>
             <?php if (!empty($m[3])): ?>
             <a class="fx-chip" href="tel:+91<?php echo fsia_attr($m[3]); ?>">Call <?php echo fsia_attr($m[3]); ?></a>
             <?php endif; ?>
@@ -525,9 +535,9 @@ $imgRight = !empty($cmsSections['hero_right']['image_url']) ? $cmsSections['hero
   <section class="fx-team" id="team">
     <div class="fx-wrap">
       <div class="fx-sec-head">
-        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($teamSec['small_label']) ? $teamSec['small_label'] : 'Team FSIA'); ?></span>
+        <span class="fx-eyebrow"><?php echo fsia_attr($cv($teamSec, ['eyebrow', 'small_label'], 'Team FSIA')); ?></span>
         <h2><?php echo fsia_attr(!empty($teamSec['heading']) ? $teamSec['heading'] : 'Mentors, Makers & Voices'); ?></h2>
-        <p><?php echo fsia_attr(!empty($teamSec['line']) ? $teamSec['line'] : 'The experts who train, film, host and run every Forever Star India season.'); ?></p>
+        <p><?php echo fsia_attr($cv($teamSec, ['subtitle', 'line'], 'The experts who train, film, host and run every Forever Star India season.')); ?></p>
       </div>
 
       <div class="fx-tabs" role="group" aria-label="Filter team">
@@ -557,9 +567,9 @@ $imgRight = !empty($cmsSections['hero_right']['image_url']) ? $cmsSections['hero
   <section class="fx-join">
     <div class="fx-wrap fx-join-in">
       <div>
-        <span class="fx-eyebrow"><?php echo fsia_attr(!empty($cta['small_label']) ? $cta['small_label'] : 'Season 2026 is open'); ?></span>
-        <h2><?php echo fsia_attr(!empty($cta['heading']) ? $cta['heading'] : 'Your stage is'); ?> <span class="fx-serif"><?php echo fsia_attr(!empty($cta['heading_gold']) ? $cta['heading_gold'] : 'waiting'); ?></span></h2>
-        <p><?php echo nl2br(fsia_attr(!empty($cta['paragraph']) ? $cta['paragraph'] : 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.')); ?></p>
+        <span class="fx-eyebrow"><?php echo fsia_attr($cv($cta, ['eyebrow', 'small_label'], 'Season 2026 is open')); ?></span>
+        <h2><?php echo fsia_attr(!empty($cta['heading']) ? $cta['heading'] : 'Your stage is'); ?> <span class="fx-serif"><?php echo fsia_attr($cv($cta, ['heading_italic', 'heading_gold'], 'waiting')); ?></span></h2>
+        <p><?php echo nl2br(fsia_attr($cv($cta, ['text', 'paragraph'], 'Audition in your city, train with this team, and walk the national stage at Zee Studio Jaipur. Questions? Our helpline is open Mon–Sat, 10am–7pm IST.'))); ?></p>
       </div>
       <div class="fx-join-links">
         <a href="<?php echo fsia_attr(!empty($cta['link1_url']) ? $cta['link1_url'] : 'https://www.fsia.in/quickapply'); ?>"><span><b><?php echo fsia_attr(!empty($cta['link1_title']) ? $cta['link1_title'] : 'Quick Apply'); ?></b><small><?php echo fsia_attr(!empty($cta['link1_sub']) ? $cta['link1_sub'] : 'Register for the 2026 season'); ?></small></span><i>→</i></a>
