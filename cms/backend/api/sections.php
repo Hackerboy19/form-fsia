@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
+require_once __DIR__ . '/../lib/calendar_status.php';
 
 /*
  * GET /api/sections.php?page=index            -> { "<section_key>": {content, image_url, updated_at}, ... }
@@ -37,6 +38,12 @@ respond(function () {
 
     switch (request_method()) {
         case 'GET':
+            // Past calendar events turn "Concluded" by themselves (saved, so the homepage sees it too).
+            try {
+                calendar_auto_conclude_saved($slug);
+            } catch (Throwable $e) {
+                error_log('[fsia-cms] calendar auto-conclude: ' . $e->getMessage());
+            }
             $key = query_param('key');
             if ($key !== null && $key !== '') {
                 $st = db()->prepare('SELECT content, image_url, updated_at FROM page_sections WHERE page_slug = ? AND section_key = ?');
@@ -77,6 +84,9 @@ respond(function () {
                 'INSERT INTO page_sections (page_slug, section_key, content, image_url) VALUES (?, ?, ?, ?)
                  ON DUPLICATE KEY UPDATE content = VALUES(content), image_url = VALUES(image_url)'
             )->execute([$slug, $key, $json, $image]);
+            if ($key === 'calendar_events') {
+                calendar_auto_conclude_saved($slug);
+            }
 
             $st = db()->prepare('SELECT content, image_url, updated_at FROM page_sections WHERE page_slug = ? AND section_key = ?');
             $st->execute([$slug, $key]);

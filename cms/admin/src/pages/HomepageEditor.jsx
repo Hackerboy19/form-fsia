@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, assetUrl } from '../lib/api';
 import { PageHeader } from '../components/Layout';
 import { Field, SelectField, Toggle } from '../components/Field';
 import ImageUpload from '../components/ImageUpload';
+import DocUpload from '../components/DocUpload';
 import ListEditor, { newId, scheduleStatus } from '../components/ListEditor';
 import { useToast } from '../lib/toast';
 import DEFAULTS from '../lib/homeDefaults.json';
@@ -204,13 +205,22 @@ const VALIDATORS = {
       s.startDate && s.endDate && s.startDate > s.endDate && `Slide ${named(s, i)}: the end date is before the start date.`,
     ]).filter(Boolean),
   ],
-  calendar_events: ({ items }) =>
-    items.flatMap((e, i) => [
+  calendar_events: ({ items, types, formPages }) => [
+    ...(Array.isArray(formPages?.rules) ? formPages.rules : []).flatMap((r, i) => [
+      !String(r.pages || '').trim() && `Category-wise calendar, rule ${i + 1}: enter the pages it is for.`,
+      !(r.types || []).length && `Category-wise calendar, rule ${i + 1}: tick at least one category.`,
+    ]),
+    ...(Array.isArray(types) ? types : []).map((t, i) => !t.label?.trim() && `Your own event type ${i + 1} needs a name.`),
+    ...items.flatMap((e, i) => [
       !e.title?.trim() && `Event ${i + 1} needs a title.`,
       !/^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && `Event ${named(e, i)} needs a date.`,
       e.endDate && e.endDate < e.date && `Event ${named(e, i)}: the end date is before the start date.`,
       !isUrl(e.ctaUrl) && `Event ${named(e, i)}: the button link must start with https:// or /.`,
-    ]).filter(Boolean),
+      e.pdfUrl && !isUrl(e.pdfUrl) && `Event ${named(e, i)}: the PDF link must start with https:// or /.`,
+      e.pptUrl && !isUrl(e.pptUrl) && `Event ${named(e, i)}: the PPT link must start with https:// or /.`,
+      e.videoUrl && !isUrl(e.videoUrl) && `Event ${named(e, i)}: the video link must start with https:// or /.`,
+    ]),
+  ].filter(Boolean),
   advertisement: ({ items }) =>
     items.flatMap((a, i) => [
       !a.image && `Ad ${named(a, i)} needs a desktop image.`,
@@ -367,7 +377,227 @@ const EVENT_STATUS = [
   { value: 'closing_soon', label: 'Closing soon' },
   { value: 'concluded', label: 'Concluded' },
 ];
-const typeColor = (t) => EVENT_TYPES.find((x) => x.value === t)?.color || '#94a3b8';
+// Built-in types plus the ones added under "Event types" (saved as content.types).
+const allTypes = (custom) => [...EVENT_TYPES, ...(Array.isArray(custom) ? custom : []).filter((t) => t && t.value)];
+const typeColor = (t, custom) => allTypes(custom).find((x) => x.value === t)?.color || '#94a3b8';
+
+// Which event categories each group of form pages shows. First matching rule wins;
+// pages no rule matches show every category.
+// Pages of the site's Registration menu (header1806.php), for the page dropdown in each rule.
+const REGISTRATION_PAGES = [
+  { group: 'Pageants', items: [
+    ['/forever-miss-india-new.php', 'Forever Miss India'],
+    ['/forever-mrs-india-new.php', 'Forever Mrs India'],
+    ['/forever-miss-teen-india-new.php', 'Forever Miss Teen India'],
+    ['/miss-fsia-international-2024.php', 'Miss FSIA International'],
+    ['/mrs-fsia-international-2024.php', 'Mrs FSIA International'],
+    ['/miss-world-beauty-pageant.php', 'Miss World'],
+    ['/mrs-world-beauty-pageant.php', 'Mrs World'],
+    ['/miss-universe-beauty-pageant.php', 'Miss Universe'],
+    ['/mrs-universe-beauty-pageant.php', 'Mrs Universe'],
+    ['/miss-*', 'All Miss state pages (Miss Rajasthan, Miss Delhi…)'],
+    ['/mrs-*', 'All Mrs state pages (Mrs Rajasthan, Mrs Delhi…)'],
+  ] },
+  { group: 'Awards', items: [
+    ['/super-hero-award.php', 'Super Hero Award'],
+    ['/super-woman-award.php', 'Super Woman Award'],
+    ['/business-awards.php', 'Business Awards'],
+    ['/bharat-national-awards.php', 'Bharat National Awards'],
+    ['/international-award.php', 'International Award'],
+    ['/infinity-achievers', 'Infinity Achievers'],
+    ['/forever-achievers', 'Forever Achievers'],
+    ['/nominate-yourself', 'Nominate Yourself'],
+  ] },
+  { group: 'Others', items: [
+    ['/star-india-kids-contest.php', 'Forever Star Kids'],
+    ['/fashion-designer.php', 'Fashion Designers'],
+    ['/makeup-artist.php', 'Makeup Artists'],
+    ['/bharat-couture-week-fashion-week.php', 'Bharat Couture Week'],
+    ['/channel-partner', 'Channel Partner'],
+  ] },
+];
+const PAGE_LABEL = Object.fromEntries(REGISTRATION_PAGES.flatMap((g) => g.items));
+const splitPages = (str) => String(str || '').split(',').map((x) => x.trim()).filter(Boolean);
+const groupPages = (name) => REGISTRATION_PAGES.find((g) => g.group === name).items.map(([v]) => v);
+
+const RULE_PRESETS = [
+  { label: 'Pageant pages', pages: groupPages('Pageants').join(', '), types: ['audition', 'pageant', 'ceremony', 'workshop'] },
+  { label: 'Award pages', pages: groupPages('Awards').join(', '), types: ['award'] },
+];
+
+/** Multi-select dropdown of the Registration pages; the value stays a comma-separated list. */
+function PagePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [other, setOther] = useState('');
+  const box = useRef(null);
+  const sel = splitPages(value);
+  const set = (list) => onChange([...new Set(list)].join(', '));
+  const toggle = (v) => set(sel.includes(v) ? sel.filter((x) => x !== v) : [...sel, v]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+  const match = (v, l) => !q || (l + ' ' + v).toLowerCase().includes(q.toLowerCase());
+  const addOther = () => {
+    let v = other.trim();
+    if (!v) return;
+    if (!v.startsWith('/')) v = '/' + v.replace(/^https?:\/\/[^/]+\/?/i, '');
+    set([...sel, v]);
+    setOther('');
+  };
+
+  return (
+    <div ref={box} className="relative min-w-[240px] flex-1">
+      <button type="button" onClick={() => setOpen(!open)}
+        className="input flex min-h-[42px] w-full flex-wrap items-center gap-1.5 text-left">
+        {sel.length === 0 && <span className="text-slate-400">Select registration pages…</span>}
+        {sel.map((v) => (
+          <span key={v} className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-semibold text-slate-700">
+            {PAGE_LABEL[v] ? PAGE_LABEL[v].replace(/ \(.*\)$/, '') : v}
+            <span role="button" tabIndex={-1} className="text-slate-400 hover:text-red-600" onClick={(e) => { e.stopPropagation(); toggle(v); }}>×</span>
+          </span>
+        ))}
+        <span className="ml-auto pl-1 text-slate-400">▾</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 z-30 mt-1 max-h-[380px] overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+          <input className="input mb-2 text-sm" placeholder="Search pages…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+          {REGISTRATION_PAGES.map((g) => {
+            const items = g.items.filter(([v, l]) => match(v, l));
+            if (!items.length) return null;
+            const all = items.every(([v]) => sel.includes(v));
+            return (
+              <div key={g.group} className="mb-2">
+                <div className="flex items-center justify-between px-2 py-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{g.group}</span>
+                  <button type="button" className="text-[11px] font-semibold text-gold-dark hover:underline"
+                    onClick={() => set(all ? sel.filter((x) => !items.some(([v]) => v === x)) : [...sel, ...items.map(([v]) => v)])}>
+                    {all ? 'Clear all' : 'Select all'}
+                  </button>
+                </div>
+                {items.map(([v, l]) => (
+                  <label key={v} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-cream">
+                    <input type="checkbox" className="h-4 w-4" checked={sel.includes(v)} onChange={() => toggle(v)} />
+                    <span className="flex-1">{l}</span>
+                    <span className="text-[10px] text-slate-400">{v}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+          <div className="mt-1 flex gap-2 border-t border-slate-100 px-1 pt-2">
+            <input className="input flex-1 text-xs" placeholder="Other page, e.g. /quickapply" value={other}
+              onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOther(); } }} />
+            <button type="button" className="btn-ghost text-xs" onClick={addOther}>Add</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryRules({ content, setContent }) {
+  const fp = content.formPages || {};
+  const rules = Array.isArray(fp.rules) ? fp.rules : [];
+  const types = allTypes(content.types);
+  const setRules = (next) => setContent({ ...content, formPages: { ...fp, rules: next } });
+  const add = (preset) => setRules([...rules, { id: newId('rule'), pages: preset?.pages || '', types: preset?.types || [] }]);
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4">
+      <p className="text-sm font-semibold">Category-wise calendar</p>
+      <p className="mb-3 text-xs text-slate-500">
+        Pick registration pages from the dropdown, then tick the categories their calendar shows. The first rule that matches a page is used; pages no rule matches show all categories.
+      </p>
+      <div className="space-y-3">
+        {rules.map((r, i) => {
+          const patch = (p) => setRules(rules.map((x, j) => (j === i ? { ...x, ...p } : x)));
+          const on = (v) => (r.types || []).includes(v);
+          return (
+            <div key={r.id || i} className="rounded-lg border border-slate-200 bg-cream/50 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Rule {i + 1} · Pages</span>
+                <PagePicker value={r.pages} onChange={(pages) => patch({ pages })} />
+                <button type="button" className="text-xs font-semibold text-red-600" onClick={() => setRules(rules.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="self-center text-xs font-bold text-slate-500">Show:</span>
+                {types.map((t) => (
+                  <label key={t.value} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${on(t.value) ? 'border-gold bg-white font-semibold' : 'border-slate-200 text-slate-500'}`}>
+                    <input type="checkbox" className="h-3.5 w-3.5" checked={on(t.value)}
+                      onChange={(e) => patch({ types: e.target.checked ? [...(r.types || []), t.value] : (r.types || []).filter((x) => x !== t.value) })} />
+                    <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />{t.label || '(unnamed)'}
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {RULE_PRESETS.map((p) => (
+          <button key={p.label} type="button" className="rounded-lg border border-dashed border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-cream" onClick={() => add(p)}>+ {p.label}</button>
+        ))}
+        <button type="button" className="rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-cream" onClick={() => add()}>+ Custom rule</button>
+      </div>
+    </div>
+  );
+}
+
+function EventTypesCard({ content, setContent }) {
+  const custom = Array.isArray(content.types) ? content.types : [];
+  const usedBy = (v) => content.items.filter((e) => e.type === v).length;
+  const setCustom = (types) => setContent({ ...content, types });
+  const add = () => {
+    let value = `c-${newId('t').slice(-6)}`;
+    while (allTypes(custom).some((t) => t.value === value)) value = `c-${newId('t').slice(-6)}`;
+    setCustom([...custom, { value, label: '', color: '#6366f1' }]);
+  };
+  const Used = ({ v }) => {
+    const n = usedBy(v);
+    return n ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{n} event{n > 1 ? 's' : ''} · shown on site</span>
+      : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">not used · hidden on site</span>;
+  };
+
+  return (
+    <div className="card mb-5 space-y-4 p-5">
+      <div>
+        <h3 className="font-display text-base font-bold">Event types (calendar colour + filter)</h3>
+        <p className="mt-1 text-xs text-slate-500">The website's filter buttons and colour key show only the types that at least one event uses. Add your own type below, then pick it in an event's Type.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {EVENT_TYPES.map((t) => (
+          <span key={t.value} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />{t.label}<Used v={t.value} />
+          </span>
+        ))}
+      </div>
+      {custom.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Your own types</p>
+          {custom.map((t, i) => {
+            const n = usedBy(t.value);
+            const patch = (p) => setCustom(custom.map((x, j) => (j === i ? { ...x, ...p } : x)));
+            return (
+              <div key={t.value} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-2">
+                <input type="color" aria-label="Colour" className="h-9 w-12 cursor-pointer rounded border border-slate-200 bg-white p-0.5" value={t.color || '#6366f1'} onChange={(e) => patch({ color: e.target.value })} />
+                <input className="input min-w-[200px] flex-1" placeholder="Type name, e.g. Fashion Show" maxLength={40} value={t.label} onChange={(e) => patch({ label: e.target.value })} />
+                <Used v={t.value} />
+                <button type="button" className="text-xs font-semibold text-red-600 disabled:cursor-not-allowed disabled:text-slate-300" disabled={n > 0}
+                  title={n > 0 ? 'Change the Type of those events first' : 'Remove this type'}
+                  onClick={() => setCustom(custom.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button type="button" className="rounded-lg border border-dashed border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-cream" onClick={add}>+ Add your own type</button>
+    </div>
+  );
+}
 const fmtDate = (d) => (d ? new Date(`${d}T00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date');
 
 function CalendarEditor({ content, setContent }) {
@@ -392,12 +622,10 @@ function CalendarEditor({ content, setContent }) {
           label="Hide automatically when every event has ended"
           description="Once the last event's date (or end date) is past, or all are marked Concluded, the calendar disappears from the form pages by itself."
         />
+        <CategoryRules content={content} setContent={setContent} />
       </div>
+      <EventTypesCard content={content} setContent={setContent} />
       <div className="card mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-xs">
-        <span className="font-bold uppercase tracking-wider text-slate-500">Calendar colours</span>
-        {EVENT_TYPES.map((t) => (
-          <span key={t.value} className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />{t.label}</span>
-        ))}
         <span className="inline-flex items-center gap-1.5"><span className="text-gold-dark">★</span>Featured (Season Peak)</span>
         <label className="ml-auto inline-flex items-center gap-2">
           <input type="checkbox" checked={sortByDate} onChange={(e) => setSortByDate(e.target.checked)} /> Sort by date
@@ -418,10 +646,10 @@ function CalendarEditor({ content, setContent }) {
           title: `${e.highlight ? '★ ' : ''}${e.title}`,
           subtitle: `${fmtDate(e.date)}${e.city ? ` • ${e.city}` : ''}`,
           image: e.image,
-          dot: typeColor(e.type),
+          dot: typeColor(e.type, content.types),
           badge: { text: EVENT_STATUS.find((s) => s.value === e.status)?.label || e.status, tone: e.status === 'concluded' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700' },
         })}
-        renderForm={(e, set) => <EventForm key={e.id} ev={e} set={set} />}
+        renderForm={(e, set) => <EventForm key={e.id} ev={e} set={set} types={allTypes(content.types).map((t) => ({ value: t.value, label: t.label || '(unnamed type)' }))} />}
       />
     </>
   );
@@ -429,7 +657,7 @@ function CalendarEditor({ content, setContent }) {
 
 const splitList = (s, sep) => s.split(sep).map((x) => x.trim()).filter(Boolean);
 
-function EventForm({ ev: e, set }) {
+function EventForm({ ev: e, set, types }) {
   // Keep the raw text while typing so commas/new lines are not eaten.
   const [keywords, setKeywords] = useState((e.keywords || []).join(', '));
   const [highlights, setHighlights] = useState((e.highlights || []).join('\n'));
@@ -438,7 +666,7 @@ function EventForm({ ev: e, set }) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2"><Field label="Event title" value={e.title} onChange={(title) => set({ title })} max={120} /></div>
-        <SelectField label="Type (calendar colour + filter)" value={e.type} options={EVENT_TYPES} onChange={(type) => set({ type })} />
+        <SelectField label="Type (calendar colour + filter)" value={e.type} options={types} onChange={(type) => set({ type })} />
         <SelectField label="Status" value={e.status} options={EVENT_STATUS} onChange={(status) => set({ status })} />
         <Field label="Date" type="date" value={e.date} onChange={(date) => set({ date })} />
         <Field label="End date (optional)" type="date" value={e.endDate} onChange={(endDate) => set({ endDate })} hint="For events spanning several days" />
@@ -468,6 +696,18 @@ function EventForm({ ev: e, set }) {
         <Field label="Button link" value={e.ctaUrl} onChange={(ctaUrl) => set({ ctaUrl })} />
       </div>
       <ImageUpload label="Event image (optional)" value={e.image} onChange={(image) => set({ image })} size={{ w: 1600, h: 900, fit: 'cover' }} />
+
+      <div className="rounded-xl border border-gold-light bg-cream/60 p-4">
+        <h3 className="mb-1 font-display text-base font-bold">PDF, PPT &amp; Video (optional)</h3>
+        <p className="mb-3 text-xs text-slate-500">Brochure, schedule, rules or a promo video for this event. Visitors get a “View PDF” / “View PPT” / “Watch Video” button on the calendar; it opens right on the page.</p>
+        <div className="space-y-4">
+          <DocUpload label="PDF file" kind="pdf" value={e.pdfUrl} onChange={(pdfUrl) => set({ pdfUrl })} />
+          <DocUpload label="PPT file" kind="ppt" value={e.pptUrl} onChange={(pptUrl) => set({ pptUrl })} hint="PowerPoint (.ppt or .pptx)" />
+          <DocUpload label="Video" kind="video" value={e.videoUrl} onChange={(videoUrl) => set({ videoUrl })}
+            linkPlaceholder="…or paste a YouTube / Instagram / Google Drive / MP4 link"
+            hint="Upload an MP4 (up to 100 MB) or paste a YouTube link. YouTube is best for big videos." />
+        </div>
+      </div>
     </div>
   );
 }
