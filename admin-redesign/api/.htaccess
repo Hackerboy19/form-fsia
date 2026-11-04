@@ -1,0 +1,8 @@
+# Hostinger (LiteSpeed/Apache): only index.php and install.php may be opened from the web.
+Options -Indexes
+<FilesMatch "^(config|config\.sample|lib)\.php$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.(sql|log|md|json|bak)$">
+  Require all denied
+</FilesMatch>
