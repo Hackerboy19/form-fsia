@@ -504,7 +504,7 @@
             can.del ? h('button', { type: 'button', class: 'btn btn-danger-ghost', onclick: function () { removeMany([id]); } }, icon('trash', 16), 'Delete') : h('span'),
             h('span', { class: 'muted small' }, idx >= 0 ? (idx + 1) + ' of ' + F.fmt.num(live.length) + ' in this list' : ''),
             h('button', { type: 'button', class: 'btn', onclick: closeDrawer }, 'Close')));
-        dlg.addEventListener('close', function () { openId = null; syncUrl(); if (dlg) { dlg.remove(); dlg = null; } if (returnFocus && returnFocus.focus && document.contains(returnFocus)) returnFocus.focus(); });
+        dlg.addEventListener('close', function () { openId = null; if (location.hash.indexOf('#/registrations') === 0) syncUrl(); if (dlg) { dlg.remove(); dlg = null; } if (returnFocus && returnFocus.focus && document.contains(returnFocus)) returnFocus.focus(); });
         dlg.addEventListener('click', function (e) { if (e.target === dlg) closeDrawer(); });
         dlg.addEventListener('keydown', function (e) {
           if (/TEXTAREA|INPUT|SELECT/.test(e.target.tagName)) return;
