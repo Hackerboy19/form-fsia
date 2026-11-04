@@ -1,0 +1,7 @@
+# Vercel only hosts the admin preview. The PHP site and API run on Hostinger and must never be served as source here.
+*.php
+**/*.php
+admin-redesign/api
+admin-redesign/tests
+admin-redesign/docs
+assets-new

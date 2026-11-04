@@ -1,0 +1,59 @@
+/* FSIA form pages: an extra motion layer on top of main.css / forms-master.css.
+   Everything here is opt-in through classes that assets-new/js/fsia-motion.js adds, so if the script does not
+   run nothing is hidden. All motion is turned off for visitors who ask their device for reduced motion. */
+
+:root { --fm-ease: cubic-bezier(.2, .7, .2, 1); --fm-gold: #f59e0b; --fm-gold-2: #fcd34d; }
+
+/* ---------- scroll reveal ---------- */
+.fm-reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s var(--fm-ease), transform .7s var(--fm-ease); transition-delay: var(--fm-delay, 0s); }
+.fm-reveal.fm-in { opacity: 1; transform: none; }
+
+/* ---------- reading progress ---------- */
+.fm-progress { position: fixed; z-index: 10000; top: 0; left: 0; height: 3px; width: 100%; transform-origin: 0 50%; transform: scaleX(var(--fm-p, 0));
+  background: linear-gradient(90deg, #be123c, var(--fm-gold), var(--fm-gold-2)); box-shadow: 0 0 10px rgba(245, 158, 11, .6); pointer-events: none; }
+
+/* ---------- hero sparkles ---------- */
+.fm-hero { position: relative; isolation: isolate; }
+.fm-sparkles { position: absolute; inset: 0 0 auto 0; height: 520px; overflow: hidden; pointer-events: none; z-index: -1; }
+.fm-sparkles i { position: absolute; width: var(--s, 6px); height: var(--s, 6px); border-radius: 50%; left: var(--x); top: var(--y);
+  background: radial-gradient(circle, #fff7d6 0%, var(--fm-gold-2) 40%, rgba(245, 158, 11, 0) 70%); opacity: 0;
+  animation: fm-twinkle var(--d, 4s) ease-in-out var(--w, 0s) infinite; }
+@keyframes fm-twinkle { 0%, 100% { opacity: 0; transform: translateY(0) scale(.6); } 40% { opacity: .9; } 60% { opacity: .8; transform: translateY(-18px) scale(1); } }
+.fm-glow { position: absolute; z-index: -1; width: 460px; height: 460px; border-radius: 50%; filter: blur(80px); opacity: .35; pointer-events: none; }
+.fm-glow.a { left: -120px; top: 40px; background: radial-gradient(circle, rgba(245, 158, 11, .7), transparent 65%); animation: fm-drift-a 16s ease-in-out infinite; }
+.fm-glow.b { right: -140px; top: 120px; background: radial-gradient(circle, rgba(225, 29, 72, .45), transparent 65%); animation: fm-drift-b 19s ease-in-out infinite; }
+@keyframes fm-drift-a { 50% { transform: translate(80px, 50px) scale(1.15); } }
+@keyframes fm-drift-b { 50% { transform: translate(-90px, -30px) scale(.9); } }
+
+/* ---------- hero title ---------- */
+.fm-title { animation: fm-rise .9s var(--fm-ease) both; }
+.fm-title + * { animation: fm-rise .9s .12s var(--fm-ease) both; }
+@keyframes fm-rise { from { opacity: 0; transform: translateY(16px) scale(.98); letter-spacing: .02em; } to { opacity: 1; transform: none; } }
+
+/* ---------- cards ---------- */
+.fsia-crit, .info-box, .fsia-s3d { transition: transform .35s var(--fm-ease), box-shadow .35s var(--fm-ease); }
+.fsia-crit:hover { transform: translateY(-4px); box-shadow: 0 18px 34px -18px rgba(180, 83, 9, .45); }
+.fm-tilt { transform: perspective(900px) rotateX(var(--fm-rx, 0deg)) rotateY(var(--fm-ry, 0deg)); }
+
+/* ---------- form fields ---------- */
+#registrationForm input:not([type=checkbox]):not([type=radio]):not([type=file]), #registrationForm select, #registrationForm textarea {
+  transition: border-color .2s, box-shadow .25s var(--fm-ease), transform .2s var(--fm-ease); }
+#registrationForm input:not([type=checkbox]):not([type=radio]):focus, #registrationForm select:focus, #registrationForm textarea:focus {
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, .18), 0 6px 18px -10px rgba(180, 83, 9, .5); transform: translateY(-1px); }
+
+/* ---------- buttons ---------- */
+#mainSubmitBtn, .reg-btn, .fsia-otp-btn { position: relative; overflow: hidden; }
+#mainSubmitBtn::after, .reg-btn::after, .fsia-otp-btn::after { content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%); pointer-events: none; }
+#mainSubmitBtn:not(.cursor-not-allowed):hover::after, .reg-btn:hover::after, .fsia-otp-btn:hover::after { animation: fm-shine .9s ease; }
+#mainSubmitBtn:not(.cursor-not-allowed) { animation: fm-ready .6s var(--fm-ease); }
+#mainSubmitBtn:active, .reg-btn:active, .fsia-otp-btn:active { transform: scale(.98); }
+@keyframes fm-shine { to { transform: translateX(120%); } }
+@keyframes fm-ready { 0% { transform: scale(.96); } 60% { transform: scale(1.02); } 100% { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-reveal { opacity: 1; transform: none; transition: none; }
+  .fm-sparkles, .fm-glow, .fm-progress { display: none; }
+  .fm-title, .fm-title + *, #mainSubmitBtn { animation: none !important; }
+  .fsia-crit:hover, .fm-tilt { transform: none; }
+}
