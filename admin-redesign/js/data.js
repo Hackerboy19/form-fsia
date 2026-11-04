@@ -62,8 +62,11 @@
     [146, 'forever-fashion-week', 'Forever Fashion Week', 'events'],
     [29, 'india-fashion-week-fashion-show', 'India Fashion Week', 'events'],
     [162, 'bharat-couture-week-fashion-week', 'Bharat Couture Week', 'events'],
-    [145, 'miss-universe-registration', 'Miss Universe', 'events']
+    [145, 'miss-universe-registration', 'Miss Universe', 'events'],
+    // Live form posting to saveworld.php; its more_pages id is not known yet, 9001 is a placeholder.
+    [9001, 'miss-world-beauty-pageant', 'Miss World', 'events']
   ];
+  var ID_UNKNOWN = { 9001: 1 };
 
   F.STATE_NAMES = STATES.map(function (s) { return s[3]; }).sort();
 
@@ -91,7 +94,7 @@
   var order = { miss: 0, mrs: 1, business: 2, events: 3 };
   forms.sort(function (a, b) { return order[a.group] - order[b.group] || a.title.localeCompare(b.title); });
   var formsById = {};
-  forms.forEach(function (f) { f.live = 'https://www.fsia.in/' + f.slug; formsById[f.id] = f; });
+  forms.forEach(function (f) { f.live = 'https://www.fsia.in/' + f.slug + (f.id === 9001 ? '.php' : ''); f.idKnown = !ID_UNKNOWN[f.id]; formsById[f.id] = f; });
 
   /* ---------- team, roles, permissions ---------- */
   F.ROLES = [
@@ -194,6 +197,17 @@
     raw[CITYFSIA_FORMS[f.id] ? 'cityfsia' : 'city'] = city;
     raw.state = state;
     if (f.group === 'miss' || f.group === 'mrs') raw.landing = pick(SOURCES);
+    if (f.id === 9001) {
+      // saveworld.php: country code + local number, a hidden combined mobile, country and the category
+      var abroad = r() < 0.25 ? pick([['Nepal', '977', 'Bagmati', 'Kathmandu'], ['United Arab Emirates', '971', 'Dubai', 'Dubai'], ['United Kingdom', '44', 'England', 'London']]) : null;
+      delete raw.mobile;
+      raw.regtype = 'Miss World'; raw.ncategory = 'Miss World 2026';
+      raw.country = abroad ? abroad[0] : 'India';
+      raw.ccode = '+' + (abroad ? abroad[1] : '91');
+      raw.mobile_local = abroad ? String(int(5000000000, 5999999999)) : mobile;
+      raw.mobile = raw.ccode + raw.mobile_local;
+      if (abroad) { raw.state = abroad[2]; raw.city = abroad[3]; }
+    }
     if (f.id === 145) { raw.instagram = '@' + firstName.toLowerCase() + int(10, 99); raw.qualification = pick(['Graduate', '12th pass', 'Post graduate']); raw.skills = pick(['Dance', 'Public speaking', 'Singing', 'Acting']); }
     if (LEGACY_FORMS[f.id] && daysAgo > LEGACY_DAYS) {
       raw.education = pick(['Graduate', '12th pass', 'Post graduate', 'Diploma']); raw.totalmarks = int(55, 95) + '%';
@@ -261,7 +275,7 @@
     var owner = callers.filter(function (u) { return u.states.indexOf(p.state) >= 0; })[0];
     return {
       id: id, formId: f.id, formTitle: f.title, group: f.group, createdAt: row.createdAt, verified: row.verified, status: row.status,
-      name: p.name || 'Unnamed applicant', mobile: p.mobile, email: p.email, dob: p.dob, age: p.age, ageDerived: p.ageDerived,
+      name: p.name || 'Unnamed applicant', cc: p.cc, mobile: p.mobile, email: p.email, country: p.country, dob: p.dob, age: p.age, ageDerived: p.ageDerived,
       city: p.city, state: p.state, source: p.source, extras: p.extras, profileIssues: p.issues, raw: row.raw,
       assignedTo: owner && q[3] < 0.75 ? owner.id : null, payment: pay
     };
@@ -271,7 +285,7 @@
   /* ---------- OTP log ---------- */
   var otps = regs.map(function (g) {
     var st = g.verified ? 'verified' : (r() < 0.6 ? 'expired' : 'failed');
-    return { id: g.id, mobile: g.mobile, formId: g.formId, formTitle: g.formTitle, at: g.createdAt - int(60, 400) * 1000, status: st, attempts: st === 'verified' ? int(1, 2) : st === 'failed' ? 5 : int(0, 2) };
+    return { id: g.id, cc: g.cc, mobile: g.mobile, formId: g.formId, formTitle: g.formTitle, at: g.createdAt - int(60, 400) * 1000, status: st, attempts: st === 'verified' ? int(1, 2) : st === 'failed' ? 5 : int(0, 2) };
   });
   for (i = 0; i < 90; i++) {
     var ff = pickForm();

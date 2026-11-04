@@ -139,7 +139,7 @@
       }
       if (s && allowed('registrations')) {
         if (s.length >= 2) F.reg.all().filter(function (g) { return num ? g.mobile.indexOf(digits) >= 0 : g._hay.indexOf(s) >= 0; }).slice(0, 6)
-          .forEach(function (g) { out.push({ group: 'Registrations', label: g.name, sub: g.formTitle + ' · ' + F.fmt.phone(g.mobile), hash: '#/registrations?open=' + g.id, ico: 'users' }); });
+          .forEach(function (g) { out.push({ group: 'Registrations', label: g.name, sub: g.formTitle + ' · ' + F.phone.show(g), hash: '#/registrations?open=' + g.id, ico: 'users' }); });
       }
       return out;
     }

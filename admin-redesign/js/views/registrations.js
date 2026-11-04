@@ -12,7 +12,7 @@
   function today() { return F.fmt.ymd(Date.now()); }
   function userName(id) { var u = id && F.team.user(id); return u ? u.name : 'Nobody'; }
   function first(name) { return name.split(' ')[0]; }
-  function okMobile(g) { return /^[6-9]\d{9}$/.test(g.mobile); }
+  function okMobile(g) { return F.phone.valid(g); }
   function parse(query) {
     var f = Object.assign({}, DEFAULTS);
     Object.keys(DEFAULTS).forEach(function (k) { if (query.has(k)) f[k] = query.get(k); });
@@ -71,11 +71,11 @@
     var sensitive = F.can('registrations.sensitive');
     var extraCols = [];
     rows.forEach(function (g) { g.extras.forEach(function (e) { if (!e.secret && (sensitive || !e.sensitive) && extraCols.indexOf(e.label) < 0) extraCols.push(e.label); }); });
-    var head = ['ID', 'Name', 'Mobile', 'Email', 'Date of birth', 'Age', 'City', 'State', 'Form', 'Found us via', 'OTP verified', 'Status', 'Assigned to',
+    var head = ['ID', 'Name', 'Mobile', 'Email', 'Date of birth', 'Age', 'City', 'State', 'Country', 'Form', 'Found us via', 'OTP verified', 'Status', 'Assigned to',
       'Offer', 'Amount', 'Payment status', 'Payment link', 'Paid on', 'Payment ref', 'Applied at', 'Data check', 'Notes'].concat(extraCols);
     var body = rows.map(function (g) {
       var p = g.payment;
-      var row = [g.id, g.name, g.mobile ? '+91' + g.mobile : '', g.email, g.dob, g.age == null ? '' : g.age, g.city, g.state, g.formTitle, g.source, g.verified ? 'Yes' : 'No',
+      var row = [g.id, g.name, F.phone.full(g), g.email, g.dob, g.age == null ? '' : g.age, g.city, g.state, g.country, g.formTitle, g.source, g.verified ? 'Yes' : 'No',
         statusLabel(g.status), g.assignedTo ? userName(g.assignedTo) : '', p.offer, p.amount, PAY[p.status], p.url, p.paidAt ? new Date(p.paidAt).toISOString() : '', p.ref,
         new Date(g.createdAt).toISOString(), g.issues.map(function (i) { return i.text; }).join('; '), g.notes];
       extraCols.forEach(function (label) { var e = g.extras.filter(function (x) { return x.label === label; })[0]; row.push(e ? e.value : ''); });
@@ -300,9 +300,9 @@
             h('button', { type: 'button', class: 'who-name', onclick: function () { openDrawer(g.id); } }, g.name),
             issues ? h('span', { class: 'issue-dot', title: g.issues.map(function (i) { return i.text; }).join('\n') }, icon('alert', 13), h('span', { class: 'sr-only' }, issues + ' data problem' + (issues > 1 ? 's' : ''))) : null,
             h('div', { class: 'muted small' }, g.formTitle + ' · ' + (g.age == null ? 'Age not given' : 'Age ' + g.age))))),
-          h('td', { 'data-label': 'Contact' }, h('div', { class: 'contact' }, h('span', { class: 'mono' + (okMobile(g) ? '' : ' bad') }, F.fmt.phone(g.mobile)),
-            okMobile(g) ? h('a', { class: 'btn-icon sm', href: 'https://wa.me/91' + g.mobile, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'WhatsApp ' + g.name, title: 'WhatsApp' }, icon('chat', 15)) : null,
-            okMobile(g) ? h('a', { class: 'btn-icon sm', href: 'tel:+91' + g.mobile, 'aria-label': 'Call ' + g.name, title: 'Call' }, icon('phone', 15)) : null),
+          h('td', { 'data-label': 'Contact' }, h('div', { class: 'contact' }, h('span', { class: 'mono' + (okMobile(g) ? '' : ' bad') }, F.phone.show(g)),
+            okMobile(g) ? h('a', { class: 'btn-icon sm', href: F.phone.wa(g), target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'WhatsApp ' + g.name, title: 'WhatsApp' }, icon('chat', 15)) : null,
+            okMobile(g) ? h('a', { class: 'btn-icon sm', href: F.phone.tel(g), 'aria-label': 'Call ' + g.name, title: 'Call' }, icon('phone', 15)) : null),
             h('div', { class: 'small ' + (g.verified ? 'ok-text' : 'warn-text') }, g.verified ? '✓ OTP verified' : 'OTP not verified')),
           h('td', { 'data-label': 'City' }, g.city || h('span', { class: 'muted' }, 'Not given'), h('div', { class: 'muted small' }, g.state || 'State not given')),
           h('td', { 'data-label': 'Applied' }, h('span', { title: F.fmt.dateTime(g.createdAt) }, F.fmt.ago(g.createdAt)),
@@ -394,7 +394,7 @@
           F.audit.add('payment', note || ('Updated the offer and payment link for ' + g.name));
           refresh(); openDrawer(id, true); return true;
         }
-        var wa = okMobile(g) && p.url && F.profile.validUrl(p.url) ? 'https://wa.me/91' + g.mobile + '?text=' + encodeURIComponent(waText(g)) : null;
+        var wa = okMobile(g) && p.url && F.profile.validUrl(p.url) ? F.phone.wa(g) + '?text=' + encodeURIComponent(waText(g)) : null;
         var body = [
           h('div', { class: 'pay-head' }, h('div', null, h('div', { class: 'big' }, F.fmt.money(p.amount)), h('div', { class: 'muted small' }, p.offer || 'Audition fee')), badge),
           p.status === 'paid' ? h('p', { class: 'small ok-text' }, '✓ Received ' + F.fmt.dateTime(p.paidAt) + (p.ref ? ' · Ref ' + p.ref : '')) : null,
@@ -467,22 +467,23 @@
             h('section', null, h('h3', { class: 'dr-h' }, 'Status'), stSeg, can.edit ? null : h('p', { class: 'hint' }, icon('lock', 13), ' You can see the status but not change it.')),
             h('section', null, h('h3', { class: 'dr-h' }, 'Contact'),
               h('div', { class: 'contact-card' },
-                h('div', null, h('div', { class: 'mono big' + (okMobile(g) ? '' : ' bad') }, F.fmt.phone(g.mobile)), h('div', { class: 'muted small' }, g.email || 'No email given')),
+                h('div', null, h('div', { class: 'mono big' + (okMobile(g) ? '' : ' bad') }, F.phone.show(g)), h('div', { class: 'muted small' }, g.email || 'No email given')),
                 h('div', { class: 'contact-actions' },
-                  okMobile(g) ? h('a', { class: 'btn btn-sm', href: 'https://wa.me/91' + g.mobile, target: '_blank', rel: 'noopener noreferrer' }, icon('chat', 15), 'WhatsApp') : null,
-                  okMobile(g) ? h('a', { class: 'btn btn-sm', href: 'tel:+91' + g.mobile }, icon('phone', 15), 'Call') : null,
+                  okMobile(g) ? h('a', { class: 'btn btn-sm', href: F.phone.wa(g), target: '_blank', rel: 'noopener noreferrer' }, icon('chat', 15), 'WhatsApp') : null,
+                  okMobile(g) ? h('a', { class: 'btn btn-sm', href: F.phone.tel(g) }, icon('phone', 15), 'Call') : null,
                   g.email && F.profile.validEmail(g.email) ? h('a', { class: 'btn btn-sm', href: 'mailto:' + g.email }, icon('mail', 15), 'Email') : null,
-                  g.mobile ? h('button', { type: 'button', class: 'btn btn-sm', onclick: function () { if (navigator.clipboard) navigator.clipboard.writeText(g.mobile).then(function () { F.toast('Mobile number copied'); }, function () {}); } }, icon('copy', 15), 'Copy number') : null))),
+                  g.mobile ? h('button', { type: 'button', class: 'btn btn-sm', onclick: function () { if (navigator.clipboard) navigator.clipboard.writeText(F.phone.full(g)).then(function () { F.toast('Mobile number copied'); }, function () {}); } }, icon('copy', 15), 'Copy number') : null))),
             paymentSection(g, id),
             h('section', null, h('h3', { class: 'dr-h' }, 'Profile'),
               h('dl', { class: 'kvs' },
                 kv('Full name', g.name, byField.name),
-                kv('Mobile number', F.fmt.phone(g.mobile), byField.mobile),
+                kv('Mobile number', F.phone.show(g), byField.mobile),
                 kv('Email', F.fmt.val(g.email), byField.email),
                 kv('Date of birth', g.dob ? F.fmt.date(new Date(g.dob + 'T00:00:00').getTime()) : 'Not provided', byField.dob),
                 kv('Age', g.age == null ? 'Not provided' : g.age + (g.ageDerived ? ' (worked out from date of birth)' : ''), byField.age),
                 kv('City', F.fmt.val(g.city), byField.city),
                 kv('State', F.fmt.val(g.state), byField.state),
+                g.country ? kv('Country', g.country) : null,
                 kv('Found us via', F.fmt.val(g.source)),
                 kv('OTP check', h('span', { class: 'badge ' + (g.verified ? 'ok' : 'warn') }, g.verified ? 'Number verified' : 'Not verified')),
                 kv('Applied', F.fmt.dateTime(g.createdAt)),

@@ -46,7 +46,7 @@
         F.fill(listHost, items.length ? items.map(function (x) {
           var m = F.store.page(x.id), n = filled(m), ok = n === CHECKED.length;
           return h('li', null, h('a', { class: 'pitem' + (x.id === id ? ' is-on' : ''), href: '#/pages/' + x.id, 'aria-current': x.id === id ? 'page' : null, onclick: function (e) { e.preventDefault(); if (x.id !== id) go('#/pages/' + x.id); } },
-            h('span', { class: 'pitem-main' }, h('strong', null, x.title), h('span', { class: 'muted small' }, '/' + x.slug + ' · ID ' + x.id)),
+            h('span', { class: 'pitem-main' }, h('strong', null, x.title), h('span', { class: 'muted small' }, '/' + x.slug + (x.idKnown ? ' · ID ' + x.id : ' · page ID not known yet'))),
             h('span', { class: 'badge ' + (ok ? 'ok' : 'warn'), title: ok ? 'All SEO fields filled' : 'Missing: ' + missing(m).join(', ') }, ok ? icon('check', 13) : icon('alert', 13), n + '/' + CHECKED.length)));
         }) : h('li', { class: 'empty small' }, h('span', { class: 'muted' }, 'No pages match.')));
         count.textContent = items.length + ' of ' + F.data.forms.length + ' pages';

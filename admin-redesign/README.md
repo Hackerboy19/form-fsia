@@ -39,9 +39,14 @@ pick a member to see the panel exactly as they would.
 
 The forms have changed over time, so the database holds rows in different shapes. Found in this repository:
 
-- `fname` on most forms, `firstName` on Channel Partner and Bharat Couture Week
+- Every form asks for the **full name**. Most post it as `fname`; Channel Partner and Bharat Couture Week post it as `firstName`. Both are read as the full name.
 - `city` on most forms, `cityfsia` on India Fashion Week and Miss Universe
 - `dob`, plus `birthday` / `birthmonth` / `birthyear` on the state forms
+- Miss World (`miss-world-beauty-pageant.php` → `saveworld.php`, live only, not in this repository) posts `country`,
+  `ccode` + `mobile_local` and a combined `mobile`, and `ncategory`. Numbers from other countries keep their country
+  code for display, calls and WhatsApp.
+- The live forms also post `fsia_source`, which the copies in this repository do not have yet, so the repository is
+  behind the live site. It is read as "Found us via".
 - Earlier versions of Celebrity PR Agency, Forever Fashion Week and India Fashion Week also asked for
   `education`, `totalmarks`, `instname`, `brandname`, `workexpr`, `address`, `kyc`, `comment`, `password`,
   `instagram`, `message`. Old rows still hold these.

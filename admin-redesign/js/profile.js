@@ -14,8 +14,10 @@
     age: ['age'],
     city: ['city', 'cityfsia'],
     state: ['state'],
-    source: ['landing']
+    country: ['country'],
+    source: ['landing', 'fsia_source']
   };
+  var PHONE_PARTS = ['ccode', 'country_code', 'mobile_local']; // Miss World: country code + local number
   var FOLDED = { birthday: 1, birthmonth: 1, birthyear: 1 }; // merged into dob when dob itself is empty
   var PLUMBING = { submit_reg: 1, code: 1 };                  // the submit button and the one-time OTP digits
   var EXTRA = {                                                // [label, sensitive, secret]
@@ -23,7 +25,7 @@
     workexpr: ['Work experience'], address: ['Address'], comment: ['About the applicant'], instagram: ['Instagram'],
     message: ['Message'], qualification: ['Qualification'], skills: ['Skills'], regtype: ['Registration type'],
     reg_type: ['Registration type'], category: ['Category'], fsia_category: ['FSIA category'], fsia_model_sub: ['Model sub-category'],
-    kyc: ['KYC documents', true], password: ['Password', true, true]
+    ncategory: ['Applied for'], kyc: ['KYC documents', true], password: ['Password', true, true]
   };
   var MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -31,7 +33,7 @@
   var ISSUES = {
     missing_name: ['Name is missing', 'Open the original form entry and add the name.'],
     missing_mobile: ['Mobile number is missing', 'Ask the applicant for a number. Without it you cannot call or use WhatsApp.'],
-    bad_mobile: ['Mobile number looks wrong', 'A valid number has 10 digits and starts with 6, 7, 8 or 9. Check with the applicant.'],
+    bad_mobile: ['Mobile number looks wrong', 'An Indian number has 10 digits and starts with 6, 7, 8 or 9. A number from another country needs its country code. Check with the applicant.'],
     missing_email: ['Email is missing', 'Ask the applicant for an email address.'],
     bad_email: ['Email looks wrong', 'It should look like name@example.com. Check for typos.'],
     missing_dob: ['Date of birth is missing', 'Ask the applicant for their date of birth.'],
@@ -57,6 +59,16 @@
     if (d.length === 11 && d.charAt(0) === '0') d = d.slice(1);
     return d;
   }
+  /* -> { cc: '91', mobile: local digits }. Handles '+91 98765 43210', '09876543210', '+977' + '9812345678'. */
+  function splitMobile(full, ccRaw, local) {
+    var cc = clean(ccRaw).replace(/\D/g, '');
+    var d = clean(full).replace(/\D/g, '');
+    if (!d && local) d = clean(local).replace(/\D/g, '');
+    else if (cc && cc !== '91' && d.indexOf(cc) === 0 && d.length > cc.length + 5) d = d.slice(cc.length);
+    if (!cc || cc === '91') return { cc: '91', mobile: mobileDigits(d) };
+    return { cc: cc, mobile: d.replace(/^0+/, '') };
+  }
+  function validMobile(cc, m) { return cc === '91' ? /^[6-9]\d{9}$/.test(m) : /^\d{6,14}$/.test(m); }
   function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
   function validUrl(v) {
     try { var u = new URL(v); return u.protocol === 'https:' && !!u.hostname; } catch (e) { return false; }
@@ -92,7 +104,7 @@
       });
       return found;
     }
-    var p = { name: take(ALIASES.name), email: take(ALIASES.email), city: take(ALIASES.city), state: take(ALIASES.state), source: take(ALIASES.source) };
+    var p = { name: take(ALIASES.name), email: take(ALIASES.email), city: take(ALIASES.city), state: take(ALIASES.state), country: take(ALIASES.country), source: take(ALIASES.source) };
     var mobileRaw = take(ALIASES.mobile), dobRaw = take(ALIASES.dob), ageRaw = take(ALIASES.age);
     var dobZero = /^0000-00-00/.test(String(raw.dob == null ? '' : raw.dob).trim()); // MySQL's "zero date" means a broken save, not a blank one
     var bd = take(['birthday']), bm = take(['birthmonth']), by = take(['birthyear']);
@@ -101,7 +113,10 @@
       if (mi) dobRaw = by + '-' + pad(mi) + '-' + pad(parseInt(bd, 10) || 0);
     }
 
-    p.mobile = mobileDigits(mobileRaw);
+    var ccRaw = take(['ccode', 'country_code']), local = take(['mobile_local']);
+    if (!mobileRaw) mobileRaw = local;
+    var ph = splitMobile(mobileRaw, ccRaw, local);
+    p.cc = ph.cc; p.mobile = ph.mobile;
     var dob = parseDob(dobRaw, now);
     if (!dobRaw && dobZero) dob.bad = true;
     p.dob = dob.iso;
@@ -123,7 +138,7 @@
     var issues = [];
     if (!p.name) issues.push(issue('missing_name', 'name'));
     if (!mobileRaw) issues.push(issue('missing_mobile', 'mobile'));
-    else if (!/^[6-9]\d{9}$/.test(p.mobile)) issues.push(issue('bad_mobile', 'mobile'));
+    else if (!validMobile(p.cc, p.mobile)) issues.push(issue('bad_mobile', 'mobile'));
     if (!p.email) issues.push(issue('missing_email', 'email'));
     else if (!validEmail(p.email)) issues.push(issue('bad_email', 'email'));
     if (dob.bad) issues.push(issue('bad_dob', 'dob'));
@@ -146,9 +161,9 @@
 
   F.profile = {
     normalize: normalize, checkPayment: checkPayment, validUrl: validUrl, validEmail: validEmail,
-    parseDob: parseDob, ageFrom: ageFrom, mobileDigits: mobileDigits, clean: clean,
+    parseDob: parseDob, ageFrom: ageFrom, mobileDigits: mobileDigits, splitMobile: splitMobile, validMobile: validMobile, clean: clean, PHONE_PARTS: PHONE_PARTS,
     ISSUES: ISSUES, ALIASES: ALIASES, EXTRA: EXTRA, FOLDED: FOLDED, PLUMBING: PLUMBING,
     issueLabel: function (code) { return ISSUES[code] ? ISSUES[code][0] : code; },
-    FIELDS: [['name', 'Full name'], ['mobile', 'Mobile number'], ['email', 'Email'], ['dob', 'Date of birth'], ['age', 'Age'], ['city', 'City'], ['state', 'State'], ['source', 'Found us via']]
+    FIELDS: [['name', 'Full name'], ['mobile', 'Mobile number'], ['email', 'Email'], ['dob', 'Date of birth'], ['age', 'Age'], ['city', 'City'], ['state', 'State'], ['country', 'Country'], ['source', 'Found us via']]
   };
 })(typeof window !== 'undefined' ? window : globalThis);

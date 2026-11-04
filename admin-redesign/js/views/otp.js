@@ -28,12 +28,12 @@
         var page = rows.slice((f.page - 1) * f.size, f.page * f.size);
         F.fill(tbody, page.length ? page.map(function (o) {
           return h('tr', null,
-            h('td', { 'data-label': 'Mobile' }, h('span', { class: 'mono' }, F.fmt.phone(o.mobile))),
+            h('td', { 'data-label': 'Mobile' }, h('span', { class: 'mono' }, F.phone.show(o))),
             h('td', { 'data-label': 'Form' }, o.formTitle),
             h('td', { 'data-label': 'Requested' }, h('span', { title: F.fmt.dateTime(o.at) }, F.fmt.ago(o.at))),
             h('td', { 'data-label': 'Result' }, h('span', { class: 'badge ' + CLS[o.status] }, LABEL[o.status])),
             h('td', { 'data-label': 'Attempts' }, String(o.attempts)),
-            h('td', { class: 'col-act' }, h('a', { class: 'btn-icon sm', href: 'https://wa.me/91' + o.mobile, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'WhatsApp ' + F.fmt.phone(o.mobile) }, icon('chat', 15))));
+            h('td', { class: 'col-act' }, h('a', { class: 'btn-icon sm', href: F.phone.wa(o), target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'WhatsApp ' + F.phone.show(o) }, icon('chat', 15))));
         }) : h('tr', { class: 'empty-row' }, h('td', { colspan: 6 }, h('div', { class: 'empty' }, icon('search', 28), h('strong', null, 'No OTP records found')))));
         F.fill(foot, F.pager({ page: f.page, size: f.size, total: rows.length, onPage: function (p) { f.page = p; render(); }, onSize: function (s) { f.size = s; f.page = 1; render(); } }));
       }

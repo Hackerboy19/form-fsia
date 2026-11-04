@@ -21,6 +21,9 @@ Anything the live panel does that is missing below must be added as a new row fi
 | Fields from **older form versions** (education, totalmarks, instname, brandname, workexpr, address, kyc, comment, instagram, message, qualification, skills, regtype, category, fsia_category, fsia_model_sub, reg_type) still shown | ✅ | ☐ |
 | Different column names for the same field (`fname` / `firstName`, `city` / `cityfsia`, `dob` / birthday+birthmonth+birthyear) read correctly | ✅ | ☐ |
 | Unknown or new database columns still shown, never dropped | ✅ | ☐ |
+| Miss World: country, country code + local number, category; foreign numbers keep their code in WhatsApp / call links | ✅ | ☐ |
+| `fsia_source` from the live forms shown as "Found us via" | ✅ | ☐ |
+| Miss World page id in `more_pages` (preview uses a placeholder) | ☐ | ☐ |
 | Broken values (`NULL`, `0000-00-00`, short mobile, bad email, age ≠ DOB) flagged with a fix hint, never shown as "undefined" | ✅ | ☐ |
 | Old-form passwords never displayed or exported | ✅ | ☐ |
 | KYC files visible only to roles with KYC access | ✅ | ☐ |

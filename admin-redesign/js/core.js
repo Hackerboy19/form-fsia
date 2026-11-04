@@ -125,6 +125,19 @@
     /* never print undefined / null / NaN */
     val: function (v) { return v == null || v === '' || (typeof v === 'number' && isNaN(v)) ? 'Not provided' : String(v); }
   };
+  /* Phone helpers for a record with { cc, mobile }; cc defaults to India. */
+  F.phone = {
+    cc: function (g) { return (g && g.cc) || '91'; },
+    valid: function (g) { return F.profile ? F.profile.validMobile(F.phone.cc(g), g.mobile || '') : /^\d{10}$/.test(g.mobile || ''); },
+    show: function (g) {
+      var m = (g && g.mobile) || '', cc = F.phone.cc(g);
+      if (!m) return 'Not provided';
+      return '+' + cc + ' ' + (cc === '91' && m.length === 10 ? m.slice(0, 5) + ' ' + m.slice(5) : m);
+    },
+    full: function (g) { return g.mobile ? '+' + F.phone.cc(g) + g.mobile : ''; },
+    wa: function (g) { return 'https://wa.me/' + F.phone.cc(g) + g.mobile; },
+    tel: function (g) { return 'tel:+' + F.phone.cc(g) + g.mobile; }
+  };
   F.debounce = function (fn, ms) {
     var t;
     return function () { var a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, ms); };

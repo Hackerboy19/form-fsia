@@ -111,6 +111,15 @@ function ok(v, msg) { if (!v) throw new Error(msg || 'expected true'); }
       ok(t.includes('_front.jpg'), 'Super Admin sees KYC file names');
       await page.keyboard.press('Escape');
     });
+    await check('Miss World applicant from abroad: country code kept in number and WhatsApp link', async () => {
+      const id = await page.evaluate(() => (FSIA.reg.all().find((g) => g.cc && g.cc !== '91') || {}).id);
+      ok(id, 'sample has a foreign applicant');
+      await go(page, '#/registrations?open=' + id, 'dialog.drawer[open]');
+      const t = await page.textContent('dialog.drawer'), wa = await page.getAttribute('dialog.drawer a:has-text("WhatsApp")', 'href');
+      ok(/\+(977|971|44) /.test(t) && t.includes('Country'), 'shows +country code and country');
+      ok(/wa\.me\/(977|971|44)\d+$/.test(wa), 'WhatsApp link uses the country code: ' + wa);
+      await page.keyboard.press('Escape');
+    });
     await check('CSV download includes payment and old-form columns', async () => {
       await go(page, '#/registrations', '.tbl tbody tr');
       const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.page-actions button:has-text("Download CSV")')]);

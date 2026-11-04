@@ -25,9 +25,11 @@ const FORM_SHAPES = {
   'India Fashion Week': { fname: 'Sanya Kapoor', mobile: '9876543214', email: 'sanya@example.com', dob: '2001-09-09', age: '25', cityfsia: 'Delhi', state: 'Delhi', regtype: 'Model', category: 'Ramp', fsia_category: 'Fashion', fsia_model_sub: 'Runway', submit_reg: '1' },
   'Miss Universe': { fname: 'Zoya Khan', mobile: '9876543215', email: 'zoya@example.com', dob: '2004-12-12', age: '21', cityfsia: 'Lucknow', state: 'Uttar Pradesh', instagram: '@zoya', message: 'Hi', qualification: 'Graduate', skills: 'Dance', regtype: 'Self' },
   'Celebrity PR (older version)': { fname: 'Kavya Rao', mobile: '9876543216', email: 'kavya@example.com', dob: '1998-03-03', age: '28', city: 'Hyderabad', state: 'Telangana', password: 'secret', code: '123456', education: 'Graduate', totalmarks: '80%', instname: 'City College', brandname: 'Styling', workexpr: '3 years', address: 'Banjara Hills', kyc: ['front.jpg', 'back.jpg'], comment: 'Hello' },
+  'Miss World (live form)': { regtype: 'Miss World', fname: 'Asha Thapa', dob: '2002-07-07', age: '24', state: 'Bagmati', city: 'Kathmandu', country: 'Nepal', email: 'asha@example.com', ccode: '+977', mobile_local: '9812345678', mobile: '+9779812345678', ncategory: 'Miss World 2026', fsia_source: 'Instagram' },
   'A column nobody knew about': { fname: 'Test Person', mobile: '9876543217', email: 't@example.com', dob: '2000-01-01', city: 'Goa', state: 'Goa', new_column_2027: 'kept' }
 };
 const CORE = Object.keys(P.ALIASES).reduce((m, k) => (P.ALIASES[k].forEach((a) => { m[a] = k; }), m), {});
+P.PHONE_PARTS.forEach((k) => { CORE[k] = 'mobile'; });
 
 console.log('Profile fields');
 Object.keys(FORM_SHAPES).forEach((shape) => test(shape + ': no field is lost', () => {
@@ -70,6 +72,24 @@ test('"+91 98765 43210" and "09876543210" both become 9876543210', () => {
   assert.strictEqual(P.mobileDigits('+91 98765 43210'), '9876543210');
   assert.strictEqual(P.mobileDigits('09876543210'), '9876543210');
 });
+test('Miss World: +977 number is kept with its country code, not treated as Indian', () => {
+  const p = P.normalize(FORM_SHAPES['Miss World (live form)'], { now: NOW });
+  assert.strictEqual(p.cc, '977'); assert.strictEqual(p.mobile, '9812345678'); assert.strictEqual(p.country, 'Nepal');
+  assert.strictEqual(F.phone.wa(p), 'https://wa.me/9779812345678');
+  assert.strictEqual(F.phone.show(p), '+977 9812345678');
+});
+test('Miss World: only country code + local number, no combined mobile', () => {
+  const p = P.normalize({ fname: 'A B', ccode: '+44', mobile_local: '07700900123', email: 'a@b.co', dob: '2000-01-01', city: 'London', state: 'England' }, { now: NOW });
+  assert.strictEqual(p.cc, '44'); assert.strictEqual(p.mobile, '7700900123'); assert.deepStrictEqual(p.issues, []);
+});
+test('Indian numbers still get +91 links', () => {
+  const p = P.normalize(FORM_SHAPES['Miss state forms'], { now: NOW });
+  assert.strictEqual(F.phone.wa(p), 'https://wa.me/919876543210'); assert.strictEqual(F.phone.show(p), '+91 98765 43210');
+});
+test('every form asks for the full name; fname and firstName both become the full name', () => {
+  assert.strictEqual(P.normalize({ firstName: 'Rahul Verma' }).name, 'Rahul Verma');
+  assert.strictEqual(P.normalize({ fname: 'Rahul Verma' }).name, 'Rahul Verma');
+});
 test('payment link must be https', () => {
   assert.ok(P.validUrl('https://pay.example.com/x'));
   assert.ok(!P.validUrl('http://pay.example.com/x'));
@@ -103,6 +123,7 @@ test('sample data covers old and new form versions and broken rows', () => {
   assert.ok(F.data.regs.some((g) => 'firstName' in g.raw), 'firstName rows present');
   assert.ok(F.data.regs.some((g) => 'cityfsia' in g.raw), 'cityfsia rows present');
   assert.ok(F.data.regs.some((g) => g.profileIssues.length), 'broken rows present');
+  assert.ok(F.data.regs.some((g) => g.cc && g.cc !== '91'), 'international Miss World rows present');
 });
 
 console.log('Team access');
