@@ -3,7 +3,7 @@
   'use strict';
   var F = window.FSIA, h = F.h, icon = F.icon;
   var tab = 'members';
-  var ACTIONS = { status: 'Status changes', assign: 'Assignments', payment: 'Payments', page: 'Page edits', export: 'Downloads', delete: 'Deletions', team: 'Team & access', login: 'Sign-ins' };
+  var ACTIONS = { status: 'Status changes', assign: 'Assignments', payment: 'Payments', share: 'Links shared', page: 'Page edits', export: 'Downloads', delete: 'Deletions', team: 'Team & access', login: 'Sign-ins' };
 
   function areaText(u) { return u.states.length ? u.states.join(', ') : 'All states'; }
 
@@ -13,6 +13,8 @@
     var err = h('p', { class: 'form-err', role: 'alert' });
     var name = h('input', { class: 'input', type: 'text', value: u.name, required: true, autocomplete: 'off' });
     var email = h('input', { class: 'input', type: 'email', value: u.email, required: true, autocomplete: 'off' });
+    var username = h('input', { class: 'input', type: 'text', value: u.username || '', autocomplete: 'off', placeholder: 'e.g. neha.singh' });
+    var password = h('input', { class: 'input', type: 'password', autocomplete: 'new-password', placeholder: isNew ? 'At least 10 characters' : 'Leave empty to keep the current one' });
     var roleDesc = h('p', { class: 'hint' }, F.team.role(u.role).desc);
     var role = h('select', { class: 'select', value: u.role, onchange: function () { roleDesc.textContent = F.team.role(role.value).desc; } }, F.ROLES.map(function (r) { return h('option', { value: r.id }, r.label); }));
     var some = h('input', { type: 'radio', name: 'area', value: 'some', checked: u.states.length > 0 });
@@ -24,13 +26,14 @@
     var body = h('div', { class: 'stackf' },
       h('label', { class: 'field' }, h('span', { class: 'label' }, 'Full name'), name),
       h('label', { class: 'field' }, h('span', { class: 'label' }, 'Email'), email),
+      F.live.on ? h('div', { class: 'row2' }, h('label', { class: 'field' }, h('span', { class: 'label' }, 'User name'), username), h('label', { class: 'field' }, h('span', { class: 'label' }, isNew ? 'Password' : 'New password'), password)) : null,
       h('label', { class: 'field' }, h('span', { class: 'label' }, 'Role'), role, roleDesc),
       h('fieldset', { class: 'field plain' }, h('legend', { class: 'label' }, 'Which registrations can they work on?'),
         h('label', { class: 'check' }, allR, 'All states'), h('label', { class: 'check' }, some, 'Only some states'), grid),
       err);
     function read() {
       var states = some.checked ? F.$$('input[type=checkbox]:checked', grid).map(function (c) { return c.value; }) : [];
-      return { name: name.value.trim(), email: email.value.trim().toLowerCase(), role: role.value, states: states };
+      return { name: name.value.trim(), email: email.value.trim().toLowerCase(), role: role.value, states: states, username: username.value.trim(), password: password.value };
     }
     return F.dialog({ title: isNew ? 'Add a team member' : 'Edit ' + u.name, body: body, wide: true,
       buttons: [['cancel', 'Cancel', ''], ['ok', isNew ? 'Add member' : 'Save', 'btn-primary']],
@@ -39,6 +42,8 @@
         if (!v.name) { err.textContent = 'Enter their full name.'; return false; }
         if (!F.profile.validEmail(v.email)) { err.textContent = 'Enter a valid email, like name@example.com.'; return false; }
         if (F.team.users().some(function (x) { return x.email === v.email && x.id !== u.id; })) { err.textContent = 'Someone on the team already uses this email.'; return false; }
+        if (F.live.on && v.username && !/^[A-Za-z0-9._@-]{3,60}$/.test(v.username)) { err.textContent = 'The user name can use letters, numbers and . _ - @ only.'; return false; }
+        if (F.live.on && (isNew ? v.password.length < 10 : v.password && v.password.length < 10)) { err.textContent = 'Passwords need at least 10 characters.'; return false; }
         if (some.checked && !v.states.length) { err.textContent = 'Pick at least one state, or choose “All states”.'; return false; }
         if (!isNew && u.role === 'admin' && v.role !== 'admin' && F.team.activeAdmins() <= 1) { err.textContent = 'Keep at least one Super Admin.'; return false; }
         return true;
@@ -53,7 +58,7 @@
       var manage = F.can('team.manage'), me = F.auth.user();
 
       function tabs() {
-        return h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Team sections' }, [['members', 'Team members'], ['roles', 'Roles & access'], ['log', 'Activity log']].map(function (t) {
+        return h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Team sections' }, [['members', 'Team members'], ['roles', 'Roles & access'], ['log', 'Activity log']].concat(F.live.on && manage ? [['db', 'Database check']] : []).map(function (t) {
           return h('button', { type: 'button', role: 'tab', class: 'tab' + (tab === t[0] ? ' is-on' : ''), 'aria-selected': tab === t[0] ? 'true' : 'false', onclick: function () { tab = t[0]; render(); } }, t[1]);
         }));
       }
@@ -142,14 +147,35 @@
             list.length ? tbody : h('tbody', null, h('tr', { class: 'empty-row' }, h('td', { colspan: 4 }, h('div', { class: 'empty' }, h('strong', null, 'Nothing here yet')))))))));
       }
 
+      /* Live only: which tables the API reads, and what it found in them. */
+      function dbCheck() {
+        var box = h('div', null, h('p', { class: 'muted' }, 'Checking the database…'));
+        F.live.call('db.check').then(function (d) {
+          F.fill(box,
+            h('p', { class: 'muted section-head' }, 'These are the tables the panel reads registrations from (set in api/config.php). Every column is read, so new form fields show up on their own.'),
+            h('div', { class: 'card tbl-card' }, h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl responsive static' },
+              h('thead', null, h('tr', null, ['Table', 'Found', 'Rows', 'Id / date column', 'Columns'].map(function (t) { return h('th', null, t); }))),
+              h('tbody', null, d.sources.map(function (s) {
+                return h('tr', null, h('td', { 'data-label': 'Table' }, h('strong', null, s.table)),
+                  h('td', { 'data-label': 'Found' }, h('span', { class: 'badge ' + (s.exists ? 'ok' : 'bad') }, s.exists ? 'Yes' : 'Not in database')),
+                  h('td', { 'data-label': 'Rows' }, F.fmt.num(s.rows)),
+                  h('td', { 'data-label': 'Id / date column' }, (s.idColumn || 'none found') + ' / ' + (s.dateColumn || 'none found'), s.hasState ? null : h('div', { class: 'small warn-text' }, 'No state column: members limited to states will not see these rows')),
+                  h('td', { 'data-label': 'Columns', class: 'small' }, s.columns.join(', ')));
+              }))))),
+            d.otherTables.length ? h('p', { class: 'hint section-head' }, 'Other tables in the database, not read by the panel: ' + d.otherTables.join(', ') + '. If one of them holds form registrations, add it to sources in api/config.php.') : null);
+        }, function (e) { F.fill(box, h('p', { class: 'form-err' }, e.message)); });
+        return box;
+      }
+
       function render() {
         F.fill(root,
           h('div', { class: 'page-head' }, h('div', null, h('h1', { class: 'page-title' }, 'Team & Access'), h('p', { class: 'page-sub' }, 'Give each person their own sign-in and only the tools they need.'))),
           tabs(), body);
-        F.fill(body, tab === 'members' ? members() : tab === 'roles' ? roles() : log());
+        F.fill(body, tab === 'members' ? members() : tab === 'roles' ? roles() : tab === 'db' ? dbCheck() : log());
       }
       render();
-      return { el: root };
+      var off = F.store.on(function () { if (tab !== 'db') render(); });
+      return { el: root, destroy: off };
     }
   };
 })();

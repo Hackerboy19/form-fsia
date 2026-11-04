@@ -400,13 +400,16 @@
           p.status === 'paid' ? h('p', { class: 'small ok-text' }, '✓ Received ' + F.fmt.dateTime(p.paidAt) + (p.ref ? ' · Ref ' + p.ref : '')) : null,
           h('div', { class: 'row2' }, h('label', { class: 'field' }, h('span', { class: 'label' }, 'Offer name'), offer), h('label', { class: 'field' }, h('span', { class: 'label' }, 'Amount (₹)'), amount)),
           h('label', { class: 'field' }, h('span', { class: 'label' }, 'Payment link'), h('div', { class: 'file-row' }, url,
-            can.send ? h('button', { type: 'button', class: 'btn', onclick: function () { url.value = 'https://pay.example.com/pay/FSIA-' + id + '?amount=' + (parseInt(amount.value, 10) || p.amount); } }, 'Create link') : null)),
-          h('p', { class: 'hint' }, 'Preview: “Create link” makes a sample link. The live panel will create it with your payment gateway.'),
+            can.send && (!F.live.on || F.live.paymentTemplate) ? h('button', { type: 'button', class: 'btn', onclick: function () {
+              var amt = parseInt(amount.value, 10) || p.amount;
+              url.value = F.live.on ? F.live.paymentTemplate.replace('{amount}', encodeURIComponent(amt)).replace('{ref}', encodeURIComponent('FSIA-' + id)) : 'https://pay.example.com/pay/FSIA-' + id + '?amount=' + amt;
+            } }, 'Create link') : null)),
+          h('p', { class: 'hint' }, F.live.on ? (F.live.paymentTemplate ? '“Create link” fills in your payment link pattern. Check it, then press Save.' : 'Create the link in your payment gateway, paste it here and press Save.') : 'Preview: “Create link” makes a sample link. The live panel will create it with your payment gateway.'),
           err,
           h('div', { class: 'contact-actions' },
             can.send ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: function () { if (save()) F.toast('Payment details saved'); } }, icon('save', 15), 'Save') : null,
             p.url ? h('button', { type: 'button', class: 'btn btn-sm', onclick: function () { if (navigator.clipboard) navigator.clipboard.writeText(p.url).then(function () { F.toast('Payment link copied'); }, function () {}); } }, icon('copy', 15), 'Copy link') : null,
-            wa ? h('a', { class: 'btn btn-sm', href: wa, target: '_blank', rel: 'noopener noreferrer', onclick: function () { F.audit.add('payment', 'Sent the payment link to ' + g.name + ' on WhatsApp'); } }, icon('chat', 15), 'Send on WhatsApp') : null,
+            wa ? h('a', { class: 'btn btn-sm', href: wa, target: '_blank', rel: 'noopener noreferrer', onclick: function () { F.audit.add('share', 'Sent the payment link to ' + g.name + ' (#' + g.id + ') on WhatsApp'); } }, icon('chat', 15), 'Send on WhatsApp') : null,
             can.confirm && p.status !== 'paid' ? h('button', { type: 'button', class: 'btn btn-sm', onclick: function () {
               var ref = h('input', { class: 'input', type: 'text', placeholder: 'Bank or UPI reference (optional)', 'aria-label': 'Payment reference' });
               F.dialog({ title: 'Mark ' + F.fmt.money(parseInt(amount.value, 10) || p.amount) + ' as received?', body: h('div', { class: 'stackf' }, h('p', null, 'Only do this after you see the money in the account. The status will change to “Fee paid”.'), ref),

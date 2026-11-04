@@ -68,7 +68,7 @@
     var view = h('main', { id: 'view', class: 'view', tabindex: '-1' });
     var bannerGone = false;
     try { bannerGone = sessionStorage.getItem('fsia-banner') === '1'; } catch (e) {}
-    var banner = bannerGone ? null : h('div', { class: 'banner', role: 'note' }, icon('info', 16),
+    var banner = bannerGone || F.live.on ? null : h('div', { class: 'banner', role: 'note' }, icon('info', 16),
       h('span', null, h('strong', null, 'Preview with sample data.'), ' Nothing here touches fsia.in. Edits are saved only in this browser.'),
       h('button', { type: 'button', class: 'btn-icon sm', 'aria-label': 'Dismiss', onclick: function () { banner.remove(); try { sessionStorage.setItem('fsia-banner', '1'); } catch (e) {} } }, icon('x', 15)));
 
@@ -196,5 +196,6 @@
   }
 
   if (!location.hash) { history.replaceState(null, '', '#/dashboard'); }
-  route();
+  F.fill(root, h('div', { class: 'boot', role: 'status' }, h('span', { class: 'brand-mark' }, icon('star', 24)), h('span', { class: 'boot-bar', 'aria-hidden': 'true' }), 'Loading the admin panel…'));
+  F.boot(root).then(route, function () {});
 })();

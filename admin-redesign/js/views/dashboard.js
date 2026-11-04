@@ -15,6 +15,23 @@
     return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
   }
 
+  /* KPI numbers count up from zero once, keeping their ₹ / % formatting. */
+  function countUp(scope) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    F.$$('.kpi-value', scope).forEach(function (el) {
+      var text = el.textContent, m = text.match(/[\d,]+/);
+      if (!m) return;
+      var target = parseInt(m[0].replace(/,/g, ''), 10);
+      if (!(target > 0)) return;
+      var start = performance.now(), dur = 900;
+      (function step(t) {
+        var k = Math.min(1, (t - start) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = text.replace(m[0], Math.round(target * e).toLocaleString('en-IN'));
+        if (k < 1 && document.contains(el)) requestAnimationFrame(step); else el.textContent = text;
+      })(start);
+    });
+  }
+
   function kpi(label, value, sub, delta, href, ico) {
     var body = [
       h('div', { class: 'kpi-top' }, h('span', { class: 'kpi-label' }, label), h('span', { class: 'kpi-ico' }, icon(ico, 18))),
@@ -50,8 +67,8 @@
       g.append(svg('text', { x: x(idx), y: H - 6, 'class': 'axis', 'text-anchor': t === 0 ? 'start' : t === ticks - 1 ? 'end' : 'middle' }, F.fmt.short(points[idx].t)));
     }
     var line = points.map(function (p, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join(' ');
-    g.append(svg('path', { d: line + ' L' + x(points.length - 1) + ' ' + (m.t + ih) + ' L' + x(0) + ' ' + (m.t + ih) + ' Z', fill: 'url(#' + gradId + ')' }));
-    g.append(svg('path', { d: line, 'class': 'line' }));
+    g.append(svg('path', { d: line + ' L' + x(points.length - 1) + ' ' + (m.t + ih) + ' L' + x(0) + ' ' + (m.t + ih) + ' Z', fill: 'url(#' + gradId + ')', 'class': 'area' }));
+    g.append(svg('path', { d: line, 'class': 'line', pathLength: 1 }));
     var cross = svg('line', { y1: m.t, y2: m.t + ih, 'class': 'cross', visibility: 'hidden' });
     var dot = svg('circle', { r: 4.5, 'class': 'dot', visibility: 'hidden' });
     g.append(cross, dot);
@@ -195,6 +212,7 @@
       }
 
       build();
+      countUp(root);
       offStore = F.store.on(build);
       return { el: root, destroy: function () { if (ro) ro.disconnect(); if (offStore) offStore(); } };
     }

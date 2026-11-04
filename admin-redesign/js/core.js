@@ -102,15 +102,16 @@
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function p2(n) { return n < 10 ? '0' + n : '' + n; }
   F.fmt = {
-    date: function (ts) { var d = new Date(ts); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); },
+    date: function (ts) { if (!ts) return 'Date not saved'; var d = new Date(ts); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); },
     short: function (ts) { var d = new Date(ts); return d.getDate() + ' ' + MONTHS[d.getMonth()]; },
     time: function (ts) {
       var d = new Date(ts), hr = d.getHours(), ap = hr >= 12 ? 'PM' : 'AM';
       hr = hr % 12 || 12;
       return hr + ':' + p2(d.getMinutes()) + ' ' + ap;
     },
-    dateTime: function (ts) { return F.fmt.date(ts) + ', ' + F.fmt.time(ts); },
+    dateTime: function (ts) { return ts ? F.fmt.date(ts) + ', ' + F.fmt.time(ts) : 'Date not saved'; },
     ago: function (ts) {
+      if (!ts) return 'Date not saved';
       var s = (Date.now() - ts) / 1000;
       if (s < 60) return 'just now';
       if (s < 3600) return Math.floor(s / 60) + ' min ago';

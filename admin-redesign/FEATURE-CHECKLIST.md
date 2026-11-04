@@ -56,8 +56,10 @@ Anything the live panel does that is missing below must be added as a new row fi
 | Assign registrations to a member, "My queue" | ✅ | ☐ |
 | Turn access off, remove a member, keep at least one Super Admin | ✅ | ☐ |
 | Activity log: who did what and when | ✅ | ☐ |
-| Permissions enforced on the **server** for every request | ☐ | ☐ |
-| Passwords hashed, sessions regenerated on sign-in, CSRF tokens on every form | ☐ | ☐ |
+| Permissions enforced on the **server** for every request | ✅ PHP API, tested | ☐ |
+| Passwords hashed, sessions regenerated on sign-in, CSRF tokens on every form, lock after 5 wrong passwords | ✅ PHP API, tested | ☐ |
+| Form tables only read, never changed (checksum test) | ✅ PHP API, tested | ☐ |
+| `sources` in `api/config.php` match the real table names (Database check all green) | ☐ | ☐ |
 
 ## Pages, OTP, everything else
 

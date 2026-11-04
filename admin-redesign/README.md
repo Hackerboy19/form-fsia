@@ -85,8 +85,48 @@ npm i --no-save playwright && npx playwright install chromium
 node tests/e2e.js
 ```
 
+```bash
+node tests/live/live.test.js
+```
+
+Runs the PHP API against a throwaway MySQL/MariaDB database built from `tests/live/fixture.sql`: setup, sign-in,
+CSRF, lockout, every role's access on the server, state limits, passwords and OTP codes never sent, payment flow,
+pages, the activity log, and a checksum that proves the form tables were not changed. Needs `php` and a local
+MySQL/MariaDB reachable as root.
+
 Signs in as each role and runs through every screen: filters, payment link, old-form profile, CSV, team, access
 rules, phone layout, and no JavaScript or CSP errors.
+
+## Go live on Hostinger (real database)
+
+The same folder runs in **live mode** when it sits next to `api/` on a PHP server: it shows a real sign-in, reads the
+form tables through the PHP API and saves status, notes, payments, assignment and team changes in new tables.
+
+What the API does and does not do:
+
+- **Reads** the existing form tables (`SELECT *`, so every column, old or new, reaches the profile). It never writes
+  to them or deletes from them. "Delete" in the panel only hides a registration.
+- **Writes** only to five new tables it creates: `admin_users`, `admin_user_states`, `admin_role_permissions`,
+  `registration_work`, `admin_audit_log` (see `docs/multi-user-schema.sql`).
+- Checks the member's role and states on **every request**, uses CSRF tokens, hashed passwords, a 15-minute lock after
+  five wrong passwords, and never sends passwords or OTP codes to the browser. KYC columns need the KYC permission.
+
+Steps:
+
+1. Take a backup in hPanel → Files → Backups (the API adds tables, so have a restore point).
+2. Upload the contents of this folder (or `fsia-admin-hostinger.zip`) to a new folder, for example `public_html/fsia-admin/`.
+   Keep the old `fsiaadmm21` running until the new panel is checked.
+3. In that folder, copy `api/config.sample.php` to `api/config.php` and fill it in: the database name, user and password
+   (the same database the forms use), a long random `setup_key`, and under `sources` the table each form saves into
+   (look them up in phpMyAdmin).
+4. Open `https://www.fsia.in/fsia-admin/api/install.php`, enter the setup key and create your Super Admin account.
+5. Sign in at `https://www.fsia.in/fsia-admin/`. Open **Team & Access → Database check**: every table should say
+   "Yes", with a row count and the id / date column it found. Fix `sources` in `config.php` until it does.
+6. Add the team in **Team & Access**, each with their own user name, password, role and states.
+7. Change `setup_key` in `config.php` (or delete `api/install.php`) so setup cannot run again.
+
+PHP 8.1 or newer with `pdo_mysql` is needed (hPanel → Advanced → PHP Configuration). `api/config.php` is never in git,
+and `.htaccess` stops the web server from serving it.
 
 ## Run locally
 
