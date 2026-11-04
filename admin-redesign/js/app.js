@@ -7,8 +7,11 @@
     ['registrations', 'Registrations', 'users'],
     ['pages', 'Forms & Pages', 'file'],
     ['otp', 'OTP Log', 'shield'],
+    ['team', 'Team & Access', 'team'],
     ['settings', 'Settings', 'sliders']
   ];
+  function allowed(name) { var v = F.views[name]; return !!v && (!v.perm || F.can(v.perm)); }
+  function home() { var n = NAV.filter(function (x) { return allowed(x[0]); })[0]; return '#/' + (n ? n[0] : 'settings'); }
   var root = document.getElementById('root');
   var shell = null, current = null, firstRoute = true;
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -35,7 +38,14 @@
       var n = F.reg.all().filter(function (g) { return g.status === 'new'; }).length;
       badge.textContent = F.fmt.num(n); badge.hidden = !n; badge.setAttribute('aria-label', n + ' new registrations');
     }
-    F.store.on(updateBadge); updateBadge();
+    var userCard = h('div', { class: 'sb-user' });
+    function updateUser() {
+      var u = F.auth.user();
+      if (!u) return;
+      F.fill(userCard, F.avatar(u.name, 34), h('div', null, h('strong', null, u.name), h('span', null, F.team.role(u.role).label + (u.states.length ? ' · ' + u.states.length + ' states' : ''))));
+      NAV.forEach(function (n) { if (links[n[0]]) links[n[0]].parentNode.hidden = !allowed(n[0]); });
+    }
+    F.store.on(function () { updateBadge(); updateUser(); }); updateBadge();
 
     var navList = h('ul', null, NAV.map(function (n) {
       var a = h('a', { class: 'sb-link', href: '#/' + n[0], onclick: function () { app.classList.remove('nav-open'); } }, icon(n[2], 19), h('span', null, n[1]), n[0] === 'registrations' ? badge : null);
@@ -47,8 +57,9 @@
       h('nav', { class: 'sb-nav', 'aria-label': 'Sections' }, navList),
       h('div', { class: 'sb-foot' },
         h('a', { class: 'sb-link', href: 'https://www.fsia.in/', target: '_blank', rel: 'noopener noreferrer' }, icon('link', 19), h('span', null, 'Open live site')),
-        h('button', { type: 'button', class: 'sb-link', onclick: F.signOut }, icon('logout', 19), h('span', null, 'Sign out')),
-        h('div', { class: 'sb-user' }, F.avatar('Admin User', 34), h('div', null, h('strong', null, 'Admin'), h('span', null, 'Signed in')))));
+        h('button', { type: 'button', class: 'sb-link', onclick: F.signOut }, icon('logout', 19), h('span', null, 'Sign out / switch user')),
+        userCard));
+    updateUser();
 
     var titleEl = h('div', { class: 'tb-title' });
     var themeBtn = h('button', { type: 'button', class: 'btn-icon', onclick: function () { F.applyTheme(isDark() ? 'light' : 'dark'); } });
@@ -67,6 +78,7 @@
           h('button', { type: 'button', class: 'btn-icon menu-btn', 'aria-label': 'Open menu', 'aria-controls': 'sidebar', onclick: function () { app.classList.add('nav-open'); } }, icon('menu')),
           titleEl,
           h('button', { type: 'button', class: 'qs-btn', onclick: openPalette }, icon('search', 16), h('span', null, 'Quick search'), h('kbd', null, 'Ctrl K')),
+          h('button', { type: 'button', class: 'btn-icon', 'aria-label': 'How to use this panel', title: 'Help', onclick: showHelp }, icon('help')),
           themeBtn),
         banner, view));
 
@@ -91,13 +103,14 @@
     if (!F.auth.isIn()) {
       shell = null;
       document.title = 'Sign in · FSIA Admin Preview';
-      F.fill(root, F.views.login(function () { var back = location.hash; go(!back || back === '#/login' ? '#/dashboard' : back); }));
+      F.fill(root, F.views.login(function () { var back = location.hash, name = back.replace(/^#\/?/, '').split(/[/?]/)[0]; go(!back || name === 'login' || !allowed(name) ? home() : back); }));
       return;
     }
     var v = F.views[name];
-    if (!v || !v.render) { go('#/dashboard'); return; }
+    if (!v || !v.render) { go(home()); return; }
     if (!shell) { shell = buildShell(); F.fill(root, shell.el); }
-    var out = v.render({ parts: parts, query: query });
+    var out = allowed(name) ? v.render({ parts: parts, query: query }) : { el: h('div', { class: 'empty big' }, icon('lock', 34), h('strong', null, 'You do not have access to ' + v.title),
+      h('span', { class: 'muted' }, 'Your role is ' + F.team.role(F.auth.user().role).label + '. Ask a Super Admin if you need this.'), h('a', { class: 'btn btn-sm', href: home() }, 'Go to my start page')) };
     shell.mount(out.el, v.title, name);
     if (out.afterMount) out.afterMount();
     current = out;
@@ -117,12 +130,14 @@
 
     function compute(q) {
       var s = q.trim().toLowerCase(), out = [];
-      NAV.forEach(function (n) { if (!s || n[1].toLowerCase().indexOf(s) >= 0) out.push({ group: 'Go to', label: n[1], sub: '', hash: '#/' + n[0], ico: n[2] }); });
-      if (!s) out.push({ group: 'Shortcuts', label: 'Registrations that need follow-up', sub: 'Status: New', hash: '#/registrations?status=new', ico: 'alert' });
-      if (s) {
+      var digits = s.replace(/\D/g, ''), num = /^[\d\s+()-]+$/.test(s) && digits.length >= 3;
+      NAV.forEach(function (n) { if (allowed(n[0]) && (!s || n[1].toLowerCase().indexOf(s) >= 0)) out.push({ group: 'Go to', label: n[1], sub: '', hash: '#/' + n[0], ico: n[2] }); });
+      if (!s && allowed('registrations')) out.push({ group: 'Shortcuts', label: 'Registrations that need follow-up', sub: 'Status: New', hash: '#/registrations?status=new', ico: 'alert' });
+      if (s && allowed('pages')) {
         F.data.forms.filter(function (x) { return (x.title + ' ' + x.slug + ' ' + x.id).toLowerCase().indexOf(s) >= 0; }).slice(0, 5)
           .forEach(function (x) { out.push({ group: 'Edit page', label: x.title, sub: '/' + x.slug, hash: '#/pages/' + x.id, ico: 'file' }); });
-        var digits = s.replace(/\D/g, ''), num = /^[\d\s+()-]+$/.test(s) && digits.length >= 3;
+      }
+      if (s && allowed('registrations')) {
         if (s.length >= 2) F.reg.all().filter(function (g) { return num ? g.mobile.indexOf(digits) >= 0 : g._hay.indexOf(s) >= 0; }).slice(0, 6)
           .forEach(function (g) { out.push({ group: 'Registrations', label: g.name, sub: g.formTitle + ' · ' + F.fmt.phone(g.mobile), hash: '#/registrations?open=' + g.id, ico: 'users' }); });
       }
@@ -161,6 +176,24 @@
     }
     if (e.key === 'Escape') { var a = document.querySelector('.app.nav-open'); if (a) a.classList.remove('nav-open'); }
   });
+
+  /* ---------- plain-language guide, written for the signed-in role ---------- */
+  function showHelp() {
+    var steps = [];
+    if (F.can('registrations.view')) steps.push(['Find someone', 'Open Registrations and type a name, mobile number or city. Use “Quick views” for common lists such as “Needs follow-up”.']);
+    if (F.can('registrations.view')) steps.push(['Narrow the list', 'Pick a form, state, status or payment state. “More filters” has city, age, OTP, data check and who is handling it. Every filter shows as a chip you can remove.']);
+    if (F.can('registrations.edit')) steps.push(['Update an applicant', 'Click a name to open their full profile. Change the status, write a note, call or WhatsApp them.']);
+    if (F.can('payments.send')) steps.push(['Send a payment link', 'In the profile, under “Offer & payment”, set the amount, create or paste the link, press Save and then “Send on WhatsApp”.']);
+    if (F.can('payments.confirm')) steps.push(['Confirm a payment', 'After the money arrives, press “Mark as paid” and add the bank or UPI reference.']);
+    if (F.can('registrations.view')) steps.push(['Fix data problems', 'A small warning sign next to a name means something is missing or wrong. The profile lists each problem and how to fix it.']);
+    if (F.can('pages.edit')) steps.push(['Edit a form page', 'Forms & Pages lets you change the Google title, description, share image and fee box. The preview on the right shows the result.']);
+    if (F.can('team.manage')) steps.push(['Manage the team', 'Team & Access: add people, choose their role and states, and see the activity log.']);
+    var u = F.auth.user();
+    F.dialog({ title: 'How to use this panel', wide: true, body: h('div', { class: 'stackf' },
+      h('p', { class: 'muted' }, 'You are signed in as ' + u.name + ' (' + F.team.role(u.role).label + '). ' + F.team.role(u.role).desc),
+      h('ol', { class: 'help-steps' }, steps.map(function (st) { return h('li', null, h('strong', null, st[0]), h('span', null, st[1])); })),
+      h('p', { class: 'muted small' }, 'Shortcuts: Ctrl + K to search anything, / to jump to the search box, Esc to close.')) });
+  }
 
   if (!location.hash) { history.replaceState(null, '', '#/dashboard'); }
   route();

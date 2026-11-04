@@ -23,7 +23,7 @@
         h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Keyboard shortcuts')), h('div', { class: 'card-body' },
           h('dl', { class: 'keys' }, keys.map(function (k) { return h('div', null, h('dt', null, h('kbd', null, k[0])), h('dd', null, k[1])); })))),
         h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Preview data')), h('div', { class: 'card-body' },
-          row('Reset sample data', 'Clears the status changes, notes, deletions and page edits saved in this browser.', h('button', { type: 'button', class: 'btn btn-danger-ghost', onclick: function () {
+          row('Reset sample data', 'Clears every change made in this preview: statuses, notes, payments, team members, access and the activity log.', h('button', { type: 'button', class: 'btn btn-danger-ghost', onclick: function () {
             F.confirm({ title: 'Reset all sample data?', body: 'Every change you made in this preview will be removed.', confirmText: 'Reset', danger: true }).then(function (ok) { if (ok) { F.store.reset(); F.toast('Sample data reset'); } });
           } }, icon('refresh', 16), 'Reset')),
           row('Sign out', 'Return to the sign-in screen.', h('button', { type: 'button', class: 'btn', onclick: function () { F.signOut(); } }, icon('logout', 16), 'Sign out'))))) };

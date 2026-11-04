@@ -1,24 +1,29 @@
-/* Preview-only sign-in. No credentials are read, sent or stored. */
+/* Preview-only sign-in: pick a team member to see the panel exactly as they would.
+   The live panel keeps a username and password per member (checked on the server). */
 (function () {
   'use strict';
   var F = window.FSIA, h = F.h, icon = F.icon;
 
   F.views.login = function (onDone) {
-    var pw = h('input', { class: 'input', id: 'lg-pass', type: 'password', value: 'preview', autocomplete: 'off' });
-    var toggle = h('button', { type: 'button', class: 'btn-icon field-end', 'aria-label': 'Show password', onclick: function () {
-      var show = pw.type === 'password';
-      pw.type = show ? 'text' : 'password';
-      toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-    } }, icon('eye'));
-    var form = h('form', { class: 'login-card', onsubmit: function (e) { e.preventDefault(); F.auth.login(); onDone(); } },
+    var users = F.team.users();
+    var pick = (users.filter(function (u) { return u.active; })[0] || {}).id;
+    var list = h('div', { class: 'who-list', role: 'radiogroup', 'aria-label': 'Sign in as' }, users.map(function (u) {
+      var role = F.team.role(u.role);
+      return h('label', { class: 'who-opt' + (u.active ? '' : ' is-off') },
+        h('input', { type: 'radio', name: 'who', value: u.id, checked: u.id === pick, disabled: !u.active, onchange: function () { pick = u.id; } }),
+        F.avatar(u.name, 34),
+        h('span', { class: 'who-txt' }, h('strong', null, u.name), h('span', { class: 'muted small' }, role.label + (u.states.length ? ' · ' + u.states.join(', ') : '') + (u.active ? '' : ' · access turned off'))));
+    }));
+    var form = h('form', { class: 'login-card', onsubmit: function (e) {
+      e.preventDefault(); if (!pick) return;
+      F.auth.login(pick); F.audit.add('login', 'Signed in'); onDone();
+    } },
       h('div', { class: 'login-brand' }, h('span', { class: 'brand-mark' }, icon('star', 22)), h('div', null, h('strong', null, 'FSIA Admin'), h('span', null, 'Forever Star India'))),
       h('h1', { class: 'login-title' }, 'Welcome back'),
-      h('p', { class: 'login-sub' }, 'Sign in to manage registrations and form pages.'),
-      h('div', { class: 'field' }, h('label', { class: 'label', for: 'lg-user' }, 'User name'),
-        h('input', { class: 'input', id: 'lg-user', type: 'text', value: 'preview', autocomplete: 'off', autofocus: true })),
-      h('div', { class: 'field' }, h('label', { class: 'label', for: 'lg-pass' }, 'Password'), h('div', { class: 'field-wrap' }, pw, toggle)),
+      h('p', { class: 'login-sub' }, 'Choose who you are. Each team member sees only what their role allows.'),
+      list,
       h('button', { class: 'btn btn-primary btn-lg btn-block', type: 'submit' }, 'Sign in'),
-      h('p', { class: 'login-note' }, icon('info', 16), h('span', null, 'This is a design preview with sample data. There is no server, so any input signs you in.')));
+      h('p', { class: 'login-note' }, icon('info', 16), h('span', null, 'Design preview with sample data. In the live panel each member signs in with their own user name and password.')));
     return h('div', { class: 'login' }, h('div', { class: 'login-art', 'aria-hidden': 'true' }), form);
   };
 })();

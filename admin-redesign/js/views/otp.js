@@ -6,6 +6,7 @@
 
   F.views.otp = {
     title: 'OTP Log',
+    perm: 'otp.view',
     render: function () {
       var f = { q: '', status: '', page: 1, size: 25 };
       var root = h('div'), tbody = h('tbody'), foot = h('div'), kpis = h('div', { class: 'kpis three' });

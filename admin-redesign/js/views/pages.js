@@ -14,7 +14,9 @@
 
   F.views.pages = {
     title: 'Forms & Pages',
+    perm: 'pages.view',
     render: function (ctx) {
+      var canEdit = F.can('pages.edit');
       var id = ctx.parts[1] ? +ctx.parts[1] : null;
       var form = id ? F.data.formsById[id] : null;
       var saved = form ? F.store.page(id) : null;
@@ -113,7 +115,9 @@
       }
 
       function save() {
+        if (!canEdit) return;
         F.store.savePage(id, draft);
+        F.audit.add('page', 'Edited the ' + form.title + ' page');
         saved = F.store.page(id); draft = Object.assign({}, saved);
         F.toast(form.title + ' saved. Preview only: stored in this browser, not on fsia.in.');
         renderEditor(); renderList();
@@ -128,6 +132,7 @@
             ['app_fee', 'fee_title', 'fee_heading', 'fee_subtitle', 'journey_note'].forEach(function (k) { m[k] = draft[k]; });
             F.store.savePage(x.id, m);
           });
+          F.audit.add('page', 'Copied the fee box of ' + form.title + ' to ' + targets.length + ' pages');
           F.toast('Fee box copied to ' + targets.length + ' pages'); renderList();
         });
       }
@@ -152,7 +157,7 @@
           h('div', { class: 'ed-head' },
             h('a', { class: 'back', href: '#/pages', onclick: function (e) { e.preventDefault(); go('#/pages'); } }, icon('left', 16), 'All pages'),
             h('div', { class: 'ed-title' }, h('h2', null, form.title), h('a', { class: 'link small', href: form.live, target: '_blank', rel: 'noopener noreferrer' }, 'fsia.in/' + form.slug, icon('link', 13)), dirtyTag),
-            h('div', { class: 'ed-actions' }, discardBtn, saveBtn)),
+            canEdit ? h('div', { class: 'ed-actions' }, discardBtn, saveBtn) : h('span', { class: 'badge plain' }, icon('lock', 13), 'View only')),
           h('div', { class: 'ed-grid' },
             h('div', { class: 'ed-form' },
               h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Search listing'), h('span', { class: 'muted small' }, 'How the page appears on Google')),
@@ -177,6 +182,7 @@
                   h('div', null, h('button', { type: 'button', class: 'btn btn-sm', onclick: copyFee }, icon('copy', 15), 'Copy fee box to all ' + F.GROUPS.filter(function (g) { return g.id === form.group; })[0].label + ' pages'))))),
             previewHost));
         renderPreview();
+        if (!canEdit) F.$$('.ed-form input, .ed-form textarea, .ed-form button, .ed-form label.btn', editorHost).forEach(function (el) { if (el.tagName === 'LABEL') el.hidden = true; else el.disabled = true; });
       }
 
       function renderAll() { renderList(); renderEditor(); }

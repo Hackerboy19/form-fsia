@@ -81,7 +81,13 @@
     image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
     star: '<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>'
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+    userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+    help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>',
+    edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    team: '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>'
   };
   F.icon = function (name, size) {
     var s = size || 18;
@@ -114,7 +120,10 @@
     },
     num: function (n) { return Number(n).toLocaleString('en-IN'); },
     ymd: function (ts) { var d = new Date(ts); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); },
-    phone: function (m) { return '+91 ' + m.slice(0, 5) + ' ' + m.slice(5); }
+    phone: function (m) { return /^\d{10}$/.test(m || '') ? '+91 ' + m.slice(0, 5) + ' ' + m.slice(5) : (m || 'Not provided'); },
+    money: function (n) { return '₹ ' + Number(n || 0).toLocaleString('en-IN'); },
+    /* never print undefined / null / NaN */
+    val: function (v) { return v == null || v === '' || (typeof v === 'number' && isNaN(v)) ? 'Not provided' : String(v); }
   };
   F.debounce = function (fn, ms) {
     var t;
@@ -173,6 +182,27 @@
           h('p', { class: 'modal-body' }, o.body),
           h('div', { class: 'modal-actions' }, cancel, ok)));
       dlg.addEventListener('close', function () { var v = dlg.returnValue === 'ok'; dlg.remove(); resolve(v); });
+      document.body.append(dlg);
+      dlg.showModal();
+    });
+  };
+
+  /* ---------- Dialog with custom content; resolves with the button value ---------- */
+  F.dialog = function (o) {
+    return new Promise(function (resolve) {
+      var dlg = h('dialog', { class: 'modal' + (o.wide ? ' wide' : ''), 'aria-labelledby': 'dlg-title' },
+        h('form', { method: 'dialog', novalidate: true },
+          h('h2', { id: 'dlg-title', class: 'modal-title' }, o.title),
+          h('div', { class: 'modal-body' }, o.body),
+          h('div', { class: 'modal-actions' }, (o.buttons || [['ok', 'OK', 'btn-primary']]).map(function (b) {
+            return h('button', { value: b[0], class: 'btn ' + (b[2] || ''), type: 'submit' }, b[1]);
+          }))));
+      var form = dlg.querySelector('form');
+      form.addEventListener('submit', function (e) {
+        var v = e.submitter ? e.submitter.value : 'ok';
+        if (v !== 'cancel' && o.validate && !o.validate()) { e.preventDefault(); return; }
+      });
+      dlg.addEventListener('close', function () { var v = dlg.returnValue || 'cancel'; dlg.remove(); resolve(v); });
       document.body.append(dlg);
       dlg.showModal();
     });

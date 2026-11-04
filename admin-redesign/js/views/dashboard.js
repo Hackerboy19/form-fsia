@@ -73,9 +73,22 @@
     host.prepend(g);
   }
 
+  function pagesOnly() {
+    var CHECK = ['meta_title', 'descritpion', 'meta_keyword', 'og_title', 'og_description', 'og_image', 'app_fee'];
+    var weak = F.data.forms.filter(function (f) { var m = F.store.page(f.id); return CHECK.some(function (k) { return !String(m[k] || '').trim(); }); });
+    return h('div', null,
+      h('div', { class: 'page-head' }, h('div', null, h('h1', { class: 'page-title' }, 'Hello ' + F.auth.user().name.split(' ')[0]), h('p', { class: 'page-sub' }, F.team.role(F.auth.user().role).desc))),
+      h('div', { class: 'kpis three' },
+        kpi('Form pages', F.fmt.num(F.data.forms.length), 'Miss, Mrs, business and event forms', null, '#/pages', 'file'),
+        kpi('Need attention', F.fmt.num(weak.length), 'missing title, description, image or fee', null, '#/pages', 'alert'),
+        kpi('Complete', F.fmt.num(F.data.forms.length - weak.length), 'all search and share fields filled', null, '#/pages', 'check')));
+  }
+
   F.views.dashboard = {
     title: 'Dashboard',
+    perm: 'dashboard.view',
     render: function () {
+      if (!F.can('registrations.view')) return { el: pagesOnly() };
       var root = h('div', { class: 'view-dashboard' });
       var ro = null, offStore = null;
 
@@ -84,11 +97,17 @@
         var cur = all.filter(function (g) { return g.createdAt >= now - range * DAY; });
         var prev = all.filter(function (g) { return g.createdAt < now - range * DAY && g.createdAt >= now - 2 * range * DAY; });
         var todayN = all.filter(function (g) { return g.createdAt >= today; }).length;
-        var yesterdayN = all.filter(function (g) { return g.createdAt >= today - DAY && g.createdAt <= now - DAY; }).length; // same time of day, so the comparison is fair
         var verified = cur.filter(function (g) { return g.verified; }).length;
-        var vPrev = prev.filter(function (g) { return g.verified; }).length;
         var newCount = all.filter(function (g) { return g.status === 'new'; }).length;
         var paid = cur.filter(function (g) { return g.status === 'paid'; }).length;
+        var waiting = all.filter(function (g) { return g.payment.status === 'sent'; });
+        var waitingSum = waiting.reduce(function (a, g) { return a + (g.payment.amount || 0); }, 0);
+        var collected = all.filter(function (g) { return g.payment.status === 'paid' && g.payment.paidAt >= now - range * DAY; });
+        var collectedSum = collected.reduce(function (a, g) { return a + (g.payment.amount || 0); }, 0);
+        var withIssues = all.filter(function (g) { return g.issues.length; });
+        var issueCount = {};
+        withIssues.forEach(function (g) { g.issues.forEach(function (i) { issueCount[i.code] = (issueCount[i.code] || 0) + 1; }); });
+        var issueList = Object.keys(issueCount).sort(function (a, b) { return issueCount[b] - issueCount[a]; });
 
         // daily series
         var points = [], d;
@@ -105,8 +124,6 @@
           .sort(function (a, b) { return b.n - a.n; }).slice(0, 7);
         var topMax = top.length ? top[0].n : 1;
 
-        // groups
-        var groups = F.GROUPS.map(function (gr) { return { g: gr, n: cur.filter(function (x) { return x.group === gr.id; }).length }; });
 
         // pipeline
         var pipeline = F.STATUSES.map(function (s) { return { s: s, n: all.filter(function (x) { return x.status === s.id; }).length }; });
@@ -126,13 +143,14 @@
 
         F.fill(root, 
           h('div', { class: 'page-head' },
-            h('div', null, h('h1', { class: 'page-title' }, greet + ' 👋'), h('p', { class: 'page-sub' }, 'Here is what is happening across all your forms.')),
+            h('div', null, h('h1', { class: 'page-title' }, greet + ', ' + F.auth.user().name.split(' ')[0]),
+              h('p', { class: 'page-sub' }, F.fmt.num(todayN) + ' new today · ' + (cur.length ? Math.round(verified / cur.length * 100) : 0) + '% verified their number by OTP' + (F.scope() ? ' · showing your states only' : ''))),
             h('div', { class: 'page-actions' }, rangeSel)),
           h('div', { class: 'kpis' },
             kpi('Registrations', F.fmt.num(cur.length), 'vs previous ' + range + ' days', pct(cur.length, prev.length), '#/registrations?from=' + F.fmt.ymd(now - range * DAY), 'users'),
-            kpi('Today', F.fmt.num(todayN), 'vs same time yesterday', pct(todayN, yesterdayN), '#/registrations?from=' + F.fmt.ymd(now), 'clock'),
-            kpi('OTP verified', cur.length ? Math.round(verified / cur.length * 100) + '%' : '–', F.fmt.num(verified) + ' of ' + F.fmt.num(cur.length), pct(verified, vPrev), '#/otp', 'shield'),
-            kpi('Need follow-up', F.fmt.num(newCount), 'status “New”, not contacted yet', null, '#/registrations?status=new', 'alert')),
+            kpi('Need follow-up', F.fmt.num(newCount), 'status “New”, nobody called yet', null, '#/registrations?status=new', 'alert'),
+            kpi('Waiting for payment', F.fmt.num(waiting.length), F.fmt.money(waitingSum) + ' not paid yet', null, '#/registrations?pay=sent', 'clock'),
+            kpi('Fee collected', F.fmt.money(collectedSum), F.fmt.num(collected.length) + ' payments in ' + range + ' days', null, '#/registrations?pay=paid', 'card')),
           h('div', { class: 'grid-2' },
             h('section', { class: 'card' },
               h('div', { class: 'card-head' }, h('h2', null, 'Registrations per day'), h('span', { class: 'muted' }, F.fmt.num(cur.length) + ' in total · ' + F.fmt.num(paid) + ' fee paid')),
@@ -154,13 +172,12 @@
                     h('span', { class: 'bar-n' }, F.fmt.num(t.n))));
                 })) : h('p', { class: 'muted' }, 'No registrations in this period.'))),
             h('section', { class: 'card' },
-              h('div', { class: 'card-head' }, h('h2', null, 'By category')),
+              h('div', { class: 'card-head' }, h('h2', null, 'Data check'), withIssues.length ? h('a', { class: 'link', href: '#/registrations?data=issues' }, 'Review all') : null),
               h('div', { class: 'card-body' },
-                h('div', { class: 'stack', role: 'img', 'aria-label': groups.map(function (x) { return x.g.label + ' ' + x.n; }).join(', ') },
-                  groups.map(function (x, i) { return x.n ? h('span', { class: 'stack-seg c' + i, style: { flexGrow: x.n }, title: x.g.label + ': ' + x.n }) : null; })),
-                h('ul', { class: 'legend' }, groups.map(function (x, i) {
-                  return h('li', null, h('a', { href: '#/registrations?group=' + x.g.id }, h('i', { class: 'dotk c' + i }), h('span', null, x.g.label), h('strong', null, F.fmt.num(x.n))));
-                }))))),
+                h('p', { class: 'muted small health-sub' }, withIssues.length ? F.fmt.num(withIssues.length) + ' of ' + F.fmt.num(all.length) + ' profiles have missing or wrong details.' : 'Every profile has complete, readable details.'),
+                withIssues.length ? h('ul', { class: 'bars' }, issueList.slice(0, 6).map(function (c) {
+                  return h('li', null, h('a', { class: 'bar-row health', href: '#/registrations?data=' + c }, h('span', { class: 'bar-label' }, F.profile.issueLabel(c)), h('span', { class: 'bar-n' }, F.fmt.num(issueCount[c]))));
+                })) : h('p', { class: 'ok-text' }, '✓ Nothing to fix')))),
           h('section', { class: 'card' },
             h('div', { class: 'card-head' }, h('h2', null, 'Latest registrations'), h('a', { class: 'link', href: '#/registrations' }, 'See all')),
             h('ul', { class: 'recent' }, recent.map(function (g) {
