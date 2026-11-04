@@ -489,7 +489,7 @@
                 kv('Applied', F.fmt.dateTime(g.createdAt)),
                 kv('Photo', 'Uploaded with the form (shown here in the live panel)'))),
             extras.length || secret.length ? h('section', null, h('h3', { class: 'dr-h' }, 'More details from the form'),
-              h('p', { class: 'hint' }, 'Older versions of this form asked for these. They are kept so no data is lost.'),
+              h('p', { class: 'hint' }, 'Everything else this form saved, including fields that older versions of the form asked for. Nothing is left out.'),
               h('dl', { class: 'kvs' }, extras.map(function (e) {
                 return kv(e.label, e.sensitive && !can.sensitive ? h('span', { class: 'muted' }, icon('lock', 13), ' Only people with KYC access can see this') : e.value);
               }), secret.map(function (e) { return kv(e.label, h('span', { class: 'muted' }, icon('lock', 13), ' Saved by the old form. Hidden for safety')); }))) : null,
