@@ -19,8 +19,13 @@
       var json = (r.headers.get('content-type') || '').indexOf('application/json') >= 0;
       if (!json) throw Object.assign(new Error('The server did not answer.'), { status: r.status, notApi: true });
       return r.json().then(function (d) {
-        if (!r.ok) throw Object.assign(new Error(d.error || 'Something went wrong.'), { status: r.status });
+        // Our API always sends { error: "text" }. Any other error body, such as the JSON a hosting firewall
+        // answers with (Vercel blocks api/index.php with a 403), means the API is not here.
+        if (!r.ok && (!d || typeof d.error !== 'string')) throw Object.assign(new Error('The server did not answer.'), { status: r.status, notApi: true });
+        if (!r.ok) throw Object.assign(new Error(d.error), { status: r.status });
         return d;
+      }, function () {
+        throw Object.assign(new Error('The server did not answer.'), { status: r.status, notApi: true });
       });
     });
   }
